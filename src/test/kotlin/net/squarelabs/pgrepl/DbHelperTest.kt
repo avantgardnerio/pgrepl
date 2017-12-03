@@ -11,11 +11,13 @@ class DbHelperTest {
     @Test
     fun shouldCrud() {
         try {
-            val db = DbHelper("jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres");
-            if(db.list().contains(NAME)) db.drop(NAME);
-            assertEquals("should not have test db after drop", false, db.list().contains(NAME));
-            db.create(NAME)
-            assertEquals("should not test db after create", true, db.list().contains(NAME));
+            val conString = "jdbc:postgresql://localhost:5432/$NAME?user=postgres&password=postgres";
+            DbHelper(conString).use {
+                if(it.list().contains(NAME)) it.drop(NAME);
+                assertEquals("should not have test db after drop", false, it.list().contains(NAME));
+                it.create(NAME)
+                assertEquals("should have test db after create", true, it.list().contains(NAME));
+            }
         } catch (ex: Exception) {
             assertNull(ex);
         }
