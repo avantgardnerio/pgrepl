@@ -3,6 +3,14 @@ before_install:
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+language: java
+sudo: false
+jdk:
+  - oraclejdk8
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
 cache:
   directories:
     - $HOME/.gradle/caches/
