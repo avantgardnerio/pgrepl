@@ -4,6 +4,10 @@ pgrepl is a project that aims to use the [Logical Replication](https://jdbc.post
 
 Though this project is not dependent upon React or Redux, adoption will come most naturally to client-side developers used to thinking in a log/present-state pattern.
 
+## Build Status
+
+![travis](https://travis-ci.org/bgard6977/pgrepl.svg?branch=master)
+
 ## Setup
 
 1. git clone this repo
