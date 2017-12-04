@@ -6,20 +6,20 @@ import org.junit.Test
 
 class DbHelperTest {
 
-    val NAME = "pgrepl_test";
+    private val name = "pgrepl_test"
 
     @Test
     fun shouldCrud() {
         try {
-            val conString = "jdbc:postgresql://localhost:5432/$NAME?user=postgres&password=postgres";
+            val conString = "jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres"
             DbHelper(conString).use {
-                if(it.list().contains(NAME)) it.drop(NAME);
-                assertEquals("should not have test db after drop", false, it.list().contains(NAME));
-                it.create(NAME)
-                assertEquals("should have test db after create", true, it.list().contains(NAME));
+                if(it.list().contains(name)) it.drop(name)
+                assertEquals("should not have test db after drop", false, it.list().contains(name))
+                it.create(name)
+                assertEquals("should have test db after create", true, it.list().contains(name))
             }
         } catch (ex: Exception) {
-            assertNull(ex);
+            assertNull(ex)
         }
     }
 }

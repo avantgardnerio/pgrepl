@@ -5,44 +5,43 @@ import java.sql.DriverManager
 
 class DbHelper(private val conString: String) : AutoCloseable {
 
-    private val con: Connection = DriverManager.getConnection(conString);
+    private val con: Connection = DriverManager.getConnection(conString)
 
-    private val SQL_NAME = "SELECT current_database();";
-    private val SQL_LIST = "SELECT datname FROM pg_database WHERE datistemplate = false;";
-    val SQL_SLOTS = "select slot_name from pg_replication_slots where database = ?;";
+    private val sqlName = "SELECT current_database();"
+    private val sqlList = "SELECT datname FROM pg_database WHERE datistemplate = false;"
+    private val sqlSlots = "select slot_name from pg_replication_slots where database = ?;"
 
     fun getName(): String {
-        con.prepareStatement(SQL_NAME).use {
+        con.prepareStatement(sqlName).use {
             it.executeQuery().use {
-                val dbNames = mutableListOf<String>();
-                it.next();
-                return it.getString(1);
+                it.next()
+                return it.getString(1)
             }
         }
     }
 
     fun getSlots(): List<String> {
-        val name = getName();
-        con.prepareStatement(SQL_SLOTS).use {
+        val name = getName()
+        con.prepareStatement(sqlSlots).use {
             it.setString(1, name)
             it.executeQuery().use {
-                val dbNames = mutableListOf<String>();
+                val dbNames = mutableListOf<String>()
                 while (it.next()) {
-                    dbNames.add(it.getString(1));
+                    dbNames.add(it.getString(1))
                 }
-                return dbNames;
+                return dbNames
             }
         }
     }
 
     fun list(): List<String> {
-        con.prepareStatement(SQL_LIST).use {
+        con.prepareStatement(sqlList).use {
             it.executeQuery().use {
-                val dbNames = mutableListOf<String>();
+                val dbNames = mutableListOf<String>()
                 while (it.next()) {
-                    dbNames.add(it.getString(1));
+                    dbNames.add(it.getString(1))
                 }
-                return dbNames;
+                return dbNames
             }
         }
     }
@@ -52,18 +51,18 @@ class DbHelper(private val conString: String) : AutoCloseable {
             getSlots().forEach { s -> it.drop(s) }
         }
         con.prepareStatement("drop database $name;").use {
-            it.execute();
+            it.execute()
         }
     }
 
     fun create(name: String) {
         con.prepareStatement("create database $name;").use {
-            it.execute();
+            it.execute()
         }
     }
 
     override fun close() {
-        con.close();
+        con.close()
     }
 
 }

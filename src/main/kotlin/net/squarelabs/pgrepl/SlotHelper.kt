@@ -7,36 +7,36 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 class SlotHelper(conString: String) : AutoCloseable {
-    private val con: Connection = DriverManager.getConnection(conString);
+    private val con: Connection = DriverManager.getConnection(conString)
 
-    val SQL_LIST = "select * from pg_replication_slots;";
-    val SQL_CREATE = "SELECT * FROM pg_create_logical_replication_slot(?, ?)";
-    val SQL_ACTIVE = "select active from pg_replication_slots where slot_name = ?";
-    val SQL_DROP = "select pg_drop_replication_slot(slot_name) from pg_replication_slots where slot_name = ?";
-    val SQL_TERMINATE = "select pg_terminate_backend(active_pid) from pg_replication_slots where active = true and slot_name = ?";
+    private val sqlList = "select * from pg_replication_slots;"
+    private val sqlCreate = "SELECT * FROM pg_create_logical_replication_slot(?, ?)"
+    private val sqlActive = "select active from pg_replication_slots where slot_name = ?"
+    private val sqlDrop = "select pg_drop_replication_slot(slot_name) from pg_replication_slots where slot_name = ?"
+    private val sqlTerminate = "select pg_terminate_backend(active_pid) from pg_replication_slots where active = true and slot_name = ?"
 
     fun list(): List<String> {
-        con.prepareStatement(SQL_LIST).use {
+        con.prepareStatement(sqlList).use {
             it.executeQuery().use {
-                val dbNames = mutableListOf<String>();
+                val dbNames = mutableListOf<String>()
                 while (it.next()) {
-                    dbNames.add(it.getString(1));
+                    dbNames.add(it.getString(1))
                 }
-                return dbNames;
+                return dbNames
             }
         }
     }
 
     @Throws(SQLException::class, InterruptedException::class, TimeoutException::class)
     fun drop(slotName: String) {
-        con.prepareStatement(SQL_TERMINATE).use {
+        con.prepareStatement(sqlTerminate).use {
             it.setString(1, slotName)
             it.execute()
         }
 
         waitStopReplicationSlot(slotName)
 
-        con.prepareStatement(SQL_DROP).use {
+        con.prepareStatement(sqlDrop).use {
             it.setString(1, slotName)
             it.execute()
         }
@@ -46,7 +46,7 @@ class SlotHelper(conString: String) : AutoCloseable {
     fun create(slotName: String, outputPlugin: String) {
         drop(slotName)
 
-        con.prepareStatement(SQL_CREATE).use({
+        con.prepareStatement(sqlCreate).use({
             it.setString(1, slotName)
             it.setString(2, outputPlugin)
             it.executeQuery().use({
@@ -79,13 +79,13 @@ class SlotHelper(conString: String) : AutoCloseable {
 
     @Throws(SQLException::class)
     private fun isReplicationSlotActive(slotName: String): Boolean {
-        con.prepareStatement(SQL_ACTIVE).use {
+        con.prepareStatement(sqlActive).use {
             it.setString(1, slotName)
             it.executeQuery().use { rs -> return rs.next() && rs.getBoolean(1) }
         }
     }
     
     override fun close() {
-        con.close();
+        con.close()
     }
 }
