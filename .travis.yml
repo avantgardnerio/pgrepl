@@ -1,6 +1,8 @@
 before_install:
   - gradle wrapper
   - echo "hello world"
+  - printenv
+  - which psql
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 before_cache:
