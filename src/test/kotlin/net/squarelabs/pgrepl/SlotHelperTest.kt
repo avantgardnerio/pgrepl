@@ -5,20 +5,20 @@ import org.junit.Test
 
 class SlotHelperTest {
 
-    val NAME = "pgrepl_test";
+    private val dbName = "pgrepl_test"
 
     @Test
     fun shouldCrud() {
         try {
-            val conString = "jdbc:postgresql://localhost:5432/$NAME?user=postgres&password=postgres";
+            val conString = "jdbc:postgresql://localhost:5432/$dbName?user=postgres&password=postgres"
             SlotHelper(conString).use {
-                if(it.list().contains(NAME)) it.drop(NAME);
-                Assert.assertEquals("should not have test db after drop", false, it.list().contains(NAME));
-                it.create(NAME, "test_decoding");
-                Assert.assertEquals("should not test db after create", true, it.list().contains(NAME));
+                if(it.list().contains(dbName)) it.drop(dbName)
+                Assert.assertEquals("should not have test db after drop", false, it.list().contains(dbName))
+                it.create(dbName, "test_decoding")
+                Assert.assertEquals("should not test db after create", true, it.list().contains(dbName))
             }
         } catch (ex: Exception) {
-            Assert.assertNull(ex);
+            Assert.assertNull(ex)
         }
     }
 
