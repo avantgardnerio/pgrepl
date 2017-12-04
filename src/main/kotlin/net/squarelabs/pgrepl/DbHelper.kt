@@ -20,8 +20,7 @@ class DbHelper(private val conString: String) : AutoCloseable {
         }
     }
 
-    fun getSlots(): List<String> {
-        val name = getName()
+    fun getSlots(name: String): List<String> {
         con.prepareStatement(sqlSlots).use {
             it.setString(1, name)
             it.executeQuery().use {
@@ -48,7 +47,7 @@ class DbHelper(private val conString: String) : AutoCloseable {
 
     fun drop(name: String) {
         SlotHelper(conString).use {
-            getSlots().forEach { s -> it.drop(s) }
+            getSlots(name).forEach { s -> it.drop(s) }
         }
         con.prepareStatement("drop database $name;").use {
             it.execute()
