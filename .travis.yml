@@ -8,7 +8,7 @@ before_install:
   - echo "wal_keep_segments = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "wal_level = logical" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "max_replication_slots = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
-  - service postgresql restart
+  - sudo service postgresql restart
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 before_cache:
