@@ -18,6 +18,7 @@ class SlotHelperTest {
                 Assert.assertEquals("should not test db after create", true, it.list().contains(dbName))
             }
         } catch (ex: Exception) {
+            ex.printStackTrace() // Get woke, travis
             Assert.assertNull(ex)
         }
     }
