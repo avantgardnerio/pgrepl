@@ -59,7 +59,7 @@ compileTestKotlin {
 
 test {
     testLogging {
-        events "failed"
-        exceptionFormat "short"
+        showStandardStreams = true
     }
 }
+\
