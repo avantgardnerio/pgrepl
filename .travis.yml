@@ -25,12 +25,12 @@ before_install:
   - echo "max_replication_slots = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - sudo service postgresql restart
 install:
+  - pwd
+  - ls -la
   - mvn dependency:resolve
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 script:
-  - pwd
-  - ls -la 
   - mvn verify
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
