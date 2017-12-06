@@ -1,3 +1,15 @@
+language: java
+sudo: true
+jdk:
+  - oraclejdk8
+services:
+  - postgresql
+addons:
+  postgresql: "9.6"
+  apt:
+    packages:
+      - oracle-java8-installer
+      - postgresql-server-dev-9.6
 before_install:
   - gradle wrapper
   - echo "hello world"
@@ -17,20 +29,7 @@ before_script:
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-language: java
-sudo: true
-jdk:
-  - oraclejdk8
-addons:
-  apt:
-    packages:
-      - oracle-java8-installer
-      - postgresql-server-dev-9.6
 cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
-services:
-  - postgresql
-addons:
-  postgresql: "9.6"
