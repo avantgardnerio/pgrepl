@@ -3,6 +3,7 @@ before_install:
   - echo "hello world"
   - printenv
   - which psql
+  - sudo apt-get install postgresql-server-dev-9.6
   - git clone https://github.com/eulerto/wal2json.git
   - cd wal2json && USE_PGXS=1 make && USE_PGXS=1 make install
   - ls -l /etc/postgresql/9.6/main/postgresql.conf
