@@ -3,6 +3,8 @@ before_install:
   - echo "hello world"
   - printenv
   - which psql
+  - git clone https://github.com/eulerto/wal2json.git
+  - cd wal2json && set USE_PGXS=1 && make && make install
   - ls -l /etc/postgresql/9.6/main/postgresql.conf
   - echo "max_wal_senders = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "wal_keep_segments = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
@@ -22,6 +24,7 @@ addons:
   apt:
     packages:
       - oracle-java8-installer
+      - postgresql-server-dev-9.6
 cache:
   directories:
     - $HOME/.gradle/caches/
