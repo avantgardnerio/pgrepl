@@ -13,7 +13,7 @@ class SlotHelperTest {
         SlotHelper(conString).use {
             if(it.list().contains(dbName)) it.drop(dbName)
             Assert.assertEquals("should not have test db after drop", false, it.list().contains(dbName))
-            it.create(dbName, "test_decoding")
+            it.create(dbName, "wal2json")
             Assert.assertEquals("should not test db after create", true, it.list().contains(dbName))
         }
     }
