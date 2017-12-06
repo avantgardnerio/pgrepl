@@ -27,7 +27,7 @@ before_install:
 install:
   - pwd
   - ls -la
-  - ./gradlew buildDependencies
+  - ./gradlew build -x test
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 script:
