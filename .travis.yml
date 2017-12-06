@@ -13,7 +13,7 @@ before_install:
   - echo "max_replication_slots = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - sudo service postgresql restart
 before_script:
-  - psql -c 'create database travis_ci_test;' -U postgres
+  - echo hello
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
@@ -25,7 +25,6 @@ addons:
   apt:
     packages:
       - oracle-java8-installer
-      - postgresql-server-dev-9.6
 cache:
   directories:
     - $HOME/.gradle/caches/
