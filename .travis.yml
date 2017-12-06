@@ -17,7 +17,7 @@ before_install:
   - which psql
   - sudo apt-get install postgresql-server-dev-9.6
   - git clone https://github.com/eulerto/wal2json.git
-  - cd wal2json && USE_PGXS=1 make && USE_PGXS=1 make install
+  - cd wal2json && USE_PGXS=1 make && sudo USE_PGXS=1 make install
   - ls -l /etc/postgresql/9.6/main/postgresql.conf
   - echo "max_wal_senders = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "wal_keep_segments = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
