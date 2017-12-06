@@ -31,6 +31,8 @@ dependencies {
     
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile 'org.postgresql:postgresql:42.1.4'
+
+    compile group: 'org.eclipse.jetty', name: 'jetty-server', version: '9.4.8.v20171121'
 }
 
 task wrapper(type: Wrapper) {
