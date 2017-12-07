@@ -28,9 +28,6 @@ dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
 
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
-    
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile 'org.postgresql:postgresql:42.1.4'
 
@@ -43,6 +40,15 @@ dependencies {
 
     compile group: 'org.flywaydb', name: 'flyway-core', version: '4.2.0'
     compile 'com.github.javafaker:javafaker:0.14'
+
+    // Use JUnit test framework
+    testImplementation 'junit:junit:4.12'
+    //testCompile group: 'org.seleniumhq.selenium', name: 'selenium-firefox-driver', version: '3.5.3'
+    testCompile group: 'org.seleniumhq.selenium', name: 'selenium-chrome-driver', version: '3.5.3'
+    testCompile group: 'org.seleniumhq.selenium', name: 'selenium-support', version: '3.5.3'
+    testCompile('org.seleniumhq.selenium:selenium-remote-driver:3.5.3')
+    testCompile('org.seleniumhq.selenium:selenium-api:3.5.3')
+    testCompile "org.seleniumhq.selenium:htmlunit-driver:2.27"
 }
 
 task wrapper(type: Wrapper) {
