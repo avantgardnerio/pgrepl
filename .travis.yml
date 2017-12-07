@@ -31,6 +31,7 @@ install:
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 script:
+  - which chdriver
   - ./gradlew build
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
