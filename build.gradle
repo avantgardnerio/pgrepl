@@ -68,7 +68,6 @@ compileTestKotlin {
 }
 
 test {
-    systemProperty "webdriver.chrome.driver", "/usr/bin/chdriver"
     testLogging {
         showStandardStreams = true
         showExceptions = true

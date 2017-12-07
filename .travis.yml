@@ -1,3 +1,4 @@
+dist: trusty
 language: java
 sudo: true
 jdk:
@@ -5,6 +6,7 @@ jdk:
 services:
   - postgresql
 addons:
+  chrome: stable
   postgresql: "9.6"
   apt:
     packages:
@@ -24,6 +26,7 @@ before_install:
   - echo "wal_level = logical" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "max_replication_slots = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - sudo service postgresql restart
+  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
 install:
   - pwd
   - ls -la
@@ -31,7 +34,7 @@ install:
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 script:
-  - which chdriver
+  - which chromedriver
   - ./gradlew build
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
