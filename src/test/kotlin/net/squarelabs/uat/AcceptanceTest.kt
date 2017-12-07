@@ -8,6 +8,10 @@ import org.junit.BeforeClass
 import org.junit.Test
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
+import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.remote.DesiredCapabilities
+
+
 
 class AcceptanceTest {
 
@@ -31,13 +35,24 @@ class AcceptanceTest {
 
     companion object {
 
-        internal var driver: WebDriver = ChromeDriver()
+        lateinit var driver: WebDriver
 
         @BeforeClass
         @JvmStatic
         @Throws(Exception::class)
         fun setup() {
-            System.setProperty("webdriver.chrome.driver", "/usr/bin/chdriver")
+            val chromeOptions = ChromeOptions()
+            //chromeOptions.setBinary("/path/to/google-chrome-stable")
+            chromeOptions.addArguments("--headless")
+            chromeOptions.addArguments("--disable-gpu")
+
+            val dc = DesiredCapabilities()
+            dc.isJavascriptEnabled = true
+            dc.setCapability(
+                    ChromeOptions.CAPABILITY, chromeOptions
+            )
+            driver = ChromeDriver(dc)
+
             val app = App()
             app.start()
         }
