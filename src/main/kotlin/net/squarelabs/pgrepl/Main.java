@@ -1,6 +1,5 @@
 package net.squarelabs.pgrepl;
 
-import com.github.javafaker.Faker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -17,6 +16,9 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         // Database
+        // TODO: db info from environment variables
+        // TODO: test on heroku?
+        // TODO: get config from env vars
         DbHelper db = new DbHelper("jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres");
         db.drop("pgrepl_test");
         db.create("pgrepl_test");
