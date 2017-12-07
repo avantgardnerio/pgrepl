@@ -1,6 +1,6 @@
 package net.squarelabs.uat;
 
-import net.squarelabs.pgrepl.Main;
+import net.squarelabs.pgrepl.App;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -16,7 +16,8 @@ public class AcceptanceTest {
     public static void setup() throws Exception {
         System.setProperty("webdriver.chrome.driver", "/usr/bin/chdriver");
         driver = new ChromeDriver();
-        Main.main(new String[] {}); // TODO: non-static app class
+        App app = new App();
+        app.start();
     }
 
     @AfterClass
@@ -27,7 +28,7 @@ public class AcceptanceTest {
     @Test
     public void test() {
         String baseUrl = "http://127.0.0.1:8080/";
-        String expectedTitle = "Welcome: Mercury Tours";
+        String expectedTitle = "Jetty WebSocket Echo Examples";
         driver.get(baseUrl);
 
         String actualTitle = driver.getTitle();
