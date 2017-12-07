@@ -92,6 +92,7 @@ public class ReplicationSocket extends Endpoint implements MessageHandler.Whole<
                     if(buffer == null) return;
                     String str = toString(buffer);
                     System.out.println(str);
+                    remote.sendText(str);
 
                     // TODO: Only clear on confirm from client
                     stream.setAppliedLSN(stream.getLastReceiveLSN());
