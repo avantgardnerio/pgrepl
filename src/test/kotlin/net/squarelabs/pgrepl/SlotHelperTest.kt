@@ -9,6 +9,7 @@ class SlotHelperTest {
 
     @Test
     fun shouldCrud() {
+        println("--- SlotHelperTest")
         val conString = "jdbc:postgresql://localhost:5432/$dbName?user=postgres&password=postgres"
         SlotHelper(conString).use {
             if(it.list().contains(dbName)) it.drop(dbName)

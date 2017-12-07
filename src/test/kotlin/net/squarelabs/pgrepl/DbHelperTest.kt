@@ -10,6 +10,7 @@ class DbHelperTest {
 
     @Test
     fun shouldCrud() {
+        println("--- DbHelperTest")
         val conString = "jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres"
         DbHelper(conString).use {
             if(it.list().contains(name)) it.drop(name)
