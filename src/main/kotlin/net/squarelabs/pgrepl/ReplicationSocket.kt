@@ -54,6 +54,7 @@ class ReplicationSocket : Endpoint(), MessageHandler.Whole<String> {
             slot.drop(slotName)
             slot.create(slotName, "wal2json")
 
+            // TODO: implement AutoClosable and stop the timer and close the connection
             val lsn = getCurrentLSN(queryCon)
             val stream = replCon
                     .replicationAPI

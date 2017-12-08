@@ -4,9 +4,15 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
+import org.eclipse.jetty.util.log.Log
+import org.eclipse.jetty.websocket.client.io.ConnectionManager
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.flywaydb.core.Flyway
+import java.nio.ByteBuffer
+import java.sql.Connection
+import java.sql.DriverManager
 import java.util.*
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.websocket.server.ServerEndpointConfig
 
@@ -45,10 +51,36 @@ class App {
         // Start Jetty
         server.start()
         println("IsRunning ${server.isRunning} ${server.isStarted}")
+
+        // Start making changes so we can see what the tx log notifications look like
+        // TODO: All types of updates: insert, update, delete
+        // TODO: Related records and constraint violations
+        // TODO: Transactions with multiple changes
+        // TODO: Create client-side DB and move this "test" there
+        // TODO: implement autoclosable and stop the timer and close the connection
+        executor.scheduleAtFixedRate({
+            try {
+                val conString = "jdbc:postgresql://localhost:5432/pgrepl_test?user=postgres&password=postgres";
+                DriverManager.getConnection(conString).use {
+                    it.prepareStatement("insert into person (id, name) values (1, 'Brent');").use {
+                        it.executeUpdate()
+                    }
+                }
+            } catch (ex: Exception) {
+                // TODO: Kill timer
+                // TODO: slf4jsimple
+                println(ex.toString())
+            }
+        }, 0, 3, TimeUnit.SECONDS)
     }
 
     @Throws(Exception::class)
     fun join() {
         server.join()
     }
+
+    companion object {
+        private val executor = Executors.newScheduledThreadPool(1)
+    }
+
 }
