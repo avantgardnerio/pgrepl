@@ -43,12 +43,8 @@ class App {
         context.addServlet(defHolder, "/")
 
         // Start Jetty
-        println("IsRunning ${server.isRunning} ${server.isStarted}")
         server.start()
-        while(!server.isStarted || !server.isRunning) {
-            println("IsRunning ${server.isRunning} ${server.isStarted}")
-            TimeUnit.MILLISECONDS.sleep(100)
-        }
+        println("IsRunning ${server.isRunning} ${server.isStarted}")
     }
 
     @Throws(Exception::class)
