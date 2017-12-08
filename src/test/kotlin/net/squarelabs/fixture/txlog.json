@@ -1,0 +1,46 @@
+[
+  {
+    "xid": 1970,
+    "change": [
+      {
+        "kind": "insert",
+        "schema": "public",
+        "table": "person",
+        "columnnames": [
+          "id",
+          "name"
+        ],
+        "columntypes": [
+          "integer",
+          "character varying(100)"
+        ],
+        "columnvalues": [
+          1,
+          "brent"
+        ]
+      }
+    ]
+  },
+  {
+    "xid": 1971,
+    "change": [
+      {
+        "kind": "insert",
+        "schema": "public",
+        "table": "person",
+        "columnnames": [
+          "id",
+          "name"
+        ],
+        "columntypes": [
+          "integer",
+          "character varying(100)"
+        ],
+        "columnvalues": [
+          2,
+          "andy"
+        ]
+      }
+    ]
+  }
+]
