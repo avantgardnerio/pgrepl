@@ -30,15 +30,16 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
         PGProperty.ASSUME_MIN_SERVER_VERSION.set(properties, "9.4")
         PGProperty.REPLICATION.set(properties, "database")
         PGProperty.PREFER_QUERY_MODE.set(properties, "simple")
-        val url = cfgService.getAppDbUrl()
+        val url = cfgService.getAppDbUrl() // TODO: Listen to dbName, not cfgService.AppDb
         replCon = DriverManager.getConnection(url, properties) as BaseConnection
         queryCon = DriverManager.getConnection(url) as BaseConnection
 
         // Create a slot
         val slotName = "slot_${id}"
-        val slot = SlotService(url)
-        slot.drop(slotName)
-        slot.create(slotName, plugin)
+        SlotService(url).use {
+            it.drop(slotName)
+            it.create(slotName, plugin)
+        }
 
         // Start listening
         val lsn = getCurrentLSN(queryCon)
@@ -60,10 +61,7 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
             var buffer = stream.readPending()
             while (buffer != null) {
                 val str = toString(buffer)
-                for(listener in listeners) {
-                    listener(str)
-                }
-                //listeners.forEach({ l -> l(str) })
+                listeners.forEach({ l -> l(str) })
                 buffer = stream.readPending()
                 stream.setAppliedLSN(stream.lastReceiveLSN)
                 stream.setFlushedLSN(stream.lastReceiveLSN)            }
@@ -100,8 +98,8 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
         executor.shutdownNow()
 
         stream.close()
-        replCon!!.close()
-        queryCon!!.close()
+        replCon.close()
+        queryCon.close()
     }
 
     companion object {

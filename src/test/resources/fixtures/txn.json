@@ -1,0 +1,22 @@
+{
+  "xid": 3049,
+  "change": [
+    {
+      "kind": "insert",
+      "schema": "public",
+      "table": "person",
+      "columnnames": [
+        "id",
+        "name"
+      ],
+      "columntypes": [
+        "integer",
+        "character varying(100)"
+      ],
+      "columnvalues": [
+        1,
+        "Brent"
+      ]
+    }
+  ]
+}

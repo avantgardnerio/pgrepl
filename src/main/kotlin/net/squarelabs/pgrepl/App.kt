@@ -16,20 +16,20 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.websocket.server.ServerEndpointConfig
 
-class App @Inject constructor(val configService: ConfigService, val socket: ReplicationSocketFactory) : AutoCloseable {
+class App @Inject constructor(val cfgService: ConfigService, val socket: ReplicationSocketFactory) : AutoCloseable {
 
     lateinit var server: Server
 
     @Throws(Exception::class)
     fun start() {
         // Database
-        val dbName = configService.getAppDbName()
-        val url = configService.getJdbcDatabaseUrl()
+        val dbName = cfgService.getAppDbName()
+        val url = cfgService.getJdbcDatabaseUrl()
         val db = DbService(url)
         if (db.list().contains(dbName)) db.drop(dbName)
         db.create(dbName)
         val flyway = Flyway()
-        flyway.setDataSource(configService.getAppDbUrl(), null, null)
+        flyway.setDataSource(cfgService.getAppDbUrl(), null, null)
         flyway.migrate()
 
         // Jetty
@@ -62,7 +62,7 @@ class App @Inject constructor(val configService: ConfigService, val socket: Repl
         // TODO: implement autoclosable and stop the timer and close the connection
         executor.scheduleAtFixedRate({
             try {
-                val conString = configService.getAppDbUrl()
+                val conString = cfgService.getAppDbUrl()
                 DriverManager.getConnection(conString).use {
                     it.prepareStatement("INSERT INTO person (id, name) VALUES (1, 'Brent');").use {
                         it.executeUpdate()
