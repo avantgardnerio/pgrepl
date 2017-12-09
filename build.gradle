@@ -37,6 +37,7 @@ dependencies {
     compile 'org.eclipse.jetty.websocket:websocket-server:9.4.8.v20171121'
     compile 'org.eclipse.jetty.websocket:websocket-servlet:9.4.8.v20171121'
     compile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.4.8.v20171121'
+    compile group: 'org.eclipse.jetty.websocket', name: 'websocket-client', version: '9.4.8.v20171121'
 
     compile group: 'org.flywaydb', name: 'flyway-core', version: '4.2.0'
     compile 'com.github.javafaker:javafaker:0.14'
