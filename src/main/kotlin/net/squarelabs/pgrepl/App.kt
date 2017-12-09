@@ -1,31 +1,27 @@
 package net.squarelabs.pgrepl
 
+import net.squarelabs.pgrepl.services.ConfigService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
-import org.eclipse.jetty.util.log.Log
-import org.eclipse.jetty.websocket.client.io.ConnectionManager
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.flywaydb.core.Flyway
-import java.nio.ByteBuffer
-import java.sql.Connection
 import java.sql.DriverManager
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import javax.websocket.server.ServerEndpointConfig
 
-class App {
+class App @Inject constructor(val configService: ConfigService) {
     lateinit var server: Server
 
     @Throws(Exception::class)
     fun start() {
         // Database
-        // TODO: db info from environment variables
-        // TODO: test on heroku?
-        // TODO: get config from env vars
-        val db = DbHelper("jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres")
+        val url = configService.getJdbcDatabaseUrl()
+        val db = DbHelper(url)
         db.drop("pgrepl_test")
         db.create("pgrepl_test")
         val flyway = Flyway()
@@ -62,7 +58,7 @@ class App {
             try {
                 val conString = "jdbc:postgresql://localhost:5432/pgrepl_test?user=postgres&password=postgres";
                 DriverManager.getConnection(conString).use {
-                    it.prepareStatement("insert into person (id, name) values (1, 'Brent');").use {
+                    it.prepareStatement("INSERT INTO person (id, name) VALUES (1, 'Brent');").use {
                         it.executeUpdate()
                     }
                 }

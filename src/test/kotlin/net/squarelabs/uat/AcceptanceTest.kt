@@ -1,6 +1,7 @@
 package net.squarelabs.uat
 
-
+import com.google.inject.AbstractModule
+import com.google.inject.Guice
 import net.squarelabs.pgrepl.App
 import org.junit.AfterClass
 import org.junit.Assert
@@ -10,8 +11,6 @@ import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.remote.DesiredCapabilities
-
-
 
 class AcceptanceTest {
 
@@ -53,7 +52,12 @@ class AcceptanceTest {
             )
             driver = ChromeDriver(dc)
 
-            val app = App()
+            val injector = Guice.createInjector(object : AbstractModule() {
+                public override fun configure() {
+                    //bind(ConfigService::class.java).to(ConfigService::class.java)
+                }
+            })
+            val app: App = injector.getInstance(App::class.java)
             app.start()
         }
 
