@@ -24,6 +24,9 @@ before_install:
   - echo "wal_keep_segments = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "wal_level = logical" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
   - echo "max_replication_slots = 4" | sudo tee -a /etc/postgresql/9.*/main/postgresql.conf
+  - echo "local replication postgres peer" | sudo tee -a /etc/postgresql/9.6/main/pg_hba.conf
+  - echo "host replication postgres 127.0.0.1/32 md5" | sudo tee -a /etc/postgresql/9.6/main/pg_hba.conf
+  - echo "host replication postgres ::1/128 md5" | sudo tee -a /etc/postgresql/9.6/main/pg_hba.conf
   - sudo service postgresql restart
   - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
 install:
