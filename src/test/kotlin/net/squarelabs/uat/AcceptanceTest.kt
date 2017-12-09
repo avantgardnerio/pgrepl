@@ -18,7 +18,6 @@ class AcceptanceTest {
 
     companion object {
 
-        private val dbName = "pgrepl_test" // TODO: dedupe
         lateinit var driver: WebDriver
 
         @BeforeClass
@@ -26,6 +25,7 @@ class AcceptanceTest {
         @Throws(Exception::class)
         fun setup() {
             // Database
+            val dbName = ConfigService().getAppDbName()
             val url = ConfigService().getJdbcDatabaseUrl()
             val db = DbService(url)
             db.drop(dbName)
@@ -56,6 +56,10 @@ class AcceptanceTest {
         @JvmStatic
         fun tearDown() {
             driver.close()
+            val dbName = ConfigService().getAppDbName()
+            val url = ConfigService().getJdbcDatabaseUrl()
+            val db = DbService(url)
+            db.drop(dbName)
         }
     }
 

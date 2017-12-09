@@ -5,11 +5,11 @@ import org.junit.Test
 
 class DbServiceTest {
 
-    private val name = "pgrepl_test" // TODO: dedupe
 
     @Test
     fun shouldCrud() {
         println("--- DbServiceTest")
+        val name = ConfigService().getAppDbName()
         val conString = ConfigService().getJdbcDatabaseUrl()
         DbService(conString).use {
             if(it.list().contains(name)) it.drop(name)

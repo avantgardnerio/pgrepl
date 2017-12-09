@@ -21,12 +21,13 @@ class App @Inject constructor(val configService: ConfigService) {
     @Throws(Exception::class)
     fun start() {
         // Database
+        val dbName = configService.getAppDbName()
         val url = configService.getJdbcDatabaseUrl()
         val db = DbService(url)
-        db.drop("pgrepl_test")
-        db.create("pgrepl_test")
+        db.drop(dbName)
+        db.create(dbName)
         val flyway = Flyway()
-        flyway.setDataSource("jdbc:postgresql://localhost:5432/pgrepl_test", "postgres", "postgres")
+        flyway.setDataSource(configService.getAppDbUrl(), null, null)
         flyway.migrate()
 
         // Jetty
@@ -57,7 +58,7 @@ class App @Inject constructor(val configService: ConfigService) {
         // TODO: implement autoclosable and stop the timer and close the connection
         executor.scheduleAtFixedRate({
             try {
-                val conString = "jdbc:postgresql://localhost:5432/pgrepl_test?user=postgres&password=postgres";
+                val conString = configService.getAppDbUrl()
                 DriverManager.getConnection(conString).use {
                     it.prepareStatement("INSERT INTO person (id, name) VALUES (1, 'Brent');").use {
                         it.executeUpdate()

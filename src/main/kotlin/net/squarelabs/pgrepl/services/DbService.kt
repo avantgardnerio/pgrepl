@@ -40,13 +40,13 @@ class DbService(private val conString: String) : AutoCloseable {
         SlotService(conString).use {
             getSlots(name).forEach { s -> it.drop(s) }
         }
-        con.prepareStatement("drop database $name;").use {
+        con.prepareStatement("drop database $name;").use { // TODO: SQL injection
             it.execute()
         }
     }
 
     fun create(name: String) {
-        con.prepareStatement("create database $name;").use {
+        con.prepareStatement("create database $name;").use { // TODO: SQL injection
             it.execute()
         }
     }

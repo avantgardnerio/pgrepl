@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl
 
+import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.SlotService
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.PGProperty
@@ -12,9 +13,12 @@ import java.sql.SQLException
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import javax.websocket.*
 
-class ReplicationSocket : Endpoint(), MessageHandler.Whole<String> {
+class ReplicationSocket @Inject constructor(val configService: ConfigService)
+    : Endpoint(), MessageHandler.Whole<String> {
+    
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
 
@@ -37,21 +41,20 @@ class ReplicationSocket : Endpoint(), MessageHandler.Whole<String> {
 
             // TODO: Can't use one slot per client
             val properties = Properties()
-            properties.setProperty("user", "postgres")
-            properties.setProperty("password", "postgres")
+            //properties.setProperty("user", "postgres")
+            //properties.setProperty("password", "postgres")
             PGProperty.ASSUME_MIN_SERVER_VERSION.set(properties, "9.4")
             PGProperty.REPLICATION.set(properties, "database")
             PGProperty.PREFER_QUERY_MODE.set(properties, "simple")
-            val url = "jdbc:postgresql://localhost/pgrepl_test"
+            val url = configService.getAppDbUrl()
             val replCon = DriverManager.getConnection(url, properties) as BaseConnection
 
             // TODO: connection pool
-            val queryCon = DriverManager.getConnection(url, "postgres", "postgres") as BaseConnection
+            val queryCon = DriverManager.getConnection(url) as BaseConnection
 
             val slotName = "slot" + session.id
 
-            val conString = "jdbc:postgresql://localhost:5432/pgrepl_test?user=postgres&password=postgres"
-            val slot = SlotService(conString)
+            val slot = SlotService(url)
             slot.drop(slotName)
             slot.create(slotName, "wal2json")
 
