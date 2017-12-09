@@ -1,11 +1,13 @@
 package net.squarelabs.pgrepl
 
+import com.google.inject.Inject
+import com.google.inject.Singleton
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ReplicationService
 import org.eclipse.jetty.util.log.Log
-import javax.inject.Inject
 import javax.websocket.*
 
+@Singleton
 class ReplicationSocket @Inject constructor(
         val replService: ReplicationService,
         val cfgService: ConfigService

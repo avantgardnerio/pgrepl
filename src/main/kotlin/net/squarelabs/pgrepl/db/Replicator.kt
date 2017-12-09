@@ -1,6 +1,7 @@
 package net.squarelabs.pgrepl.db
 
 import net.squarelabs.pgrepl.services.ConfigService
+import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.SlotService
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.PGProperty
@@ -13,16 +14,23 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
-class Replicator(val dbName: String, val cfgService: ConfigService) : AutoCloseable {
+class Replicator(
+        val dbName: String,
+        val cfgService: ConfigService,
+        val conSvc: ConnectionService
+) : AutoCloseable {
 
+    private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
     val id = UUID.randomUUID().toString().replace('-', '_')
     val listeners = ArrayList<(String) -> Unit>()
     val replCon: BaseConnection
     val queryCon: BaseConnection
     val stream: PGReplicationStream
+    val future: Future<*>
 
     init {
         // Connect to DB
@@ -32,11 +40,11 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
         PGProperty.PREFER_QUERY_MODE.set(properties, "simple")
         val url = cfgService.getAppDbUrl() // TODO: Listen to dbName, not cfgService.AppDb
         replCon = DriverManager.getConnection(url, properties) as BaseConnection
-        queryCon = DriverManager.getConnection(url) as BaseConnection
+        queryCon = conSvc.getConnection(url)
 
         // Create a slot
         val slotName = "slot_${id}"
-        SlotService(url).use {
+        SlotService(url, conSvc).use {
             it.drop(slotName)
             it.create(slotName, plugin)
         }
@@ -53,7 +61,7 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
                 //.withSlotOption("skip-empty-xacts", true)
                 .withStatusInterval(20, TimeUnit.SECONDS)
                 .start()
-        executor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
+        future = executor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
     }
 
     fun checkMessages() {
@@ -93,6 +101,7 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
     }
 
     override fun close() {
+        future.cancel(true)
         executor.shutdown()
         executor.awaitTermination(3, TimeUnit.SECONDS)
         executor.shutdownNow()
@@ -104,9 +113,6 @@ class Replicator(val dbName: String, val cfgService: ConfigService) : AutoClosea
 
     companion object {
         private val LOG = Log.getLogger(Replicator::class.java)
-
-        // TODO: Guice
-        private val executor = Executors.newScheduledThreadPool(1)
 
         // TODO: Helper method
         private fun toString(buffer: ByteBuffer): String {

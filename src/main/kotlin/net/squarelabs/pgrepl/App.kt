@@ -1,7 +1,10 @@
 package net.squarelabs.pgrepl
 
+import com.google.inject.Inject
+import com.google.inject.Singleton
 import net.squarelabs.pgrepl.factories.ReplicationSocketFactory
 import net.squarelabs.pgrepl.services.ConfigService
+import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
@@ -9,14 +12,16 @@ import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.flywaydb.core.Flyway
-import java.sql.DriverManager
 import java.util.*
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import javax.websocket.server.ServerEndpointConfig
 
-class App @Inject constructor(val cfgService: ConfigService, val socket: ReplicationSocketFactory) : AutoCloseable {
+@Singleton
+class App @Inject constructor(
+        val cfgService: ConfigService,
+        val socket: ReplicationSocketFactory,
+        val conSvc: ConnectionService
+) : AutoCloseable {
 
     lateinit var server: Server
 
@@ -25,9 +30,10 @@ class App @Inject constructor(val cfgService: ConfigService, val socket: Replica
         // Database
         val dbName = cfgService.getAppDbName()
         val url = cfgService.getJdbcDatabaseUrl()
-        val db = DbService(url)
-        if (db.list().contains(dbName)) db.drop(dbName)
-        db.create(dbName)
+        DbService(url, conSvc).use {
+            if (it.list().contains(dbName)) it.drop(dbName)
+            it.create(dbName)
+        }
         val flyway = Flyway()
         flyway.setDataSource(cfgService.getAppDbUrl(), null, null)
         flyway.migrate()
@@ -53,27 +59,6 @@ class App @Inject constructor(val cfgService: ConfigService, val socket: Replica
         // Start Jetty
         server.start()
         println("IsRunning ${server.isRunning} ${server.isStarted}")
-
-        // Start making changes so we can see what the tx log notifications look like
-        // TODO: All types of updates: insert, update, delete
-        // TODO: Related records and constraint violations
-        // TODO: Transactions with multiple changes
-        // TODO: Create client-side DB and move this "test" there
-        // TODO: implement autoclosable and stop the timer and close the connection
-        executor.scheduleAtFixedRate({
-            try {
-                val conString = cfgService.getAppDbUrl()
-                DriverManager.getConnection(conString).use {
-                    it.prepareStatement("INSERT INTO person (id, name) VALUES (1, 'Brent');").use {
-                        it.executeUpdate()
-                    }
-                }
-            } catch (ex: Exception) {
-                // TODO: Kill timer
-                // TODO: slf4jsimple
-                println(ex.toString())
-            }
-        }, 0, 3, TimeUnit.SECONDS)
     }
 
     @Throws(Exception::class)
@@ -83,11 +68,7 @@ class App @Inject constructor(val cfgService: ConfigService, val socket: Replica
 
     override fun close() {
         server.stop()
-        while(server.isStopped == false) TimeUnit.MILLISECONDS.sleep(10)
-    }
-
-    companion object {
-        private val executor = Executors.newScheduledThreadPool(1)
+        while (server.isStopped == false) TimeUnit.MILLISECONDS.sleep(10)
     }
 
 }

@@ -6,8 +6,11 @@ import java.sql.SQLException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-class SlotService(conString: String) : AutoCloseable {
-    private val con: Connection = DriverManager.getConnection(conString)
+class SlotService(
+        conString: String,
+        conSvc: ConnectionService
+) : AutoCloseable {
+    private val con: Connection = conSvc.getConnection(conString)
 
     private val sqlList = "select * from pg_replication_slots;"
     private val sqlCreate = "SELECT * FROM pg_create_logical_replication_slot(?, ?)"

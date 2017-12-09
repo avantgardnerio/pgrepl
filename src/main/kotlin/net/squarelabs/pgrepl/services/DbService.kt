@@ -3,9 +3,12 @@ package net.squarelabs.pgrepl.services
 import java.sql.Connection
 import java.sql.DriverManager
 
-class DbService(private val conString: String) : AutoCloseable {
+class DbService(
+        private val conString: String,
+        val conSvc: ConnectionService
+) : AutoCloseable {
 
-    private val con: Connection = DriverManager.getConnection(conString)
+    private val con: Connection = conSvc.getConnection(conString)
 
     private val sqlName = "SELECT current_database();"
     private val sqlList = "SELECT datname FROM pg_database WHERE datistemplate = false;"
@@ -37,7 +40,7 @@ class DbService(private val conString: String) : AutoCloseable {
     }
 
     fun drop(name: String) {
-        SlotService(conString).use {
+        SlotService(conString, conSvc).use {
             getSlots(name).forEach { s -> it.drop(s) }
         }
         con.prepareStatement("drop database $name;").use { // TODO: SQL injection

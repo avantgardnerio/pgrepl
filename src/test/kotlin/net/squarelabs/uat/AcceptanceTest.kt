@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.App
 import net.squarelabs.pgrepl.services.ConfigService
+import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
 import org.junit.AfterClass
 import org.junit.Assert
@@ -20,16 +21,31 @@ class AcceptanceTest {
 
         lateinit var driver: WebDriver
 
+        val cfgSvc: ConfigService
+        val conSvc: ConnectionService
+        val app: App
+
+        init {
+            val injector = Guice.createInjector(object : AbstractModule() {
+                public override fun configure() {
+                }
+            })
+            cfgSvc = injector.getInstance(ConfigService::class.java)
+            conSvc = injector.getInstance(ConnectionService::class.java)
+            app = injector.getInstance(App::class.java)
+        }
+
         @BeforeClass
         @JvmStatic
         @Throws(Exception::class)
         fun setup() {
             // Database
-            val dbName = ConfigService().getAppDbName()
-            val url = ConfigService().getJdbcDatabaseUrl()
-            val db = DbService(url)
-            if(db.list().contains(dbName)) db.drop(dbName)
-            db.create(dbName)
+            val dbName = cfgSvc.getAppDbName()
+            val url = cfgSvc.getJdbcDatabaseUrl()
+            DbService(url, conSvc).use {
+                if(it.list().contains(dbName)) it.drop(dbName)
+                it.create(dbName)
+            }
 
             // Selenium
             val chromeOptions = ChromeOptions()
@@ -43,39 +59,32 @@ class AcceptanceTest {
             driver = ChromeDriver(dc)
 
             // Guice
-            val injector = Guice.createInjector(object : AbstractModule() {
-                public override fun configure() {
-                    //bind(ConfigService::class.java).to(ConfigService::class.java)
-                }
-            })
-            val app: App = injector.getInstance(App::class.java)
             app.start()
         }
 
         @AfterClass
         @JvmStatic
         fun tearDown() {
+            app.close()
             driver.close()
-            val dbName = ConfigService().getAppDbName()
-            val url = ConfigService().getJdbcDatabaseUrl()
-            val db = DbService(url)
-            db.drop(dbName)
+            val dbName = cfgSvc.getAppDbName()
+            val url = cfgSvc.getJdbcDatabaseUrl()
+            DbService(url, conSvc).use {
+                it.drop(dbName)
+            }
         }
     }
 
     @Test
     fun test() {
         try {
-            println("--- AcceptanceTest")
             val baseUrl = "http://127.0.0.1:8080/"
             val expectedTitle = "Jetty WebSocket Echo Examples"
             driver.get(baseUrl)
 
             val actualTitle = driver.title
             Assert.assertEquals(expectedTitle, actualTitle)
-            println("--- AcceptanceTest: Passed " + actualTitle)
         } catch (ex: Exception) {
-            println("--- AcceptanceTest: FAILED ")
             ex.printStackTrace()
         }
 
