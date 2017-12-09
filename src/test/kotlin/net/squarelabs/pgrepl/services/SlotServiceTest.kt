@@ -7,7 +7,7 @@ import org.junit.Test
 class SlotServiceTest {
     
     companion object {
-        private val dbName = "pgrepl_test"
+        private val dbName = "pgrepl_test" // TODO: dedupe
 
         @BeforeClass
         @JvmStatic
@@ -23,7 +23,7 @@ class SlotServiceTest {
     @Test
     fun shouldCrud() {
         println("--- SlotServiceTest")
-        val conString = "jdbc:postgresql://localhost:5432/$dbName?user=postgres&password=postgres"
+        val conString = "jdbc:postgresql://localhost:5432/$dbName?user=postgres&password=postgres" // TODO: dedupe
         SlotService(conString).use {
             if(it.list().contains(dbName)) it.drop(dbName)
             Assert.assertEquals("should not have test db after drop", false, it.list().contains(dbName))
