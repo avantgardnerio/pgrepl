@@ -28,7 +28,7 @@ class AcceptanceTest {
             val dbName = ConfigService().getAppDbName()
             val url = ConfigService().getJdbcDatabaseUrl()
             val db = DbService(url)
-            db.drop(dbName)
+            if(db.list().contains(dbName)) db.drop(dbName)
             db.create(dbName)
 
             // Selenium

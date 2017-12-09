@@ -24,7 +24,7 @@ class App @Inject constructor(val configService: ConfigService) {
         val dbName = configService.getAppDbName()
         val url = configService.getJdbcDatabaseUrl()
         val db = DbService(url)
-        db.drop(dbName)
+        if(db.list().contains(dbName)) db.drop(dbName)
         db.create(dbName)
         val flyway = Flyway()
         flyway.setDataSource(configService.getAppDbUrl(), null, null)
