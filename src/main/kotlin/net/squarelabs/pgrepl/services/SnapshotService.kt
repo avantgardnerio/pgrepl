@@ -49,7 +49,7 @@ class SnapshotService {
     }
 
     fun selectAll(tableName: String, columns: List<String>, con: Connection): List<Row> {
-        val colNames = columns.joinToString { "," }
+        val colNames = columns.joinToString(",")
         val sql = "select ${colNames} from ${tableName}"
         val rows = ArrayList<Row>()
         con.createStatement().use { st ->
@@ -72,7 +72,7 @@ class SnapshotService {
             it.executeQuery().use {
                 while (it.next()) {
                     val args = params.map { param -> it.getObject(param.name) }
-                    val inst: T = constructor.call(args) as T
+                    val inst: T = constructor.call(*args.toTypedArray()) as T
                     rows.add(inst)
                 }
             }

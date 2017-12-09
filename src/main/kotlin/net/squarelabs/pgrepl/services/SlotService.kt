@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl.services
 
+import org.postgresql.replication.LogSequenceNumber
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
@@ -57,6 +58,7 @@ class SlotService(
                     // TODO: no print
                     println("Slot Name: " + it.getString(1))
                     println("Xlog Position: " + it.getString(2))
+                    println("Xlog Long: " + LogSequenceNumber.valueOf(it.getString(2)).asLong())
                 }
             })
         })

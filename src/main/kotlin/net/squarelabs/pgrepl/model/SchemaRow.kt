@@ -4,8 +4,8 @@ data class SchemaRow(
         val tableName: String,
         val columnName: String,
         val ordinalPosition: Int,
-        val columnDefault: String,
+        val columnDefault: String?,
         val nullable: Boolean,
         val dataType: String,
-        val pkOrdinal: Int
+        val pkOrdinal: Int?
 )

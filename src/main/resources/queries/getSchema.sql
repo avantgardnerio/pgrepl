@@ -3,7 +3,11 @@ SELECT
   col.column_name      AS columnName,
   col.ordinal_position AS ordinalPosition,
   col.column_default   AS columnDefault,
-  col.is_nullable      AS nullable,
+  CASE
+  WHEN col.is_nullable = 'NO'
+    THEN FALSE
+  ELSE TRUE
+  END                  AS nullable,
   col.data_type        AS dataType,
   kcu.ordinal_position AS pkOrdinal
 FROM information_schema.tables tab

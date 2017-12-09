@@ -9,6 +9,7 @@ import java.sql.DriverManager
 
     val connections = HashMap<BaseConnection, Exception>()
 
+    // TODO: connection pool
     @Synchronized
     fun getConnection(url: String): BaseConnection {
         val con = DriverManager.getConnection(url) as BaseConnection
