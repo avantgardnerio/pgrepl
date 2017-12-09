@@ -16,7 +16,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.websocket.server.ServerEndpointConfig
 
-class App @Inject constructor(val configService: ConfigService, val socket: ReplicationSocketFactory) {
+class App @Inject constructor(val configService: ConfigService, val socket: ReplicationSocketFactory) : AutoCloseable {
+
     lateinit var server: Server
 
     @Throws(Exception::class)
@@ -78,6 +79,11 @@ class App @Inject constructor(val configService: ConfigService, val socket: Repl
     @Throws(Exception::class)
     fun join() {
         server.join()
+    }
+
+    override fun close() {
+        server.stop()
+        while(server.isStopped == false) TimeUnit.MILLISECONDS.sleep(10)
     }
 
     companion object {
