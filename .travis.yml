@@ -38,7 +38,6 @@ install:
   - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
   - ./gradlew build -x test
 before_script:
-  - psql -c 'create database pgrepl_test;' -U postgres
 script:
   - which chromedriver
   - ./gradlew build
