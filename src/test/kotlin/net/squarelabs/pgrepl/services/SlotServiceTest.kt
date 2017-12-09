@@ -1,11 +1,24 @@
 package net.squarelabs.pgrepl.services
 
 import org.junit.Assert
+import org.junit.BeforeClass
 import org.junit.Test
 
 class SlotServiceTest {
+    
+    companion object {
+        private val dbName = "pgrepl_test"
 
-    private val dbName = "pgrepl_test"
+        @BeforeClass
+        @JvmStatic
+        @Throws(Exception::class)
+        fun setup() {
+            val url = ConfigService().getJdbcDatabaseUrl()
+            val db = DbService(url)
+            db.drop(dbName)
+            db.create(dbName)
+        }
+    }
 
     @Test
     fun shouldCrud() {
