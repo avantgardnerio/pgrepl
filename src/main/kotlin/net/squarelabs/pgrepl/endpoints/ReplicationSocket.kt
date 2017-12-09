@@ -1,7 +1,11 @@
-package net.squarelabs.pgrepl
+package net.squarelabs.pgrepl.endpoints
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import net.squarelabs.pgrepl.messages.TxnMsg
+import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ReplicationService
 import org.eclipse.jetty.util.log.Log
@@ -20,10 +24,10 @@ class ReplicationSocket @Inject constructor(
         try {
             this.session = session
             this.remote = session.asyncRemote
-            LOG.info("WebSocket Connect: {}", session)
+            replService.subscribe(cfgService.getAppDbName(), { json -> onTxn(json) })
 
             session.addMessageHandler(this)
-            replService.subscribe(cfgService.getAppDbName(), { json -> onTxn(json) })
+            LOG.info("WebSocket Connect: {}", session)
         } catch (ex: Exception) {
             LOG.warn("Error opening websocket!", ex)
         }
@@ -31,13 +35,15 @@ class ReplicationSocket @Inject constructor(
     }
 
     fun onTxn(json: String) {
-        remote!!.sendText(json)
+        val txn: Transaction = Gson().fromJson(json, Transaction::class.java)
+        val msg = TxnMsg(txn)
+        val msgTxt = ObjectMapper().writeValueAsString(msg)
+        remote!!.sendText(msgTxt)
     }
 
     override fun onMessage(message: String) {
-        LOG.info("Echoing back text message [{}]", message)
         if (session != null && session!!.isOpen && remote != null) {
-            remote!!.sendText(message)
+            //remote!!.sendText(msgTxt)
         }
     }
 

@@ -2,6 +2,7 @@ package net.squarelabs.pgrepl
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import net.squarelabs.pgrepl.endpoints.ReplicationSocket
 import net.squarelabs.pgrepl.factories.ReplicationSocketFactory
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService

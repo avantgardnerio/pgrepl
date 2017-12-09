@@ -2,7 +2,7 @@ package net.squarelabs.pgrepl.factories
 
 import com.google.inject.AbstractModule
 import com.google.inject.Guice
-import net.squarelabs.pgrepl.ReplicationSocket
+import net.squarelabs.pgrepl.endpoints.ReplicationSocket
 import net.squarelabs.pgrepl.services.ReplicationService
 import org.junit.Assert
 import org.junit.Test

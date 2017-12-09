@@ -6,5 +6,6 @@ data class Change(
         val table: String,
         val columnnames: ArrayList<String>,
         val columntypes: ArrayList<String>,
-        val columnvalues: ArrayList<String>
+        val columnvalues: ArrayList<Any>,
+        val prevvalues: ArrayList<Any>
 )
