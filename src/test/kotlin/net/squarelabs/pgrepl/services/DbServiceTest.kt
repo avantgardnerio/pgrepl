@@ -1,18 +1,17 @@
-package net.squarelabs.pgrepl
+package net.squarelabs.pgrepl.services
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
-class DbHelperTest {
+class DbServiceTest {
 
     private val name = "pgrepl_test"
 
     @Test
     fun shouldCrud() {
-        println("--- DbHelperTest")
+        println("--- DbServiceTest")
         val conString = "jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres"
-        DbHelper(conString).use {
+        DbService(conString).use {
             if(it.list().contains(name)) it.drop(name)
             assertEquals("should not have test db after drop", false, it.list().contains(name))
             it.create(name)

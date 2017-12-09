@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl
 
+import net.squarelabs.pgrepl.services.SlotService
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.PGProperty
 import org.postgresql.core.BaseConnection
@@ -50,7 +51,7 @@ class ReplicationSocket : Endpoint(), MessageHandler.Whole<String> {
             val slotName = "slot" + session.id
 
             val conString = "jdbc:postgresql://localhost:5432/pgrepl_test?user=postgres&password=postgres"
-            val slot = SlotHelper(conString)
+            val slot = SlotService(conString)
             slot.drop(slotName)
             slot.create(slotName, "wal2json")
 

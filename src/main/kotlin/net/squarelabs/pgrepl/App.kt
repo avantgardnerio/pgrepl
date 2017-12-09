@@ -1,6 +1,7 @@
 package net.squarelabs.pgrepl
 
 import net.squarelabs.pgrepl.services.ConfigService
+import net.squarelabs.pgrepl.services.DbService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
@@ -21,7 +22,7 @@ class App @Inject constructor(val configService: ConfigService) {
     fun start() {
         // Database
         val url = configService.getJdbcDatabaseUrl()
-        val db = DbHelper(url)
+        val db = DbService(url)
         db.drop("pgrepl_test")
         db.create("pgrepl_test")
         val flyway = Flyway()

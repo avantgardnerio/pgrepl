@@ -1,4 +1,4 @@
-package net.squarelabs.pgrepl
+package net.squarelabs.pgrepl.services
 
 import java.sql.Connection
 import java.sql.DriverManager
@@ -6,7 +6,7 @@ import java.sql.SQLException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-class SlotHelper(conString: String) : AutoCloseable {
+class SlotService(conString: String) : AutoCloseable {
     private val con: Connection = DriverManager.getConnection(conString)
 
     private val sqlList = "select * from pg_replication_slots;"

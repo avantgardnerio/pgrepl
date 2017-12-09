@@ -1,24 +1,15 @@
-package net.squarelabs.pgrepl
+package net.squarelabs.pgrepl.services
 
 import java.sql.Connection
 import java.sql.DriverManager
 
-class DbHelper(private val conString: String) : AutoCloseable {
+class DbService(private val conString: String) : AutoCloseable {
 
     private val con: Connection = DriverManager.getConnection(conString)
 
     private val sqlName = "SELECT current_database();"
     private val sqlList = "SELECT datname FROM pg_database WHERE datistemplate = false;"
     private val sqlSlots = "select slot_name from pg_replication_slots where database = ?;"
-
-    fun getName(): String {
-        con.prepareStatement(sqlName).use {
-            it.executeQuery().use {
-                it.next()
-                return it.getString(1)
-            }
-        }
-    }
 
     fun getSlots(name: String): List<String> {
         con.prepareStatement(sqlSlots).use {
@@ -46,7 +37,7 @@ class DbHelper(private val conString: String) : AutoCloseable {
     }
 
     fun drop(name: String) {
-        SlotHelper(conString).use {
+        SlotService(conString).use {
             getSlots(name).forEach { s -> it.drop(s) }
         }
         con.prepareStatement("drop database $name;").use {
