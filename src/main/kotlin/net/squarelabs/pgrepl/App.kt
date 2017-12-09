@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl
 
+import net.squarelabs.pgrepl.factories.ReplicationSocketFactory
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.DbService
 import org.eclipse.jetty.server.Server
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.websocket.server.ServerEndpointConfig
 
-class App @Inject constructor(val configService: ConfigService) {
+class App @Inject constructor(val configService: ConfigService, val socket: ReplicationSocketFactory) {
     lateinit var server: Server
 
     @Throws(Exception::class)
@@ -24,7 +25,7 @@ class App @Inject constructor(val configService: ConfigService) {
         val dbName = configService.getAppDbName()
         val url = configService.getJdbcDatabaseUrl()
         val db = DbService(url)
-        if(db.list().contains(dbName)) db.drop(dbName)
+        if (db.list().contains(dbName)) db.drop(dbName)
         db.create(dbName)
         val flyway = Flyway()
         flyway.setDataSource(configService.getAppDbUrl(), null, null)
@@ -36,8 +37,10 @@ class App @Inject constructor(val configService: ConfigService) {
         context.contextPath = "/"
         server.handler = context
         val container = WebSocketServerContainerInitializer.configureContext(context)
-        val echoConfig = ServerEndpointConfig.Builder.create(ReplicationSocket::class.java, "/echo").build()
-        container.addEndpoint(echoConfig)
+        container.addEndpoint(ServerEndpointConfig.Builder
+                .create(ReplicationSocket::class.java, "/echo")
+                .configurator(socket)
+                .build())
         val urlStatics = Thread.currentThread().contextClassLoader.getResource("static/index.html")
         Objects.requireNonNull(urlStatics, "Unable to find index.html in classpath")
         val urlBase = urlStatics!!.toExternalForm().replaceFirst("/[^/]*$".toRegex(), "/")
