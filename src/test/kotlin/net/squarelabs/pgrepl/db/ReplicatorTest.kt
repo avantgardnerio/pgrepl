@@ -34,7 +34,7 @@ class ReplicatorTest {
 
     @Test
     fun shouldReceiveNotifications() {
-        val expected = javaClass.getResource("/fixtures/txn.json").readText()
+        val expected = this.javaClass.getResource("/fixtures/txn.json").readText()
         val dbName = cfgService.getAppDbName()
         var actual = ""
         val spy = { json: String -> actual = json }
