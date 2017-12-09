@@ -40,7 +40,7 @@ install:
   - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
   - ./gradlew build -x test
 before_script:
-  - psql -c 'ALTER USER \'postgres\' WITH PASSWORD \'postgres\';' -U postgres
+  - psql -c 'ALTER USER ''postgres'' WITH PASSWORD ''postgres'';' -U postgres
 script:
   - which chromedriver
   - ./gradlew build
