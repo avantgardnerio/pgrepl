@@ -1,5 +1,5 @@
 package net.squarelabs.pgrepl.model
 
 data class Row(
-        val data: ArrayList<Any>
+        val data: List<Any>
 )

@@ -83,6 +83,7 @@ class Replicator(
         listeners.add { str -> listener(str) }
     }
 
+    // TODO: dedupe
     @Throws(SQLException::class)
     private fun getCurrentLSN(con: BaseConnection): LogSequenceNumber {
         val tenPlus = con.haveMinimumServerVersion(ServerVersion.v10)

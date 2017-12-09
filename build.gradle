@@ -29,6 +29,7 @@ dependencies {
     implementation 'com.google.guava:guava:23.0'
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile 'org.postgresql:postgresql:42.1.4'
 
     compile 'javax.websocket:javax.websocket-api:1.1'
@@ -48,7 +49,6 @@ dependencies {
 
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
-    //testCompile group: 'org.seleniumhq.selenium', name: 'selenium-firefox-driver', version: '3.5.3'
     testCompile group: 'org.seleniumhq.selenium', name: 'selenium-chrome-driver', version: '3.5.3'
     testCompile group: 'org.seleniumhq.selenium', name: 'selenium-support', version: '3.5.3'
     testCompile('org.seleniumhq.selenium:selenium-remote-driver:3.5.3')
