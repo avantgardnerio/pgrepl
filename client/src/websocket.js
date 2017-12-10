@@ -1,3 +1,5 @@
+import uuidv4 from 'uuid/v4';
+
 /*
 Inspired by https://medium.freecodecamp.org/an-introduction-to-the-redux-first-routing-model-98926ebf53cb
  */
@@ -11,12 +13,13 @@ if (!window.WebSocket) {
 export default class WsTool {
     constructor(store) {
         this.store = store;
+        this.id = uuidv4();
     }
 
     connect() {
         const location = document.location.toString()
-            .replace('http://', 'ws://')
-            .replace(":3000", ":8080")
+                .replace('http://', 'ws://')
+                .replace(":3000", ":8080")
             + "echo";
         console.info("Document URI: " + document.location);
         console.info("WS URI: " + location);
@@ -37,19 +40,22 @@ export default class WsTool {
 
     write(msg) {
         const json = JSON.stringify(msg);
+        console.log(json);
         this._send(json);
     };
 
     _onopen = () => {
         console.info("Websocket Connected");
+        this.write({type: 'HELLO', payload: this.id})
     };
 
     _send = (message) => {
         this._ws.send(message);
     };
 
-    _onmessage = (m) => {
-        console.log(m);
+    _onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        this.store.dispatch(msg);
     };
 
     _onclose = (closeEvent) => {

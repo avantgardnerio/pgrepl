@@ -3,10 +3,7 @@ package net.squarelabs.pgrepl.endpoints
 import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import net.squarelabs.pgrepl.messages.HelloMsg
-import net.squarelabs.pgrepl.messages.Message
-import net.squarelabs.pgrepl.messages.SnapMsg
-import net.squarelabs.pgrepl.messages.TxnMsg
+import net.squarelabs.pgrepl.messages.*
 import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
@@ -36,7 +33,7 @@ class ReplicationSocket @Inject constructor(
             session.addMessageHandler(this)
             LOG.info("WebSocket Connect: {}", session)
         } catch (ex: Exception) {
-            LOG.warn("Error opening websocket!", ex)
+            LOG.warn("Error opening websocket!", ex) // TODO: Error handling
         }
 
     }
@@ -51,6 +48,7 @@ class ReplicationSocket @Inject constructor(
         val baseMsg = mapper.fromJson(json, Message::class.java)
         val clazz = when (baseMsg.type) {
             "HELLO" -> HelloMsg::class.java
+            "COMMIT" -> CommitMsg::class.java
             else -> throw Exception("Unknown message: ${baseMsg.type}")
         }
         val msg = mapper.fromJson(json, clazz)
@@ -66,13 +64,38 @@ class ReplicationSocket @Inject constructor(
                     replSvc.subscribe(dbName, clientId!!, snap.lsn, { json -> onTxn(json) })
                 }
             }
-            else -> throw Exception("Unknown message: ${msg::class}")
+            is CommitMsg -> {
+                msg.txn.changes.forEach({
+                    when(it.type) {
+                        "INSERT" -> {
+                            val row = it.record
+                            val url = cfgSvc.getAppDbUrl()
+                            conSvc.getConnection(url).use { con ->
+                                val colNames = row.keys.joinToString(",")
+                                val values = row.values.map { "?" }.joinToString(",")
+                                val sql = "insert into ${it.table} (${colNames}) values (${values})"
+                                con.prepareStatement(sql).use {
+                                    row.values.forEachIndexed( { i, v -> it.setObject(i+1, v)})
+                                    val res = it.executeUpdate()
+                                    // TODO: commit transaction atomically
+                                    // TODO: use txnId and prevTxnId for optimistic concurrency
+                                    // TODO: refactor into service
+                                    // TODO: create table to hold mappings between client & server TxnIds
+                                    println("affected=${res}")
+                                }
+                            }
+                        }
+                        else -> throw Exception("Unknown change type${it.type}")
+                    }
+                })
+            }
+            else -> throw Exception("Unknown message: ${msg::class}") // TODO: Error handling
         }
     }
 
     override fun onError(session: Session?, cause: Throwable?) {
         super.onError(session, cause)
-        LOG.warn("WebSocket Error", cause)
+        LOG.warn("WebSocket Error", cause) // TODO: Error handling
     }
 
     override fun onClose(session: Session?, close: CloseReason?) {

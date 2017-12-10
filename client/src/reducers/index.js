@@ -8,10 +8,36 @@ export default (state = initialState, action) => {
     switch (action.type) {
         case 'COMMIT':
             return applyTxn(state, action);
+        case 'SNAP':
+            return handleSnapshot(state, action);
         default:
+            console.log(`unknown action: ${action.type}`);
             return state;
     }
 }
+
+const handleSnapshot = (state, action) => {
+    const newState = JSON.parse(JSON.stringify(state));
+    const lsn = action.payload.lsn;
+    const tables = action.payload.tables;
+    for(let table of tables) {
+        const name = table.name;
+        const tab = state.tables[name] || {
+            rows: []
+        };
+        state.tables[name] = tab;
+        const columns = table.columns;
+        const rows = table.rows;
+        for(let row of rows) {
+            const values = row.data;
+            const record = columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
+            console.log(record);
+            tab.rows.push(record);
+        }
+    }
+    console.log(action);
+    return newState;
+};
 
 const applyTxn = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
