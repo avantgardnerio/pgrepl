@@ -14,7 +14,10 @@ export default class WsTool {
     }
 
     connect() {
-        const location = document.location.toString().replace('http://', 'ws://') + "echo";
+        const location = document.location.toString()
+            .replace('http://', 'ws://')
+            .replace(":3000", ":8080")
+            + "echo";
         console.info("Document URI: " + document.location);
         console.info("WS URI: " + location);
         this._scount = 0;
@@ -24,7 +27,7 @@ export default class WsTool {
             this._ws.onmessage = this._onmessage;
             this._ws.onclose = this._onclose;
         } catch (exception) {
-            wstool.info("Connect Error: " + exception);
+            console.error("Connect Error: " + exception);
         }
     }
 
@@ -32,12 +35,13 @@ export default class WsTool {
         this._ws.close(1000);
     }
 
-    write(text) {
-        this._send(text);
+    write(msg) {
+        const json = JSON.stringify(msg);
+        this._send(json);
     };
 
     _onopen = () => {
-        this.info("Websocket Connected");
+        console.info("Websocket Connected");
     };
 
     _send = (message) => {
