@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import net.squarelabs.pgrepl.db.Replicator
 import org.eclipse.jetty.util.log.Log
+import java.util.*
 
 @Singleton
 class ReplicationService @Inject constructor(
@@ -13,8 +14,8 @@ class ReplicationService @Inject constructor(
 
     val listeners = HashMap<String, Replicator>()
 
-    fun subscribe(dbName: String, handler: (String) -> Unit) {
-        val repl = listeners.getOrPut(dbName, { Replicator(dbName, configService, conSvc) })
+    fun subscribe(dbName: String, clientId: UUID, lsn: Long, handler: (String) -> Unit) {
+        val repl = listeners.getOrPut(dbName, { Replicator(dbName, clientId, lsn, configService, conSvc) })
         repl.addListener(handler)
     }
 

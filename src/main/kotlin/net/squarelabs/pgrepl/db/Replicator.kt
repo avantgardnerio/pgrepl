@@ -6,12 +6,10 @@ import net.squarelabs.pgrepl.services.SlotService
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.PGProperty
 import org.postgresql.core.BaseConnection
-import org.postgresql.core.ServerVersion
 import org.postgresql.replication.LogSequenceNumber
 import org.postgresql.replication.PGReplicationStream
 import java.nio.ByteBuffer
 import java.sql.DriverManager
-import java.sql.SQLException
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -19,13 +17,14 @@ import java.util.concurrent.TimeUnit
 
 class Replicator(
         val dbName: String,
+        val clientId: UUID,
+        val lsn: Long,
         val cfgService: ConfigService,
         val conSvc: ConnectionService
 ) : AutoCloseable {
 
     private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
-    val id = UUID.randomUUID().toString().replace('-', '_')
     val listeners = ArrayList<(String) -> Unit>()
     val replCon: BaseConnection
     val queryCon: BaseConnection
@@ -43,22 +42,20 @@ class Replicator(
         queryCon = conSvc.getConnection(url)
 
         // Create a slot
-        val slotName = "slot_${id}"
+        val slotName = "slot_${clientId.toString().replace("-", "_")}"
         SlotService(url, conSvc).use {
             it.drop(slotName)
             it.create(slotName, plugin)
         }
 
         // Start listening
-        val lsn = getCurrentLSN(queryCon)
         stream = replCon
                 .replicationAPI
                 .replicationStream()
                 .logical()
                 .withSlotName(slotName)
-                .withStartPosition(lsn)
+                .withStartPosition(LogSequenceNumber.valueOf(lsn))
                 .withSlotOption("include-xids", true)
-                //.withSlotOption("skip-empty-xacts", true)
                 .withStatusInterval(20, TimeUnit.SECONDS)
                 .start()
         future = executor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
@@ -72,7 +69,8 @@ class Replicator(
                 listeners.forEach({ l -> l(str) })
                 buffer = stream.readPending()
                 stream.setAppliedLSN(stream.lastReceiveLSN)
-                stream.setFlushedLSN(stream.lastReceiveLSN)            }
+                stream.setFlushedLSN(stream.lastReceiveLSN)
+            }
         } catch (ex: Exception) {
             LOG.warn("Error reading from database!", ex)
             close()
@@ -81,24 +79,6 @@ class Replicator(
 
     fun addListener(listener: (String) -> Unit) {
         listeners.add { str -> listener(str) }
-    }
-
-    // TODO: dedupe
-    @Throws(SQLException::class)
-    private fun getCurrentLSN(con: BaseConnection): LogSequenceNumber {
-        val tenPlus = con.haveMinimumServerVersion(ServerVersion.v10)
-        val func = if (tenPlus) "pg_current_wal_lsn()" else "pg_current_xlog_location()"
-        val sql = "SELECT ${func}"
-        con.createStatement().use { st ->
-            st.executeQuery(sql).use { rs ->
-                if (rs.next()) {
-                    val lsn = rs.getString(1)
-                    return LogSequenceNumber.valueOf(lsn)
-                } else {
-                    return LogSequenceNumber.INVALID_LSN
-                }
-            }
-        }
     }
 
     override fun close() {

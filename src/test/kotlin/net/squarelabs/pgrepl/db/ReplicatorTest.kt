@@ -3,15 +3,17 @@ package net.squarelabs.pgrepl.db
 import com.google.gson.Gson
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
+import net.squarelabs.pgrepl.model.Snapshot
 import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
+import net.squarelabs.pgrepl.services.SnapshotService
 import org.flywaydb.core.Flyway
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
-import java.sql.DriverManager
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class ReplicatorTest {
@@ -20,6 +22,7 @@ class ReplicatorTest {
         private val injector = Guice.createInjector(DefaultInjector())!!
         val cfgSvc = injector.getInstance(ConfigService::class.java)!!
         val conSvc = injector.getInstance(ConnectionService::class.java)!!
+        val snapSvc = injector.getInstance(SnapshotService::class.java)!!
 
         @BeforeClass
         @JvmStatic
@@ -41,12 +44,17 @@ class ReplicatorTest {
     fun shouldReceiveNotifications() {
         val expected = this.javaClass.getResource("/fixtures/txn.json").readText()
         val dbName = cfgSvc.getAppDbName()
+        val clientId = UUID.randomUUID()
+        val conString = cfgSvc.getAppDbUrl()
+        var snap: Snapshot? = null
+        conSvc.getConnection(conString).use {
+            snap = snapSvc.takeSnapshot(it)
+        }
         var actual = ""
         val spy = { json: String -> actual = json }
-        Replicator(dbName, cfgSvc, conSvc).use {
+        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, conSvc).use {
             it.addListener(spy)
-            val conString = cfgSvc.getAppDbUrl()
-            DriverManager.getConnection(conString).use {
+            conSvc.getConnection(conString).use {
                 it.prepareStatement("INSERT INTO person (id, name) VALUES (1, 'Brent');").use {
                     it.executeUpdate()
                 }

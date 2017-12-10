@@ -1,6 +1,5 @@
 package net.squarelabs.pgrepl.endpoints
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
@@ -25,16 +24,15 @@ class ReplicationSocket @Inject constructor(
         val conSvc: ConnectionService
 ) : Endpoint(), MessageHandler.Whole<String> {
 
-    val mapper = Gson()
+    val mapper = Gson() // TODO: threading issues?
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
-    var clientId: String? = null
+    var clientId: UUID? = null
 
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
             this.session = session
             this.remote = session.asyncRemote
-            replSvc.subscribe(cfgSvc.getAppDbName(), { json -> onTxn(json) })
             session.addMessageHandler(this)
             LOG.info("WebSocket Connect: {}", session)
         } catch (ex: Exception) {
@@ -58,12 +56,14 @@ class ReplicationSocket @Inject constructor(
         val msg = mapper.fromJson(json, clazz)
         when (msg) {
             is HelloMsg -> {
-                clientId = msg.payload
+                clientId = UUID.fromString(msg.payload)
                 val url = cfgSvc.getAppDbUrl()
                 conSvc.getConnection(url).use { con ->
                     val snap = snapSvc.takeSnapshot(con)
                     val msg = SnapMsg(snap)
                     remote!!.sendText(mapper.toJson(msg))
+                    val dbName = cfgSvc.getAppDbName()
+                    replSvc.subscribe(dbName, clientId!!, snap.lsn, { json -> onTxn(json) })
                 }
             }
             else -> throw Exception("Unknown message: ${msg::class}")
