@@ -1,7 +1,24 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {createStore} from 'redux';
+import {Provider} from 'react-redux';
+
 import './index.css';
 import App from './App';
+import reducer from './reducers';
 
-ReactDOM.render(<App />, document.getElementById('leftRoot'));
-ReactDOM.render(<App />, document.getElementById('rightRoot'));
+const leftStore = createStore(reducer);
+const rightStore = createStore(reducer);
+
+ReactDOM.render(
+    <Provider store={leftStore}>
+        <App />
+    </Provider>
+    , document.getElementById('leftRoot')
+);
+ReactDOM.render(
+    <Provider store={rightStore}>
+        <App />
+    </Provider>,
+    document.getElementById('rightRoot')
+);
