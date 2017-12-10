@@ -1,7 +1,10 @@
 import React, {Component} from 'react';
-import {connect} from 'react-redux';
 
-class App extends Component {
+export default class App extends Component {
+
+    componentDidMount() {
+        
+    }
 
     get circles() {
         return this.props.circles
@@ -31,11 +34,3 @@ class App extends Component {
     }
 }
 
-const mapStateToProps = (state) => {
-    return {
-        rectangles: state.rectangles,
-        circles: state.circles
-    }
-};
-
-export default connect(mapStateToProps)(App);
