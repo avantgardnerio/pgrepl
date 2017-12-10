@@ -1,8 +1,8 @@
 package net.squarelabs.uat
 
-import com.google.inject.AbstractModule
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.App
+import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
@@ -21,19 +21,10 @@ class AcceptanceTest {
 
         lateinit var driver: WebDriver
 
-        val cfgSvc: ConfigService
-        val conSvc: ConnectionService
-        val app: App
-
-        init {
-            val injector = Guice.createInjector(object : AbstractModule() {
-                public override fun configure() {
-                }
-            })
-            cfgSvc = injector.getInstance(ConfigService::class.java)
-            conSvc = injector.getInstance(ConnectionService::class.java)
-            app = injector.getInstance(App::class.java)
-        }
+        private val injector = Guice.createInjector(DefaultInjector())!!
+        private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
+        private val conSvc = injector.getInstance(ConnectionService::class.java)!!
+        private val app = injector.getInstance(App::class.java)!!
 
         @BeforeClass
         @JvmStatic
@@ -43,7 +34,7 @@ class AcceptanceTest {
             val dbName = cfgSvc.getAppDbName()
             val url = cfgSvc.getJdbcDatabaseUrl()
             DbService(url, conSvc).use {
-                if(it.list().contains(dbName)) it.drop(dbName)
+                if (it.list().contains(dbName)) it.drop(dbName)
                 it.create(dbName)
             }
 

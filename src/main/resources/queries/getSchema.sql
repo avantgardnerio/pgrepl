@@ -22,4 +22,5 @@ FROM information_schema.tables tab
        AND kcu.column_name = col.column_name
 WHERE tab.table_schema = 'public'
       AND tab.table_type = 'BASE TABLE'
+      AND tab.table_name NOT LIKE 'schema_version'
 ORDER BY tab.table_name, col.ordinal_position;

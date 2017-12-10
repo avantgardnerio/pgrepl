@@ -6,7 +6,6 @@ import net.squarelabs.pgrepl.endpoints.ReplicationSocket
 import net.squarelabs.pgrepl.factories.ReplicationSocketFactory
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
-import net.squarelabs.pgrepl.services.DbService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
@@ -29,12 +28,6 @@ class App @Inject constructor(
     @Throws(Exception::class)
     fun start() {
         // Database
-        val dbName = cfgService.getAppDbName()
-        val url = cfgService.getJdbcDatabaseUrl()
-        DbService(url, conSvc).use {
-            if (it.list().contains(dbName)) it.drop(dbName)
-            it.create(dbName)
-        }
         val flyway = Flyway()
         flyway.setDataSource(cfgService.getAppDbUrl(), null, null)
         flyway.migrate()

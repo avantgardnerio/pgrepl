@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import net.squarelabs.pgrepl.messages.HelloMsg
+import net.squarelabs.pgrepl.messages.Message
 import net.squarelabs.pgrepl.messages.SnapMsg
 import net.squarelabs.pgrepl.messages.TxnMsg
 import net.squarelabs.pgrepl.model.Transaction
@@ -12,6 +14,7 @@ import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.ReplicationService
 import net.squarelabs.pgrepl.services.SnapshotService
 import org.eclipse.jetty.util.log.Log
+import java.util.*
 import javax.websocket.*
 
 @Singleton
@@ -22,9 +25,10 @@ class ReplicationSocket @Inject constructor(
         val conSvc: ConnectionService
 ) : Endpoint(), MessageHandler.Whole<String> {
 
-    private val mapper = ObjectMapper()
+    val mapper = Gson()
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
+    var clientId: String? = null
 
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
@@ -32,12 +36,6 @@ class ReplicationSocket @Inject constructor(
             this.remote = session.asyncRemote
             replSvc.subscribe(cfgSvc.getAppDbName(), { json -> onTxn(json) })
             session.addMessageHandler(this)
-            val url = cfgSvc.getAppDbUrl()
-            conSvc.getConnection(url).use { con ->
-                val snap = snapSvc.takeSnapshot(con)
-                val msg = SnapMsg(snap)
-                remote!!.sendText(mapper.writeValueAsString(msg))
-            }
             LOG.info("WebSocket Connect: {}", session)
         } catch (ex: Exception) {
             LOG.warn("Error opening websocket!", ex)
@@ -48,12 +46,27 @@ class ReplicationSocket @Inject constructor(
     fun onTxn(json: String) {
         val txn: Transaction = Gson().fromJson(json, Transaction::class.java)
         val msg = TxnMsg(txn)
-        remote!!.sendText(mapper.writeValueAsString(msg))
+        remote!!.sendText(mapper.toJson(msg))
     }
 
-    override fun onMessage(message: String) {
-        if (session != null && session!!.isOpen && remote != null) {
-            //remote!!.sendText(msgTxt)
+    override fun onMessage(json: String) {
+        val baseMsg = mapper.fromJson(json, Message::class.java)
+        val clazz = when (baseMsg.type) {
+            "HELLO" -> HelloMsg::class.java
+            else -> throw Exception("Unknown message: ${baseMsg.type}")
+        }
+        val msg = mapper.fromJson(json, clazz)
+        when (msg) {
+            is HelloMsg -> {
+                clientId = msg.payload
+                val url = cfgSvc.getAppDbUrl()
+                conSvc.getConnection(url).use { con ->
+                    val snap = snapSvc.takeSnapshot(con)
+                    val msg = SnapMsg(snap)
+                    remote!!.sendText(mapper.toJson(msg))
+                }
+            }
+            else -> throw Exception("Unknown message: ${msg::class}")
         }
     }
 

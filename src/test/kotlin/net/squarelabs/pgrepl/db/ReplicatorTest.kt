@@ -1,8 +1,8 @@
 package net.squarelabs.pgrepl.db
 
 import com.google.gson.Gson
-import com.google.inject.AbstractModule
 import com.google.inject.Guice
+import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
@@ -14,21 +14,12 @@ import org.junit.Test
 import java.sql.DriverManager
 import java.util.concurrent.TimeUnit
 
-
 class ReplicatorTest {
 
     companion object {
-        val cfgSvc: ConfigService
-        val conSvc: ConnectionService
-
-        init {
-            val injector = Guice.createInjector(object : AbstractModule() {
-                public override fun configure() {
-                }
-            })
-            cfgSvc = injector.getInstance(ConfigService::class.java)
-            conSvc = injector.getInstance(ConnectionService::class.java)
-        }
+        private val injector = Guice.createInjector(DefaultInjector())!!
+        val cfgSvc = injector.getInstance(ConfigService::class.java)!!
+        val conSvc = injector.getInstance(ConnectionService::class.java)!!
 
         @BeforeClass
         @JvmStatic

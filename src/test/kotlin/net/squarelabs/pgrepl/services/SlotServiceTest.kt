@@ -1,7 +1,7 @@
 package net.squarelabs.pgrepl.services
 
-import com.google.inject.AbstractModule
 import com.google.inject.Guice
+import net.squarelabs.pgrepl.DefaultInjector
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
@@ -9,17 +9,9 @@ import org.junit.Test
 class SlotServiceTest {
 
     companion object {
-        val cfgSvc: ConfigService
-        val conSvc: ConnectionService
-
-        init {
-            val injector = Guice.createInjector(object : AbstractModule() {
-                public override fun configure() {
-                }
-            })
-            cfgSvc = injector.getInstance(ConfigService::class.java)
-            conSvc = injector.getInstance(ConnectionService::class.java)
-        }
+        private val injector = Guice.createInjector(DefaultInjector())!!
+        val cfgSvc = injector.getInstance(ConfigService::class.java)!!
+        val conSvc = injector.getInstance(ConnectionService::class.java)!!
 
         @BeforeClass
         @JvmStatic

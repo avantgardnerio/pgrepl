@@ -55,7 +55,9 @@ class SnapshotService {
         con.createStatement().use { st ->
             st.executeQuery(sql).use {
                 while (it.next()) {
-                    val args = columns.map { col -> it.getObject(col) }
+                    val args = columns
+                            .map { col -> it.getObject(col) }
+                            .map { if(it is Int) it.toDouble() else it } // JSON will turn to double anyway
                     val row = Row(args)
                     rows.add(row)
                 }
