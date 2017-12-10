@@ -18,7 +18,7 @@ export default (state = initialState, action) => {
 
 const handleSnapshot = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
-    const lsn = action.payload.lsn;
+    //const lsn = action.payload.lsn;
     const tables = action.payload.tables;
     for(let table of tables) {
         const name = table.name;
