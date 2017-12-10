@@ -70,7 +70,7 @@ class AcceptanceTest {
     fun test() {
         try {
             val baseUrl = "http://127.0.0.1:8080/"
-            val expectedTitle = "Jetty WebSocket Echo Examples"
+            val expectedTitle = "React App"
             driver.get(baseUrl)
 
             val actualTitle = driver.title

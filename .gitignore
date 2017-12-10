@@ -10,3 +10,7 @@ dataSources/
 build/
 .gradle/
 out/
+
+# node
+src/main/resources/static/
+node_modules/

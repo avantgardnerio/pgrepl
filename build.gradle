@@ -10,6 +10,10 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.moowork.node" version "1.2.0"
+}
+
 // Apply the java-library plugin to add support for Java Library
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
@@ -72,6 +76,21 @@ compileTestKotlin {
         jvmTarget = "1.8"
     }
 }
+
+node {
+    download = false
+    npmWorkDir = file("${project.buildDir}/npm")
+    nodeModulesDir = file("${project.projectDir}/client")
+}
+
+task copyResources(type: Copy) {
+    from 'client/build/' into 'src/main/resources/static'
+}
+copyResources.dependsOn npm_run_build
+
+processResources.dependsOn copyResources
+
+test.outputs.upToDateWhen {false}
 
 test {
     testLogging {
