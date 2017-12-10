@@ -26,8 +26,7 @@ class Replicator(
     private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
     val listeners = ArrayList<(String) -> Unit>()
-    val replCon: BaseConnection
-    val queryCon: BaseConnection
+    val con: BaseConnection
     val stream: PGReplicationStream
     val future: Future<*>
 
@@ -38,8 +37,7 @@ class Replicator(
         PGProperty.REPLICATION.set(properties, "database")
         PGProperty.PREFER_QUERY_MODE.set(properties, "simple")
         val url = cfgService.getAppDbUrl() // TODO: Listen to dbName, not cfgService.AppDb
-        replCon = DriverManager.getConnection(url, properties) as BaseConnection
-        queryCon = conSvc.getConnection(url)
+        con = DriverManager.getConnection(url, properties) as BaseConnection
 
         // Create a slot
         val slotName = "slot_${clientId.toString().replace("-", "_")}"
@@ -49,7 +47,7 @@ class Replicator(
         }
 
         // Start listening
-        stream = replCon
+        stream = con
                 .replicationAPI
                 .replicationStream()
                 .logical()
@@ -88,8 +86,7 @@ class Replicator(
         executor.shutdownNow()
 
         stream.close()
-        replCon.close()
-        queryCon.close()
+        con.close()
     }
 
     companion object {
