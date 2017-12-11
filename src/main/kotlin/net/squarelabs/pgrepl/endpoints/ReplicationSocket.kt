@@ -97,6 +97,7 @@ class ReplicationSocket @Inject constructor(
     override fun onError(session: Session?, cause: Throwable?) {
         super.onError(session, cause)
         LOG.warn("WebSocket Error", cause) // TODO: Error handling
+        // TODO: Unsubscribe from replSvc
     }
 
     override fun onClose(session: Session?, close: CloseReason?) {
@@ -104,6 +105,7 @@ class ReplicationSocket @Inject constructor(
         this.session = null
         this.remote = null
         LOG.info("WebSocket Close: {} - {}", close!!.closeCode, close.reasonPhrase)
+        // TODO: Unsubscribe from replSvc
     }
 
     companion object {
