@@ -21,7 +21,6 @@ class ReplicationSocket @Inject constructor(
         val conSvc: ConnectionService
 ) : Endpoint(), MessageHandler.Whole<String> {
 
-    val mapper = Gson() // TODO: threading issues?
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
     var clientId: UUID? = null
@@ -39,12 +38,14 @@ class ReplicationSocket @Inject constructor(
     }
 
     fun onTxn(json: String) {
-        val txn: Transaction = Gson().fromJson(json, Transaction::class.java)
+        val mapper = Gson()
+        val txn: Transaction = mapper.fromJson(json, Transaction::class.java)
         val msg = TxnMsg(txn)
         remote!!.sendText(mapper.toJson(msg))
     }
 
     override fun onMessage(json: String) {
+        val mapper = Gson()
         val baseMsg = mapper.fromJson(json, Message::class.java)
         val clazz = when (baseMsg.type) {
             "HELLO" -> HelloMsg::class.java
