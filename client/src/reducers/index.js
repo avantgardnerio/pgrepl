@@ -10,6 +10,8 @@ export default (state = initialState, action) => {
             return applyTxn(state, action);
         case 'SNAP':
             return handleSnapshot(state, action);
+        case 'TXN':
+            return handleTxn(state, action);
         default:
             console.log(`unknown action: ${action.type}`);
             return state;
@@ -36,6 +38,34 @@ const handleSnapshot = (state, action) => {
     }
     console.log(action);
     return newState;
+};
+
+const handleTxn = (state, action) => {
+    const newState = JSON.parse(JSON.stringify(state));
+    console.log('handleTxn action=', action);
+    const changes = action.payload.change;
+    for(let change of changes) {
+        handleChange(newState, change);
+    }
+    return newState;
+};
+
+const handleChange = (state, change) => {
+    const table = state.tables[change.table] || {
+        rows: []
+    };
+    state.tables[change.table] = table;
+    switch(change.kind) {
+        case 'insert':
+            const names = change.columnnames;
+            const values = change.columnvalues;
+            const row = names
+                .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
+            table.rows.push(row);
+            break;
+        default:
+            throw new Error(`Unknown type: ${change.type}`);
+    }
 };
 
 const applyTxn = (state, action) => {
