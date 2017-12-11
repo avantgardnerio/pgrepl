@@ -19,20 +19,19 @@ export default (state = initialState, action) => {
 const handleSnapshot = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
     //const lsn = action.payload.lsn;
-    const tables = action.payload.tables;
-    for(let table of tables) {
-        const name = table.name;
-        const tab = state.tables[name] || {
+    for(let actionTable of action.payload.tables) {
+        const tableName = actionTable.name;
+        const stateTable = newState.tables[tableName] || {
             rows: []
         };
-        state.tables[name] = tab;
-        const columns = table.columns;
-        const rows = table.rows;
+        newState.tables[tableName] = stateTable;
+        const columns = actionTable.columns;
+        const rows = actionTable.rows;
         for(let row of rows) {
             const values = row.data;
             const record = columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
-            console.log(record);
-            tab.rows.push(record);
+            //console.log(record);
+            stateTable.rows.push(record);
         }
     }
     console.log(action);
