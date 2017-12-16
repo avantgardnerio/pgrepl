@@ -59,7 +59,7 @@ export default class App extends Component {
                     {this.circles}
                 </svg>
                 <div>
-                    Hello world!
+                    <input type="text" value={JSON.stringify(this.props.state)}></input>
                 </div>
             </div>
         );
