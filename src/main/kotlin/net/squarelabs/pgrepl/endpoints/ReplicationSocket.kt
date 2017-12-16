@@ -30,7 +30,7 @@ class ReplicationSocket @Inject constructor(
             this.session = session
             this.remote = session.asyncRemote
             session.addMessageHandler(this)
-            LOG.info("WebSocket Connect: {}", session)
+            LOG.info("WebSocket Connect: {}", session.id)
         } catch (ex: Exception) {
             LOG.warn("Error opening websocket!", ex) // TODO: Error handling
         }
@@ -67,7 +67,7 @@ class ReplicationSocket @Inject constructor(
             }
             is CommitMsg -> {
                 msg.txn.changes.forEach({
-                    when(it.type) {
+                    when (it.type) {
                         "INSERT" -> {
                             val row = it.record
                             val url = cfgSvc.getAppDbUrl()
@@ -76,7 +76,7 @@ class ReplicationSocket @Inject constructor(
                                 val values = row.values.map { "?" }.joinToString(",")
                                 val sql = "insert into ${it.table} (${colNames}) values (${values})"
                                 con.prepareStatement(sql).use {
-                                    row.values.forEachIndexed( { i, v -> it.setObject(i+1, v)})
+                                    row.values.forEachIndexed({ i, v -> it.setObject(i + 1, v) })
                                     val res = it.executeUpdate()
                                     // TODO: commit transaction atomically
                                     // TODO: use txnId and prevTxnId for optimistic concurrency

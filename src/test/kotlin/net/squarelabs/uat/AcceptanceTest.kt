@@ -6,6 +6,7 @@ import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
+import org.eclipse.jetty.util.log.Log
 import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.BeforeClass
@@ -19,6 +20,7 @@ class AcceptanceTest {
 
     companion object {
 
+        private val LOG = Log.getLogger(AcceptanceTest::class.java)
         lateinit var driver: WebDriver
 
         private val injector = Guice.createInjector(DefaultInjector())!!
@@ -56,6 +58,7 @@ class AcceptanceTest {
         @AfterClass
         @JvmStatic
         fun tearDown() {
+            LOG.info("Shutting down AcceptanceTest...")
             app.close()
             driver.close()
             val dbName = cfgSvc.getAppDbName()
@@ -77,6 +80,7 @@ class AcceptanceTest {
             Assert.assertEquals(expectedTitle, actualTitle)
         } catch (ex: Exception) {
             ex.printStackTrace()
+            Assert.assertNotNull("Acceptance test should not throw", ex)
         }
 
     }

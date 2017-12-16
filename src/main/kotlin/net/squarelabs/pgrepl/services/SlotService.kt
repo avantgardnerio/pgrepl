@@ -2,22 +2,22 @@ package net.squarelabs.pgrepl.services
 
 import org.postgresql.replication.LogSequenceNumber
 import java.sql.Connection
-import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
+// TODO: Make real service
 class SlotService(
         conString: String,
         conSvc: ConnectionService
 ) : AutoCloseable {
     private val con: Connection = conSvc.getConnection(conString)
 
-    private val sqlList = "select * from pg_replication_slots;"
+    private val sqlList = "SELECT * FROM pg_replication_slots;"
     private val sqlCreate = "SELECT * FROM pg_create_logical_replication_slot(?, ?)"
-    private val sqlActive = "select active from pg_replication_slots where slot_name = ?"
-    private val sqlDrop = "select pg_drop_replication_slot(slot_name) from pg_replication_slots where slot_name = ?"
-    private val sqlTerminate = "select pg_terminate_backend(active_pid) from pg_replication_slots where active = true and slot_name = ?"
+    private val sqlActive = "SELECT active FROM pg_replication_slots WHERE slot_name = ?"
+    private val sqlDrop = "SELECT pg_drop_replication_slot(slot_name) FROM pg_replication_slots WHERE slot_name = ?"
+    private val sqlTerminate = "SELECT pg_terminate_backend(active_pid) FROM pg_replication_slots WHERE active = TRUE AND slot_name = ?"
 
     fun list(): List<String> {
         con.prepareStatement(sqlList).use {
@@ -89,7 +89,7 @@ class SlotService(
             it.executeQuery().use { rs -> return rs.next() && rs.getBoolean(1) }
         }
     }
-    
+
     override fun close() {
         con.close()
     }

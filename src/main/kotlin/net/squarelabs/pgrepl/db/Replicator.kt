@@ -61,16 +61,17 @@ class Replicator(
 
     fun checkMessages() {
         try {
+            // LOG.info("------ read {}", clientId)
             var buffer = stream.readPending()
             while (buffer != null) {
                 val str = toString(buffer)
                 listeners.forEach({ l -> l(str) })
-                buffer = stream.readPending()
                 stream.setAppliedLSN(stream.lastReceiveLSN)
                 stream.setFlushedLSN(stream.lastReceiveLSN)
+                buffer = stream.readPending()
             }
         } catch (ex: Exception) {
-            LOG.warn("Error reading from database!", ex)
+            LOG.warn("Error reading from database for client ${clientId}", ex)
             close()
         }
     }
@@ -80,6 +81,7 @@ class Replicator(
     }
 
     override fun close() {
+        LOG.info("Closing Replicator ${clientId}")
         future.cancel(true)
         executor.shutdown()
         executor.awaitTermination(3, TimeUnit.SECONDS)

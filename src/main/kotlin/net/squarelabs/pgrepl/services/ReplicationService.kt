@@ -13,14 +13,26 @@ class ReplicationService @Inject constructor(
 ) : AutoCloseable {
 
     val listeners = HashMap<String, Replicator>()
+    var closed = false
 
+    @Synchronized
     fun subscribe(dbName: String, clientId: UUID, lsn: Long, handler: (String) -> Unit) {
+        // TODO: global audit for subscribe after close
+        if (closed) throw Exception("Can't subscribe while closing!")
+
         val repl = listeners.getOrPut(dbName, { Replicator(dbName, clientId, lsn, configService, conSvc) })
         repl.addListener(handler)
     }
 
+    @Synchronized
     override fun close() {
-        listeners.values.forEach({ l -> l.close() })
+        LOG.info("Shutting down ReplicationService, and ${listeners.size} listeners...")
+        closed = true
+        listeners.keys.forEach({ k ->
+            LOG.info("Shutting down listener $k")
+            val l = listeners[k]
+            l!!.close()
+        })
     }
 
     companion object {

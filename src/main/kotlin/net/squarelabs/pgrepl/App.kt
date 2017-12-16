@@ -7,10 +7,12 @@ import net.squarelabs.pgrepl.factories.ReplicationSocketFactory
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
+import net.squarelabs.pgrepl.services.ReplicationService
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
+import org.eclipse.jetty.util.log.Log
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
 import org.flywaydb.core.Flyway
 import java.util.*
@@ -21,8 +23,13 @@ import javax.websocket.server.ServerEndpointConfig
 class App @Inject constructor(
         val cfgService: ConfigService,
         val socket: ReplicationSocketFactory,
-        val conSvc: ConnectionService
+        val conSvc: ConnectionService,
+        val replSvc: ReplicationService
 ) : AutoCloseable {
+
+    companion object {
+        private val LOG = Log.getLogger(ReplicationSocket::class.java)
+    }
 
     lateinit var server: Server
 
@@ -67,8 +74,12 @@ class App @Inject constructor(
     }
 
     override fun close() {
+        LOG.info("Shutting down App...")
         server.stop()
         while (server.isStopped == false) TimeUnit.MILLISECONDS.sleep(10)
+
+        // TODO: Guice should close AutoClosables it allocates
+        replSvc.close()
     }
 
 }

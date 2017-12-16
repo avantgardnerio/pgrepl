@@ -59,7 +59,7 @@ class ReplicatorTest {
                     it.executeUpdate()
                 }
             }
-            TimeUnit.MILLISECONDS.sleep(100)
+            TimeUnit.MILLISECONDS.sleep(100) // TODO: No hard-coded waits
         }
 
         val actualObj: Transaction = Gson().fromJson(actual, Transaction::class.java)

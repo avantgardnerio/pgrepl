@@ -1,8 +1,8 @@
 package net.squarelabs.pgrepl.services
 
 import java.sql.Connection
-import java.sql.DriverManager
 
+// TODO: Make real service
 class DbService(
         private val conString: String,
         val conSvc: ConnectionService
@@ -11,8 +11,8 @@ class DbService(
     private val con: Connection = conSvc.getConnection(conString)
 
     private val sqlName = "SELECT current_database();"
-    private val sqlList = "SELECT datname FROM pg_database WHERE datistemplate = false;"
-    private val sqlSlots = "select slot_name from pg_replication_slots where database = ?;"
+    private val sqlList = "SELECT datname FROM pg_database WHERE datistemplate = FALSE;"
+    private val sqlSlots = "SELECT slot_name FROM pg_replication_slots WHERE database = ?;"
 
     fun getSlots(name: String): List<String> {
         con.prepareStatement(sqlSlots).use {
@@ -43,13 +43,15 @@ class DbService(
         SlotService(conString, conSvc).use {
             getSlots(name).forEach { s -> it.drop(s) }
         }
-        con.prepareStatement("drop database $name;").use { // TODO: SQL injection
+        con.prepareStatement("drop database $name;").use {
+            // TODO: SQL injection
             it.execute()
         }
     }
 
     fun create(name: String) {
-        con.prepareStatement("create database $name;").use { // TODO: SQL injection
+        con.prepareStatement("create database $name;").use {
+            // TODO: SQL injection
             it.execute()
         }
     }
