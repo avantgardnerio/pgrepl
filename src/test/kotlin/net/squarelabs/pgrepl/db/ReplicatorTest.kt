@@ -51,11 +51,12 @@ class ReplicatorTest {
             snap = snapSvc.takeSnapshot(it)
         }
         var actual = ""
-        val spy = { json: String -> actual = json }
+        val spy = { lsn: Long, json: String -> actual = json }
         Replicator(dbName, clientId, snap!!.lsn, cfgSvc, conSvc).use {
             it.addListener(spy)
             conSvc.getConnection(conString).use {
-                it.prepareStatement("INSERT INTO person (id, name) VALUES (1, 'Brent');").use {
+                val sql = "INSERT INTO person (id, name, curTxnId) VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');"
+                it.prepareStatement(sql).use {
                     it.executeUpdate()
                 }
             }
@@ -63,8 +64,9 @@ class ReplicatorTest {
         }
 
         val actualObj: Transaction = Gson().fromJson(actual, Transaction::class.java)
+                .copy(clientTxnId = "d55cad5c-03da-405f-af3a-13788092b33c")
         val expectedObj: Transaction = Gson().fromJson(expected, Transaction::class.java)
-                .copy(xid = actualObj.xid)
+                .copy(xid = actualObj.xid, clientTxnId = "d55cad5c-03da-405f-af3a-13788092b33c")
         Assert.assertEquals("Replicator should send notifications", expectedObj, actualObj)
         conSvc.audit()
     }

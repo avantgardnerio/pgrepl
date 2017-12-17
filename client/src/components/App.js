@@ -79,6 +79,10 @@ export default class App extends Component {
                                 <td>circle count</td>
                                 <td>{this.props.circles.rows.length}</td>
                             </tr>
+                            <tr>
+                                <td>log length</td>
+                                <td>{this.props.state.log.length}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

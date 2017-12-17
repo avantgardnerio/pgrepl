@@ -5,5 +5,7 @@ CREATE TABLE circles (
   r           INT,
   stroke      CHARACTER VARYING,
   strokeWidth CHARACTER VARYING,
-  fill        CHARACTER VARYING
+  fill        CHARACTER VARYING,
+  curTxnId    CHARACTER VARYING NOT NULL,
+  prvTxnId    CHARACTER VARYING
 );

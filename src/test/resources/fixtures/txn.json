@@ -1,5 +1,6 @@
 {
   "xid": 3049,
+  "clientTxnId": "d55cad5c-03da-405f-af3a-13788092b33c",
   "change": [
     {
       "kind": "insert",
@@ -7,15 +8,21 @@
       "table": "person",
       "columnnames": [
         "id",
-        "name"
+        "name",
+        "curtxnid",
+        "prvtxnid"
       ],
       "columntypes": [
         "integer",
-        "character varying(100)"
+        "character varying",
+        "character varying",
+        "character varying"
       ],
       "columnvalues": [
         1,
-        "Brent"
+        "Brent",
+        "d55cad5c-03da-405f-af3a-13788092b33c",
+        null
       ]
     }
   ]

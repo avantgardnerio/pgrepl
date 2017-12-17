@@ -1,4 +1,6 @@
-create table PERSON (
-  ID int not null,
-  NAME varchar(100) not null
+CREATE TABLE PERSON (
+  ID       INT               NOT NULL,
+  NAME     VARCHAR           NOT NULL,
+  curTxnId CHARACTER VARYING NOT NULL,
+  prvTxnId CHARACTER VARYING
 );

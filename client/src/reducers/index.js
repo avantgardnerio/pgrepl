@@ -91,23 +91,26 @@ const handleLocalCommit = (state, action) => {
     const txn = action.txn;
     txn.lsn = state.lsn + 1;
     for (let change of txn.changes) {
-        applyChange(newState, change);
+        applyChange(txn, newState, change);
     }
     newState.lsn = txn.lsn;
     newState.log.push(txn);
     return newState;
 };
 
-const applyChange = (state, change) => {
+const applyChange = (txn, state, change) => {
     const table = state.tables[change.table] || {
         rows: []
     };
     state.tables[change.table] = table;
     switch(change.type) {
         case 'INSERT':
+            change.record.curTxnId = txn.id;
+            change.record.prvTxnId = undefined;
             table.rows.push(change.record);
             break;
         case 'UPDATE':
+            // TODO: prvTxnId = curTxnId; curTxnId = txn.id
             throw new Error('Update not implemented!'); // TODO: Implement update
         case 'DELETE':
             throw new Error('Delete not implemented!'); // TODO: Implement update
