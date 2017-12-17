@@ -25,6 +25,9 @@ class ReplicationSocket @Inject constructor(
     private var remote: RemoteEndpoint.Async? = null
     var clientId: UUID? = null
 
+    val txnMapSql = "INSERT INTO txn_id_map (xid, client_txn_id) VALUES (txid_current(),?)"
+    val getTxnSql = "SELECT client_txn_id FROM txn_id_map WHERE xid=?"
+
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
             this.session = session
@@ -37,11 +40,23 @@ class ReplicationSocket @Inject constructor(
 
     }
 
-    fun onTxn(json: String) {
+    fun onTxn(lsn: Long, json: String) {
         val mapper = Gson()
         val txn: Transaction = mapper.fromJson(json, Transaction::class.java)
-        val msg = TxnMsg(txn)
-        remote!!.sendText(mapper.toJson(msg))
+
+        // TODO: connection pool and cache!
+        val url = cfgSvc.getAppDbUrl()
+        conSvc.getConnection(url).use { con ->
+            con.prepareStatement(getTxnSql).use { stmt ->
+                stmt.setLong(1, txn.xid)
+                stmt.executeQuery().use { rs ->
+                    if (!rs.next()) throw Exception("Error reading client_txn_id!")
+                    val txnId = rs.getString(1)
+                    val msg = TxnMsg(txn.copy(lsn = lsn, clientTxnId = txnId))
+                    remote!!.sendText(mapper.toJson(msg))
+                }
+            }
+        }
     }
 
     override fun onMessage(json: String) {
@@ -62,7 +77,7 @@ class ReplicationSocket @Inject constructor(
                     val msg = SnapMsg(snap)
                     remote!!.sendText(mapper.toJson(msg))
                     val dbName = cfgSvc.getAppDbName()
-                    replSvc.subscribe(dbName, clientId!!, snap.lsn, { json -> onTxn(json) })
+                    replSvc.subscribe(dbName, clientId!!, snap.lsn, { lsn, json -> onTxn(lsn, json) })
                 }
             }
             is CommitMsg -> {
@@ -72,18 +87,24 @@ class ReplicationSocket @Inject constructor(
                             val row = it.record
                             val url = cfgSvc.getAppDbUrl()
                             conSvc.getConnection(url).use { con ->
+                                con.autoCommit = false
                                 val colNames = row.keys.joinToString(",")
                                 val values = row.values.map { "?" }.joinToString(",")
                                 val sql = "insert into ${it.table} (${colNames}) values (${values})"
                                 con.prepareStatement(sql).use {
                                     row.values.forEachIndexed({ i, v -> it.setObject(i + 1, v) })
                                     val res = it.executeUpdate()
-                                    // TODO: commit transaction atomically
                                     // TODO: use txnId and prevTxnId for optimistic concurrency
                                     // TODO: refactor into service
-                                    // TODO: create table to hold mappings between client & server TxnIds
-                                    println("affected=${res}")
+                                    if (res != 1) throw Exception("Unable to play txn on server!")
                                 }
+                                con.prepareStatement(txnMapSql).use {
+                                    it.setString(1, msg.txn.id)
+                                    val res = it.executeUpdate()
+                                    if (res != 1) throw Exception("Unable update txn map!")
+                                }
+                                // TODO: Handle transaction failures
+                                con.commit()
                             }
                         }
                         else -> throw Exception("Unknown change type${it.type}")

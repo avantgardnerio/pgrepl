@@ -1,17 +1,25 @@
 const initialState = {
-    tables: {},
+    tables: {
+        circles: {
+            rows: []
+        },
+        rectangles: {
+            rows: []
+        }
+    },
     log: [],
-    lsn: 0
+    lsn: 0,
+    xid: 0
 };
 
 export default (state = initialState, action) => {
     switch (action.type) {
         case 'COMMIT':
-            return applyTxn(state, action);
+            return handleLocalCommit(state, action);
         case 'SNAP':
             return handleSnapshot(state, action);
         case 'TXN':
-            return handleTxn(state, action);
+            return handleServerTxn(state, action);
         default:
             console.log(`unknown action: ${action.type}`);
             return state;
@@ -20,7 +28,8 @@ export default (state = initialState, action) => {
 
 const handleSnapshot = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
-    //const lsn = action.payload.lsn;
+    if(newState.lsn) throw new Error('Cannot play snapshot onto already initialized database!');
+    newState.lsn = action.payload.lsn;
     for(let actionTable of action.payload.tables) {
         const tableName = actionTable.name;
         const stateTable = newState.tables[tableName] || {
@@ -40,10 +49,19 @@ const handleSnapshot = (state, action) => {
     return newState;
 };
 
-const handleTxn = (state, action) => {
+const handleServerTxn = (state, action) => {
+    const payload = action.payload;
     const newState = JSON.parse(JSON.stringify(state));
+    if(payload.lsn < state.lsn || payload.xid < state.xid)
+        throw new Error(`Received old txn from server: ${payload.lsn}`);
+    if(payload.lsn === state.lsn || payload.xid === state.xid)
+        throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
+    if(payload.xid !== state.xid+1)
+        console.warn(`Skipping ${payload.xid-state.xid-1} transactions :/`); // TODO: get initial xid?
+    newState.lsn = payload.lsn;
+    newState.xid = payload.xid;
     console.log('handleTxn action=', action);
-    const changes = action.payload.change;
+    const changes = payload.change;
     for(let change of changes) {
         handleChange(newState, change);
     }
@@ -68,7 +86,7 @@ const handleChange = (state, change) => {
     }
 };
 
-const applyTxn = (state, action) => {
+const handleLocalCommit = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
     const txn = action.txn;
     txn.lsn = state.lsn + 1;
@@ -90,9 +108,9 @@ const applyChange = (state, change) => {
             table.rows.push(change.record);
             break;
         case 'UPDATE':
-            break;
+            throw new Error('Update not implemented!'); // TODO: Implement update
         case 'DELETE':
-            break;
+            throw new Error('Delete not implemented!'); // TODO: Implement update
         default:
             throw new Error(`Unknown type: ${change.type}`);
     }

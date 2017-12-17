@@ -16,7 +16,7 @@ class ReplicationService @Inject constructor(
     var closed = false
 
     @Synchronized
-    fun subscribe(dbName: String, clientId: UUID, lsn: Long, handler: (String) -> Unit) {
+    fun subscribe(dbName: String, clientId: UUID, lsn: Long, handler: (Long, String) -> Unit) {
         // TODO: global audit for subscribe after close
         if (closed) throw Exception("Can't subscribe while closing!")
 

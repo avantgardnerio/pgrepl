@@ -25,7 +25,7 @@ class Replicator(
 
     private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
-    val listeners = ArrayList<(String) -> Unit>()
+    val listeners = ArrayList<(Long, String) -> Unit>()
     val con: BaseConnection
     val stream: PGReplicationStream
     val future: Future<*>
@@ -64,10 +64,11 @@ class Replicator(
             // LOG.info("------ read {}", clientId)
             var buffer = stream.readPending()
             while (buffer != null) {
+                val lsn = stream.lastReceiveLSN
                 val str = toString(buffer)
-                listeners.forEach({ l -> l(str) })
-                stream.setAppliedLSN(stream.lastReceiveLSN)
-                stream.setFlushedLSN(stream.lastReceiveLSN)
+                listeners.forEach({ l -> l(lsn.asLong(), str) })
+                stream.setAppliedLSN(lsn)
+                stream.setFlushedLSN(lsn) // TODO: never flush?
                 buffer = stream.readPending()
             }
         } catch (ex: Exception) {
@@ -76,8 +77,8 @@ class Replicator(
         }
     }
 
-    fun addListener(listener: (String) -> Unit) {
-        listeners.add { str -> listener(str) }
+    fun addListener(listener: (Long, String) -> Unit) {
+        listeners.add { lng, str -> listener(lng, str) }
     }
 
     override fun close() {

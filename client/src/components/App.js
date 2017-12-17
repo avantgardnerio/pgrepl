@@ -59,7 +59,28 @@ export default class App extends Component {
                     {this.circles}
                 </svg>
                 <div>
-                    <input type="text" value={JSON.stringify(this.props.state)}></input>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>state</td>
+                                <td>
+                                    <input type="text" readOnly={true} value={JSON.stringify(this.props.state)}></input>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>lsn</td>
+                                <td>{this.props.state.lsn}</td>
+                            </tr>
+                            <tr>
+                                <td>xid</td>
+                                <td>{this.props.state.xid}</td>
+                            </tr>
+                            <tr>
+                                <td>circle count</td>
+                                <td>{this.props.circles.rows.length}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         );
