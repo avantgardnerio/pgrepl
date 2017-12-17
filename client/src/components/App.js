@@ -69,7 +69,7 @@ export default class App extends Component {
                             </tr>
                             <tr>
                                 <td>lsn</td>
-                                <td>{this.props.state.lsn}</td>
+                                <td class="lsn">{this.props.state.lsn}</td>
                             </tr>
                             <tr>
                                 <td>xid</td>
@@ -77,7 +77,7 @@ export default class App extends Component {
                             </tr>
                             <tr>
                                 <td>circle count</td>
-                                <td>{this.props.circles.rows.length}</td>
+                                <td class="numCircles">{this.props.circles.rows.length}</td>
                             </tr>
                             <tr>
                                 <td>log length</td>

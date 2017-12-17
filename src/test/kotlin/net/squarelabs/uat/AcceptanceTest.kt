@@ -11,10 +11,15 @@ import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
+import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.interactions.Actions
 import org.openqa.selenium.remote.DesiredCapabilities
+import org.openqa.selenium.support.ui.ExpectedConditions.*
+import org.openqa.selenium.support.ui.WebDriverWait
+
 
 class AcceptanceTest {
 
@@ -42,7 +47,7 @@ class AcceptanceTest {
 
             // Selenium
             val chromeOptions = ChromeOptions()
-            chromeOptions.addArguments("--headless")
+            chromeOptions.addArguments("--headless") // TODO: override with env var for local testing
             chromeOptions.addArguments("--disable-gpu")
             val dc = DesiredCapabilities()
             dc.isJavascriptEnabled = true
@@ -70,19 +75,37 @@ class AcceptanceTest {
     }
 
     @Test
-    fun test() {
-        try {
-            val baseUrl = "http://127.0.0.1:8080/"
-            val expectedTitle = "React App"
-            driver.get(baseUrl)
+    fun twoClientsShouldConvergeOnSameState() {
+        // Browse
+        val baseUrl = "http://127.0.0.1:8080/"
+        driver.get(baseUrl)
+        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
+        Assert.assertNotNull("given I am on the home page, then I see a canvas", svg)
 
-            val actualTitle = driver.title
-            Assert.assertEquals(expectedTitle, actualTitle)
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            Assert.assertNotNull("Acceptance test should not throw", ex)
-        }
+        // Wait for initial sync
+        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
+        WebDriverWait(driver, 20).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        val originalLsnText = leftLsnField.text
+        val originalLsn = originalLsnText.toLong()
 
+        // Click and wait for left client to update
+        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+        WebDriverWait(driver, 20).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
+        val newLsnText = leftLsnField.text
+        val newLsn = newLsnText.toLong()
+        val diff = newLsn - originalLsn
+        Assert.assertTrue("given an initial LSN, when the canvas is clicked, then the LSN increases monotonically", diff > 0)
+
+        // Wait for update to reach right client, and when it does, ensure states are identical
+        val rghtLsnField = driver.findElement(By.cssSelector("#rightRoot .lsn"))
+        WebDriverWait(driver, 20).until(textToBePresentInElement(rghtLsnField, newLsnText))
+
+        // Assert state convergence
+        val leftCircleCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val rghtCircleCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        val leftCount = leftCircleCount.text.toLong()
+        val rghtCount = rghtCircleCount.text.toLong()
+        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal", leftCount, rghtCount)
     }
 
 }

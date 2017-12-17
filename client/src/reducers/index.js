@@ -89,11 +89,9 @@ const handleChange = (state, change) => {
 const handleLocalCommit = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
     const txn = action.txn;
-    txn.lsn = state.lsn + 1;
     for (let change of txn.changes) {
         applyChange(txn, newState, change);
     }
-    newState.lsn = txn.lsn;
     newState.log.push(txn);
     return newState;
 };
