@@ -25,10 +25,21 @@ export const deleteRow = (table, pk) => {
 };
 
 export const createTxn = (changes) => {
+    const txnId = uuidv4();
+    for(let change of changes) {
+        switch(change.type) {
+            case "INSERT":
+                change.record.curTxnId = txnId;
+                change.record.prvTxnId = undefined;
+                break;
+            default:
+                throw new Error(`Type not implemented${change.type}`)
+        }
+    }
     return {
         type: "COMMIT",
         txn: {
-            id: uuidv4(),
+            id: txnId,
             changes
         }
     }

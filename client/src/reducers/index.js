@@ -105,12 +105,9 @@ const applyChange = (txn, state, change) => {
     state.tables[change.table] = table;
     switch(change.type) {
         case 'INSERT':
-            change.record.curTxnId = txn.id;
-            change.record.prvTxnId = undefined;
             table.rows.push(change.record);
             break;
         case 'UPDATE':
-            // TODO: prvTxnId = curTxnId; curTxnId = txn.id
             throw new Error('Update not implemented!'); // TODO: Implement update
         case 'DELETE':
             throw new Error('Delete not implemented!'); // TODO: Implement update
