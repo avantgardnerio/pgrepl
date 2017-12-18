@@ -14,12 +14,6 @@
           "curtxnid",
           "prvtxnid"
         ],
-        "columntypes": [
-          "integer",
-          "character varying",
-          "character varying",
-          "character varying"
-        ],
         "columnvalues": [
           1.0,
           "Brent",
@@ -35,12 +29,6 @@
           "name",
           "curtxnid",
           "prvtxnid"
-        ],
-        "columntypes": [
-          "integer",
-          "character varying",
-          "character varying",
-          "character varying"
         ],
         "columnvalues": [
           3.0,
@@ -66,12 +54,6 @@
           "curtxnid",
           "prvtxnid"
         ],
-        "columntypes": [
-          "integer",
-          "character varying",
-          "character varying",
-          "character varying"
-        ],
         "columnvalues": [
           2.0,
           "Rachel",
@@ -87,12 +69,6 @@
           "name",
           "curtxnid",
           "prvtxnid"
-        ],
-        "columntypes": [
-          "integer",
-          "character varying",
-          "character varying",
-          "character varying"
         ],
         "columnvalues": [
           4.0,
@@ -118,12 +94,6 @@
           "curtxnid",
           "prvtxnid"
         ],
-        "columntypes": [
-          "integer",
-          "character varying",
-          "character varying",
-          "character varying"
-        ],
         "columnvalues": [
           1.0,
           "Justin",
@@ -135,11 +105,6 @@
             "id",
             "name",
             "curtxnid"
-          ],
-          "keytypes": [
-            "integer",
-            "character varying",
-            "character varying"
           ],
           "keyvalues": [
             1.0,
@@ -164,11 +129,6 @@
             "id",
             "name",
             "curtxnid"
-          ],
-          "keytypes": [
-            "integer",
-            "character varying",
-            "character varying"
           ],
           "keyvalues": [
             1.0,
