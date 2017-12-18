@@ -100,7 +100,7 @@ class ReplicatorTest {
         val expectedAr: List<Transaction> = gson.fromJson(expected, Array<Transaction>::class.java)
                 .mapIndexed { idx, txn -> txn.copy(xid = actualAr[idx].xid) }
         val actualJson = gson.toJson(
-                actualAr//.mapIndexed { idx, txn -> txn.copy(clientTxnId = expectedAr[idx].clientTxnId) }
+                actualAr.mapIndexed { idx, txn -> txn.copy(clientTxnId = expectedAr[idx].clientTxnId) }
         )
         val expectedJson = gson.toJson(expectedAr)
         Assert.assertEquals("Replicator should send notifications", expectedJson, actualJson)
