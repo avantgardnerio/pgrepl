@@ -54,6 +54,16 @@ class Replicator(
                 .withSlotName(slotName)
                 .withStartPosition(LogSequenceNumber.valueOf(lsn))
                 .withSlotOption("include-xids", true)
+                // https://github.com/eulerto/wal2json/blob/master/wal2json.c
+                // include-timestamp
+                // include-schemas
+                // include-types
+                // include-type-oids
+                // include-typmod
+                // include-not-null
+                // pretty-print
+                // write-in-chunks
+                .withSlotOption("include-lsn", true)
                 .withStatusInterval(20, TimeUnit.SECONDS)
                 .start()
         future = executor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)

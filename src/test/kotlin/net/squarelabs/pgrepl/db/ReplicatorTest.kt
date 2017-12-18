@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl.db
 
+import com.google.gson.GsonBuilder
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.model.Snapshot
@@ -14,7 +15,6 @@ import org.junit.BeforeClass
 import org.junit.Test
 import java.util.*
 import java.util.concurrent.TimeUnit
-import com.google.gson.GsonBuilder
 
 class ReplicatorTest {
 
@@ -58,6 +58,7 @@ class ReplicatorTest {
             it.addListener(spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->
+                    // test interleave
                     conA.autoCommit = false
                     conB.autoCommit = false
                     conA.prepareStatement("INSERT INTO person (id, name, curTxnId) VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');").use {
@@ -74,23 +75,32 @@ class ReplicatorTest {
                     }
                     conA.commit()
                     conB.commit()
+
+                    // test update
+                    conA.prepareStatement("UPDATE person SET name='Justin' WHERE name='Brent';").use {
+                        it.executeUpdate()
+                    }
+                    conA.commit()
+
+                    // test delete
+                    conA.prepareStatement("DELETE FROM person WHERE name='Justin';").use {
+                        it.executeUpdate()
+                    }
+                    conA.commit()
                 }
             }
-            while(actual.size < 2) TimeUnit.MILLISECONDS.sleep(10)
+            while (actual.size < 4) TimeUnit.MILLISECONDS.sleep(10)
         }
 
         // Assert
-        Assert.assertEquals("Two transactions should have been committed", 2, actual.size)
+        //Assert.assertEquals("Two transactions should have been committed", 2, actual.size)
         val gson = GsonBuilder().setPrettyPrinting().create()
         val expected = this.javaClass.getResource("/fixtures/txn.json").readText()
-        val actualAr = listOf<Transaction>(
-                gson.fromJson(actual[0], Transaction::class.java),
-                gson.fromJson(actual[1], Transaction::class.java)
-        )
+        val actualAr = actual.map { gson.fromJson(it, Transaction::class.java) }
         val expectedAr: List<Transaction> = gson.fromJson(expected, Array<Transaction>::class.java)
                 .mapIndexed { idx, txn -> txn.copy(xid = actualAr[idx].xid) }
         val actualJson = gson.toJson(
-                actualAr.mapIndexed { idx, txn -> txn.copy(clientTxnId = expectedAr[idx].clientTxnId) }
+                actualAr//.mapIndexed { idx, txn -> txn.copy(clientTxnId = expectedAr[idx].clientTxnId) }
         )
         val expectedJson = gson.toJson(expectedAr)
         Assert.assertEquals("Replicator should send notifications", expectedJson, actualJson)
