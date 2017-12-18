@@ -1,0 +1,46 @@
+{
+  "xid": 7795,
+  "nextlsn": "0/14995F40",
+  "change": [
+    {
+      "kind": "update",
+      "schema": "public",
+      "table": "person",
+      "columnnames": [
+        "id",
+        "name",
+        "curtxnid",
+        "prvtxnid"
+      ],
+      "columntypes": [
+        "integer",
+        "character varying",
+        "character varying",
+        "character varying"
+      ],
+      "columnvalues": [
+        1,
+        "Justin",
+        "d55cad5c-03da-405f-af3a-13788092b33c",
+        null
+      ],
+      "oldkeys": {
+        "keynames": [
+          "id",
+          "name",
+          "curtxnid"
+        ],
+        "keytypes": [
+          "integer",
+          "character varying",
+          "character varying"
+        ],
+        "keyvalues": [
+          1,
+          "Brent",
+          "d55cad5c-03da-405f-af3a-13788092b33c"
+        ]
+      }
+    }
+  ]
+}
