@@ -98,7 +98,7 @@ class ReplicatorTest {
         val expected = this.javaClass.getResource("/fixtures/txn.json").readText()
         val actualAr = actual.map { gson.fromJson(it, Transaction::class.java) }
         val expectedAr: List<Transaction> = gson.fromJson(expected, Array<Transaction>::class.java)
-                .mapIndexed { idx, txn -> txn.copy(xid = actualAr[idx].xid) }
+                .mapIndexed { idx, txn -> txn.copy(xid = actualAr[idx].xid, nextlsn = actualAr[idx].nextlsn) }
         val actualJson = gson.toJson(
                 actualAr.mapIndexed { idx, txn -> txn.copy(clientTxnId = expectedAr[idx].clientTxnId) }
         )

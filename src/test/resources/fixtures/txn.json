@@ -1,8 +1,9 @@
 [
   {
-    "xid": 7685,
-    "lsn": 0,
+    "xid": 8053,
+    "nextlsn": "0/14FF3E58",
     "clientTxnId": "12c9bb24-47fe-4e4d-be51-2096d68af308",
+    "lsn": 0,
     "change": [
       {
         "kind": "insert",
@@ -53,7 +54,8 @@
     ]
   },
   {
-    "xid": 7686,
+    "xid": 8054,
+    "nextlsn": "0/14FF3E88",
     "clientTxnId": "5e5f41a8-6428-41ea-8f08-ba07042f6d52",
     "lsn": 0,
     "change": [
@@ -106,7 +108,8 @@
     ]
   },
   {
-    "xid": 7687,
+    "xid": 8055,
+    "nextlsn": "0/14FF3F60",
     "clientTxnId": "6d4a5693-8ea4-404a-b15f-1e63d36ae54b",
     "lsn": 0,
     "change": [
@@ -131,19 +134,54 @@
           "Justin",
           "d55cad5c-03da-405f-af3a-13788092b33c",
           null
-        ]
+        ],
+        "oldkeys": {
+          "keynames": [
+            "id",
+            "name",
+            "curtxnid"
+          ],
+          "keytypes": [
+            "integer",
+            "character varying",
+            "character varying"
+          ],
+          "keyvalues": [
+            1.0,
+            "Brent",
+            "d55cad5c-03da-405f-af3a-13788092b33c"
+          ]
+        }
       }
     ]
   },
   {
-    "xid": 7688,
+    "xid": 8056,
+    "nextlsn": "0/14FF4000",
     "clientTxnId": "da3a8acc-9a75-4f36-908e-079e2e9a5e7c",
     "lsn": 0,
     "change": [
       {
         "kind": "delete",
         "schema": "public",
-        "table": "person"
+        "table": "person",
+        "oldkeys": {
+          "keynames": [
+            "id",
+            "name",
+            "curtxnid"
+          ],
+          "keytypes": [
+            "integer",
+            "character varying",
+            "character varying"
+          ],
+          "keyvalues": [
+            1.0,
+            "Justin",
+            "d55cad5c-03da-405f-af3a-13788092b33c"
+          ]
+        }
       }
     ]
   }
