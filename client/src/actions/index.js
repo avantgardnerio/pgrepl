@@ -32,8 +32,14 @@ export const createTxn = (changes) => {
                 change.record.curTxnId = txnId;
                 change.record.prvTxnId = undefined;
                 break;
+            case "UPDATE":
+                // TODO: get current state somehow
+                // TODO: Find table in state
+                // TODO: Find record in table
+                // TODO: Copy old values and prvTxnId into update
+                break;
             default:
-                throw new Error(`Type not implemented${change.type}`)
+                throw new Error(`Type not implemented: ${change.type}`)
         }
     }
     return {

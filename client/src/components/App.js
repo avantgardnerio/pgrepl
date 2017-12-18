@@ -1,19 +1,22 @@
 import React, {Component} from 'react';
 import uuidv4 from 'uuid/v4';
 
-import {insertRow, createTxn} from '../actions';
+import {createTxn, insertRow, updateRow} from '../actions';
 
 export default class App extends Component {
 
-    componentDidMount() {
-
+    constructor(props) {
+        super(props);
+        this.state = {
+            dragId: undefined
+        }
     }
 
     get circles() {
         if (!this.props.circles) return [];
         return this.props.circles.rows
-            .map(c => <circle key={c.id} cx={c.cx} cy={c.cy} r={c.r} stroke={c.stroke}
-                              strokeWidth={c.strokeWidth} fill={c.fill}/>)
+            .map(c => <circle key={c.id} cx={c.cx} cy={c.cy} r={c.r} stroke={c.stroke} onMouseDown={this.onObjectDown}
+                              strokeWidth={c.strokeWidth} fill={c.fill} id={c.id}/>)
     }
 
     get rectangles() {
@@ -23,6 +26,10 @@ export default class App extends Component {
                             fill={r.fill} strokeWidth={r.strokeWidth}
                             stroke={r.stroke}/>)
     }
+
+    onObjectDown = (e) => {
+        this.setState({dragId: e.target.id});
+    };
 
     onMouseDown = (e) => {
         const circle = {
@@ -34,8 +41,8 @@ export default class App extends Component {
             strokeWidth: 4,
             fill: "yellow"
         };
-        const circleInsert = insertRow("circles", circle);
-        const txn = createTxn([circleInsert]);
+        const change = insertRow("circles", circle);
+        const txn = createTxn([change]);
         this.props.commit(txn);
     };
 
@@ -44,7 +51,17 @@ export default class App extends Component {
     };
 
     onMouseUp = (e) => {
-        //console.log(e);
+        if(this.state.dragId === undefined) return;
+        const circle = this.props.circles.rows.find(c => c.id === this.state.dragId);
+        const newCircle = {
+            ...circle,
+            cx: e.clientX,
+            cy: e.clientY
+        };
+        const change = updateRow("circles", circle);
+        const txn = createTxn([change]);
+        this.props.commit(txn);
+        this.setState({dragId: undefined});
     };
 
     render() {
@@ -61,28 +78,28 @@ export default class App extends Component {
                 <div>
                     <table>
                         <tbody>
-                            <tr>
-                                <td>state</td>
-                                <td>
-                                    <input type="text" readOnly={true} value={JSON.stringify(this.props.state)}></input>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>lsn</td>
-                                <td class="lsn">{this.props.state.lsn}</td>
-                            </tr>
-                            <tr>
-                                <td>xid</td>
-                                <td>{this.props.state.xid}</td>
-                            </tr>
-                            <tr>
-                                <td>circle count</td>
-                                <td class="numCircles">{this.props.circles.rows.length}</td>
-                            </tr>
-                            <tr>
-                                <td>log length</td>
-                                <td>{this.props.state.log.length}</td>
-                            </tr>
+                        <tr>
+                            <td>state</td>
+                            <td>
+                                <input type="text" readOnly={true} value={JSON.stringify(this.props.state)}></input>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>lsn</td>
+                            <td class="lsn">{this.props.state.lsn}</td>
+                        </tr>
+                        <tr>
+                            <td>xid</td>
+                            <td>{this.props.state.xid}</td>
+                        </tr>
+                        <tr>
+                            <td>circle count</td>
+                            <td class="numCircles">{this.props.circles.rows.length}</td>
+                        </tr>
+                        <tr>
+                            <td>log length</td>
+                            <td>{this.props.state.log.length}</td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
