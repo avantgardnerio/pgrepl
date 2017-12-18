@@ -58,7 +58,7 @@ export default class App extends Component {
             cx: e.clientX,
             cy: e.clientY
         };
-        const change = updateRow("circles", circle);
+        const change = updateRow("circles", newCircle);
         const txn = createTxn([change]);
         this.props.commit(txn);
         this.setState({dragId: undefined});
@@ -86,7 +86,7 @@ export default class App extends Component {
                         </tr>
                         <tr>
                             <td>lsn</td>
-                            <td class="lsn">{this.props.state.lsn}</td>
+                            <td className="lsn">{this.props.state.lsn}</td>
                         </tr>
                         <tr>
                             <td>xid</td>
@@ -94,7 +94,7 @@ export default class App extends Component {
                         </tr>
                         <tr>
                             <td>circle count</td>
-                            <td class="numCircles">{this.props.circles.rows.length}</td>
+                            <td className="numCircles">{this.props.circles.rows.length}</td>
                         </tr>
                         <tr>
                             <td>log length</td>
