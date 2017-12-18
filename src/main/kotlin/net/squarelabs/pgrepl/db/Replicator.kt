@@ -46,7 +46,7 @@ class Replicator(
             it.create(slotName, plugin)
         }
 
-        // Start listening
+        // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
         stream = con
                 .replicationAPI
                 .replicationStream()
@@ -54,15 +54,9 @@ class Replicator(
                 .withSlotName(slotName)
                 .withStartPosition(LogSequenceNumber.valueOf(lsn))
                 .withSlotOption("include-xids", true)
-                // https://github.com/eulerto/wal2json/blob/master/wal2json.c
-                // include-timestamp
-                // include-schemas
-                // include-types
-                // include-type-oids
-                // include-typmod
-                // include-not-null
-                // pretty-print
-                // write-in-chunks
+                .withSlotOption("include-types", false)
+                .withSlotOption("include-timestamp", true)
+                .withSlotOption("include-schemas", false)
                 .withSlotOption("include-lsn", true)
                 .withStatusInterval(20, TimeUnit.SECONDS)
                 .start()

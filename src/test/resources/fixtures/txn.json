@@ -7,7 +7,6 @@
     "change": [
       {
         "kind": "insert",
-        "schema": "public",
         "table": "person",
         "columnnames": [
           "id",
@@ -30,7 +29,6 @@
       },
       {
         "kind": "insert",
-        "schema": "public",
         "table": "person",
         "columnnames": [
           "id",
@@ -61,7 +59,6 @@
     "change": [
       {
         "kind": "insert",
-        "schema": "public",
         "table": "person",
         "columnnames": [
           "id",
@@ -84,7 +81,6 @@
       },
       {
         "kind": "insert",
-        "schema": "public",
         "table": "person",
         "columnnames": [
           "id",
@@ -115,7 +111,6 @@
     "change": [
       {
         "kind": "update",
-        "schema": "public",
         "table": "person",
         "columnnames": [
           "id",
@@ -163,7 +158,6 @@
     "change": [
       {
         "kind": "delete",
-        "schema": "public",
         "table": "person",
         "oldkeys": {
           "keynames": [

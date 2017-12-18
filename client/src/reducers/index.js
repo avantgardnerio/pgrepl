@@ -50,6 +50,7 @@ const handleSnapshot = (state, action) => {
 };
 
 const handleServerTxn = (state, action) => {
+    // validate
     const payload = action.payload;
     const newState = JSON.parse(JSON.stringify(state));
     if(payload.lsn < state.lsn || payload.xid < state.xid)
@@ -58,6 +59,8 @@ const handleServerTxn = (state, action) => {
         throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
     if(payload.xid !== state.xid+1)
         console.warn(`Skipping ${payload.xid-state.xid-1} transactions :/`); // TODO: get initial xid?
+
+    // Apply
     newState.lsn = payload.lsn;
     newState.xid = payload.xid;
     console.log('handleTxn action=', action);
