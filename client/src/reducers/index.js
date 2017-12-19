@@ -28,19 +28,19 @@ export default (state = initialState, action) => {
 
 const handleSnapshot = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
-    if(newState.lsn) throw new Error('Cannot play snapshot onto already initialized database!');
+    if (newState.lsn) throw new Error('Cannot play snapshot onto already initialized database!');
     newState.lsn = action.payload.lsn;
-    for(let actionTable of action.payload.tables) {
+    for (let actionTable of action.payload.tables) {
         const tableName = actionTable.name;
         const stateTable = newState.tables[tableName] || {
             rows: []
         };
         newState.tables[tableName] = stateTable;
-        const columns = actionTable.columns;
+        stateTable.columns = actionTable.columns;
         const rows = actionTable.rows;
-        for(let row of rows) {
+        for (let row of rows) {
             const values = row.data;
-            const record = columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
+            const record = stateTable.columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
             //console.log(record);
             stateTable.rows.push(record);
         }
@@ -53,19 +53,19 @@ const handleServerTxn = (state, action) => {
     // validate
     const payload = action.payload;
     const newState = JSON.parse(JSON.stringify(state));
-    if(payload.lsn < state.lsn || payload.xid < state.xid)
+    if (payload.lsn < state.lsn || payload.xid < state.xid)
         throw new Error(`Received old txn from server: ${payload.lsn}`);
-    if(payload.lsn === state.lsn || payload.xid === state.xid)
+    if (payload.lsn === state.lsn || payload.xid === state.xid)
         throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
-    if(payload.xid !== state.xid+1)
-        console.warn(`Skipping ${payload.xid-state.xid-1} transactions :/`); // TODO: get initial xid?
+    if (payload.xid !== state.xid + 1)
+        console.warn(`Skipping ${payload.xid - state.xid - 1} transactions :/`); // TODO: get initial xid?
 
     // Apply
     newState.lsn = payload.lsn;
     newState.xid = payload.xid;
     console.log('handleTxn action=', action);
     const changes = payload.change;
-    for(let change of changes) {
+    for (let change of changes) {
         handleChange(newState, change);
     }
     return newState;
@@ -76,7 +76,7 @@ const handleChange = (state, change) => {
         rows: []
     };
     state.tables[change.table] = table;
-    switch(change.kind) {
+    switch (change.kind) {
         case 'insert':
             const names = change.columnnames;
             const values = change.columnvalues;
@@ -104,14 +104,25 @@ const applyChange = (txn, state, change) => {
         rows: []
     };
     state.tables[change.table] = table;
-    switch(change.type) {
+    switch (change.type) {
         case 'INSERT':
-            table.rows.push(change.record);
+            table.rows.push(change.record); // TODO: Don't mutate?
             break;
         case 'UPDATE':
             throw new Error('Update not implemented!'); // TODO: Implement update
         case 'DELETE':
-            throw new Error('Delete not implemented!'); // TODO: Implement update
+            table.columns.sort((a, b) => a.pkOrdinal - b.pkOrdinal);
+            const pkCols = table.columns
+                .filter(col => col.pkOrdinal)
+                .map(col => col.name);
+            const getPk = (rec) => pkCols.map(key => rec[key]);
+            const pkEquals = (a,b) => {
+                return [...Array(Math.max(a.length, b.length)).keys()]
+                    .reduce((acc, cur) => acc && a[cur] === b[cur], true)
+            };
+            const pk = getPk(change.record);
+            table.rows = table.rows.filter(row => !pkEquals(pk, getPk(row))); // TODO: Don't mutate?
+            break;
         default:
             throw new Error(`Unknown type: ${change.type}`);
     }
