@@ -18,7 +18,7 @@ export const updateRow = (table, record) => {
 
 export const deleteRow = (table, pk) => {
     return {
-        type: "UPDATE",
+        type: "DELETE",
         table,
         pk
     }
