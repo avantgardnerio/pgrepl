@@ -1,5 +1,5 @@
 CREATE TABLE PERSON (
-  ID       INT               NOT NULL,
+  ID       INT               NOT NULL PRIMARY KEY,
   NAME     VARCHAR           NOT NULL,
   curTxnId CHARACTER VARYING NOT NULL,
   prvTxnId CHARACTER VARYING

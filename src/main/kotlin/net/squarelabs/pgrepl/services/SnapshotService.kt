@@ -21,7 +21,7 @@ class SnapshotService {
                     val columns = schema
                             .filter { it.tableName == tableName }
                             .sortedBy { it.ordinalPosition }
-                            .map { Column(it.columnName, it.dataType) }
+                            .map { Column(it.columnName, it.dataType, it.pkOrdinal) }
                     val colNames = columns.map { it.name }
                     val rows = selectAll(tableName, colNames, con)
                     Table(tableName, columns, rows)
