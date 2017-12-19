@@ -16,11 +16,11 @@ export const updateRow = (table, record) => {
     }
 };
 
-export const deleteRow = (table, pk) => {
+export const deleteRow = (table, record) => {
     return {
         type: "DELETE",
         table,
-        pk
+        record
     }
 };
 
@@ -29,14 +29,18 @@ export const createTxn = (changes) => {
     for(let change of changes) {
         switch(change.type) {
             case "INSERT":
-                change.record.curTxnId = txnId;
                 change.record.prvTxnId = undefined;
+                change.record.curTxnId = txnId;
                 break;
             case "UPDATE":
                 // TODO: get current state somehow
                 // TODO: Find table in state
                 // TODO: Find record in table
                 // TODO: Copy old values and prvTxnId into update
+                break;
+            case "DELETE":
+                change.record.prvTxnId = change.record.curTxnId;
+                change.record.curTxnId = txnId;
                 break;
             default:
                 throw new Error(`Type not implemented: ${change.type}`)

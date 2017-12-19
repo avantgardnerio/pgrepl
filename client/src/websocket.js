@@ -59,7 +59,7 @@ export default class WsTool {
     };
 
     _onclose = (closeEvent) => {
-        this._ws = null;
+        this._ws = undefined;
         console.info("Websocket Closed");
 
         let codeMap = {};
