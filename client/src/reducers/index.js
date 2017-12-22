@@ -1,3 +1,5 @@
+import {removeRow, updateRow} from '../util/db';
+
 const initialState = {
     tables: {
         circles: {
@@ -109,19 +111,10 @@ const applyChange = (txn, state, change) => {
             table.rows.push(change.record); // TODO: Don't mutate?
             break;
         case 'UPDATE':
-            throw new Error('Update not implemented!'); // TODO: Implement update
+            updateRow(change.record, table);
+            break;
         case 'DELETE':
-            table.columns.sort((a, b) => a.pkOrdinal - b.pkOrdinal);
-            const pkCols = table.columns
-                .filter(col => col.pkOrdinal)
-                .map(col => col.name);
-            const getPk = (rec) => pkCols.map(key => rec[key]);
-            const pkEquals = (a,b) => {
-                return [...Array(Math.max(a.length, b.length)).keys()]
-                    .reduce((acc, cur) => acc && a[cur] === b[cur], true)
-            };
-            const pk = getPk(change.record);
-            table.rows = table.rows.filter(row => !pkEquals(pk, getPk(row))); // TODO: Don't mutate?
+            removeRow(change.record, table);
             break;
         default:
             throw new Error(`Unknown type: ${change.type}`);

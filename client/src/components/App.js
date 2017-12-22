@@ -92,7 +92,7 @@ export default class App extends Component {
             } else {
                 // drag
                 const newCircle = {...this.selectedCircle, cx: e.clientX, cy: e.clientY};
-                const change = updateRow("circles", newCircle);
+                const change = updateRow("circles", newCircle, this.props.state);
                 const txn = createTxn([change]);
                 this.props.commit(txn);
                 this.setState({selectedId: undefined, downPos: undefined});

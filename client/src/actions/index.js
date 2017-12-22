@@ -1,4 +1,5 @@
 import uuidv4 from 'uuid/v4';
+import {getPk, getRowByPk} from "../util/db";
 
 export const insertRow = (table, record) => {
     return {
@@ -8,11 +9,15 @@ export const insertRow = (table, record) => {
     }
 };
 
-export const updateRow = (table, record) => {
+export const updateRow = (tableName, record, db) => {
+    const table = db.tables[tableName];
+    const pk = getPk(record, table);
+    const prior = getRowByPk(pk, table);
     return {
         type: "UPDATE",
-        table,
-        record
+        table: tableName,
+        record,
+        prior
     }
 };
 
@@ -33,10 +38,8 @@ export const createTxn = (changes) => {
                 change.record.curTxnId = txnId;
                 break;
             case "UPDATE":
-                // TODO: get current state somehow
-                // TODO: Find table in state
-                // TODO: Find record in table
-                // TODO: Copy old values and prvTxnId into update
+                change.record.curTxnId = txnId;
+                change.record.curTxnId = change.prior.prvTxnId;
                 break;
             case "DELETE":
                 change.record.prvTxnId = change.record.curTxnId;
