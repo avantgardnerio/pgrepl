@@ -2,26 +2,31 @@ package net.squarelabs.pgrepl.services
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import org.postgresql.core.BaseConnection
-import java.sql.DriverManager
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import java.sql.Connection
 
-@Singleton class ConnectionService @Inject constructor() {
+@Singleton
+class ConnectionService @Inject constructor() {
 
-    val connections = HashMap<BaseConnection, Exception>()
+    val pools = HashMap<String, HikariDataSource>()
 
-    // TODO: connection pool
     @Synchronized
-    fun getConnection(url: String): BaseConnection {
-        val con = DriverManager.getConnection(url) as BaseConnection
-        connections.put(con, Exception())
-        return con
+    fun getConnection(url: String): Connection {
+        val ds = pools.getOrPut(url, {
+            val config = HikariConfig()
+            config.jdbcUrl = url
+            HikariDataSource(config)
+        })
+        return ds.connection
     }
 
     @Synchronized
-    fun audit() {
-        for ((connection, ex) in connections) {
-            if (connection.isClosed) continue
-            ex.printStackTrace()
+    fun reset() {
+        for (pool in pools.values) {
+            pool.close()
         }
+        pools.clear()
     }
+
 }

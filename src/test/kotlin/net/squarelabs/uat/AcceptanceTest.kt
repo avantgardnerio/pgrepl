@@ -8,10 +8,8 @@ import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.jetty.util.log.Log
-import org.junit.AfterClass
-import org.junit.Assert
-import org.junit.BeforeClass
-import org.junit.Test
+import org.flywaydb.core.Flyway
+import org.junit.*
 import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
@@ -36,18 +34,10 @@ class AcceptanceTest {
         @BeforeClass
         @JvmStatic
         @Throws(Exception::class)
-        fun setup() {
-            // Database
-            val dbName = cfgSvc.getAppDbName()
-            val url = cfgSvc.getJdbcDatabaseUrl()
-            DbService(url, conSvc).use {
-                if (it.list().contains(dbName)) it.drop(dbName)
-                it.create(dbName)
-            }
-
+        fun init() {
             // Selenium
             val chromeOptions = ChromeOptions()
-            if(StringUtils.equalsIgnoreCase("true", System.getenv("headless"))) {
+            if (StringUtils.equalsIgnoreCase("true", System.getenv("headless"))) {
                 chromeOptions.addArguments("--headless")
             }
             chromeOptions.addArguments("--disable-gpu")
@@ -62,16 +52,36 @@ class AcceptanceTest {
 
         @AfterClass
         @JvmStatic
-        fun tearDown() {
+        fun close() {
             LOG.info("Shutting down AcceptanceTest...")
             app.close()
             driver.close()
-            val dbName = cfgSvc.getAppDbName()
-            val url = cfgSvc.getJdbcDatabaseUrl()
-            DbService(url, conSvc).use {
-                it.drop(dbName)
-            }
         }
+    }
+
+    @Before
+    fun setup() {
+        // Database
+        val dbName = cfgSvc.getAppDbName()
+        val url = cfgSvc.getJdbcDatabaseUrl()
+        DbService(url, conSvc).use {
+            if (it.list().contains(dbName)) it.drop(dbName)
+            it.create(dbName)
+            val flyway = Flyway()
+            flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
+            flyway.migrate()
+        }
+    }
+
+    @After
+    fun tearDown() {
+        conSvc.reset()
+        val dbName = cfgSvc.getAppDbName()
+        val url = cfgSvc.getJdbcDatabaseUrl()
+        DbService(url, conSvc).use {
+            it.drop(dbName)
+        }
+        conSvc.reset()
     }
 
     @Test
@@ -86,19 +96,21 @@ class AcceptanceTest {
 
         // Exercise
         Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
-        WebDriverWait(driver, 20).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
-        WebDriverWait(driver, 20).until(textToBePresentInElement(rghtLsnField, leftLsnField.text))
+        WebDriverWait(driver, 3).until(textToBePresentInElement(rghtLsnField, originalLsnText))
 
         // Assert state convergence
         val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
         val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
-        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal", leftCount.text, rghtCount.text)
+        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
+                leftCount.text, rghtCount.text
+        )
     }
 
     fun browseAndWaitForConnect() {
         val baseUrl = "http://127.0.0.1:8080/"
         driver.get(baseUrl)
-        WebDriverWait(driver, 20).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), "0")))
     }
 
 }

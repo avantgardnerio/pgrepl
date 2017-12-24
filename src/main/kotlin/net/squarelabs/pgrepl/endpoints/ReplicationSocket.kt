@@ -10,6 +10,7 @@ import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.ReplicationService
 import net.squarelabs.pgrepl.services.SnapshotService
 import org.eclipse.jetty.util.log.Log
+import org.postgresql.core.BaseConnection
 import java.util.*
 import javax.websocket.*
 
@@ -60,58 +61,62 @@ class ReplicationSocket @Inject constructor(
     }
 
     override fun onMessage(json: String) {
-        val mapper = Gson()
-        val baseMsg = mapper.fromJson(json, Message::class.java)
-        val clazz = when (baseMsg.type) {
-            "HELLO" -> HelloMsg::class.java
-            "COMMIT" -> CommitMsg::class.java
-            else -> throw Exception("Unknown message: ${baseMsg.type}")
-        }
-        val msg = mapper.fromJson(json, clazz)
-        when (msg) {
-            is HelloMsg -> {
-                clientId = UUID.fromString(msg.payload)
-                val url = cfgSvc.getAppDbUrl()
-                conSvc.getConnection(url).use { con ->
-                    val snap = snapSvc.takeSnapshot(con)
-                    val msg = SnapMsg(snap)
-                    remote!!.sendText(mapper.toJson(msg))
-                    val dbName = cfgSvc.getAppDbName()
-                    replSvc.subscribe(dbName, clientId!!, snap.lsn, { lsn, json -> onTxn(lsn, json) })
-                }
+        try {
+            val mapper = Gson()
+            val baseMsg = mapper.fromJson(json, Message::class.java)
+            val clazz = when (baseMsg.type) {
+                "HELLO" -> HelloMsg::class.java
+                "COMMIT" -> CommitMsg::class.java
+                else -> throw Exception("Unknown message: ${baseMsg.type}")
             }
-            is CommitMsg -> {
-                msg.txn.changes.forEach({
-                    when (it.type) {
-                        "INSERT" -> {
-                            val row = it.record
-                            val url = cfgSvc.getAppDbUrl()
-                            conSvc.getConnection(url).use { con ->
-                                con.autoCommit = false
-                                val colNames = row.keys.joinToString(",")
-                                val values = row.values.map { "?" }.joinToString(",")
-                                val sql = "insert into ${it.table} (${colNames}) values (${values})"
-                                con.prepareStatement(sql).use {
-                                    row.values.forEachIndexed({ i, v -> it.setObject(i + 1, v) })
-                                    val res = it.executeUpdate()
-                                    // TODO: use txnId and prevTxnId for optimistic concurrency
-                                    // TODO: refactor into service
-                                    if (res != 1) throw Exception("Unable to play txn on server!")
-                                }
-                                con.prepareStatement(txnMapSql).use {
-                                    it.setString(1, msg.txn.id)
-                                    val res = it.executeUpdate()
-                                    if (res != 1) throw Exception("Unable update txn map!")
-                                }
-                                // TODO: Handle transaction failures
-                                con.commit()
-                            }
-                        }
-                        else -> throw Exception("Unknown change type${it.type}")
+            val msg = mapper.fromJson(json, clazz)
+            when (msg) {
+                is HelloMsg -> {
+                    clientId = UUID.fromString(msg.payload)
+                    val url = cfgSvc.getAppDbUrl()
+                    conSvc.getConnection(url).use { con ->
+                        val snap = snapSvc.takeSnapshot(con.unwrap(BaseConnection::class.java))
+                        val msg = SnapMsg(snap)
+                        remote!!.sendText(mapper.toJson(msg))
+                        val dbName = cfgSvc.getAppDbName()
+                        replSvc.subscribe(dbName, clientId!!, snap.lsn, { lsn, json -> onTxn(lsn, json) })
                     }
-                })
+                }
+                is CommitMsg -> {
+                    msg.txn.changes.forEach({
+                        when (it.type) {
+                            "INSERT" -> {
+                                val row = it.record
+                                val url = cfgSvc.getAppDbUrl()
+                                conSvc.getConnection(url).use { con ->
+                                    con.autoCommit = false
+                                    val colNames = row.keys.joinToString(",")
+                                    val values = row.values.map { "?" }.joinToString(",")
+                                    val sql = "insert into ${it.table} (${colNames}) values (${values})"
+                                    con.prepareStatement(sql).use {
+                                        row.values.forEachIndexed({ i, v -> it.setObject(i + 1, v) })
+                                        val res = it.executeUpdate()
+                                        // TODO: use txnId and prevTxnId for optimistic concurrency
+                                        // TODO: refactor into service
+                                        if (res != 1) throw Exception("Unable to play txn on server!")
+                                    }
+                                    con.prepareStatement(txnMapSql).use {
+                                        it.setString(1, msg.txn.id)
+                                        val res = it.executeUpdate()
+                                        if (res != 1) throw Exception("Unable update txn map!")
+                                    }
+                                    // TODO: Handle transaction failures
+                                    con.commit()
+                                }
+                            }
+                            else -> throw Exception("Unknown change type${it.type}")
+                        }
+                    })
+                }
+                else -> throw Exception("Unknown message: ${msg::class}") // TODO: Error handling
             }
-            else -> throw Exception("Unknown message: ${msg::class}") // TODO: Error handling
+        } catch (ex: Exception) {
+            LOG.warn("Error handling message!", ex)
         }
     }
 

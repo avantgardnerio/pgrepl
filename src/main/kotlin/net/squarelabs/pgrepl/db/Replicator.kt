@@ -92,8 +92,16 @@ class Replicator(
         executor.awaitTermination(3, TimeUnit.SECONDS)
         executor.shutdownNow()
 
-        stream.close()
-        con.close()
+        try {
+            stream.close()
+        } catch (ex: Exception) {
+            LOG.warn("Error closing stream!", ex)
+        }
+        try {
+            con.close()
+        } catch (ex: Exception) {
+            LOG.warn("Error closing connection!", ex)
+        }
     }
 
     companion object {

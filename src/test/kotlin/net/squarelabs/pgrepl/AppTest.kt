@@ -8,8 +8,10 @@ import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
 import net.squarelabs.pgrepl.services.SnapshotService
 import org.flywaydb.core.Flyway
+import org.junit.After
 import org.junit.Assert
 import org.junit.Test
+import org.postgresql.core.BaseConnection
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -20,6 +22,11 @@ class AppTest {
     private val conSvc = injector.getInstance(ConnectionService::class.java)!!
     private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
     private val snapSvc = injector.getInstance(SnapshotService::class.java)!!
+
+    @After
+    fun tearDown() {
+        conSvc.reset()
+    }
 
     @Test
     fun shouldReceiveInitialState() {
@@ -42,7 +49,7 @@ class AppTest {
             it.prepareStatement(sql).use {
                 it.executeUpdate()
             }
-            expected = snapSvc.takeSnapshot(it)
+            expected = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
         }
         app.use {
             // exercise
@@ -67,6 +74,5 @@ class AppTest {
                 .filter { it is AutoCloseable }
                 .map { it as AutoCloseable }
                 .forEach { it.close() }
-        conSvc.audit()
     }
 }

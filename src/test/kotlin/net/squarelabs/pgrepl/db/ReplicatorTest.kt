@@ -10,34 +10,35 @@ import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
 import net.squarelabs.pgrepl.services.SnapshotService
 import org.flywaydb.core.Flyway
-import org.junit.Assert
-import org.junit.BeforeClass
-import org.junit.Test
+import org.junit.*
+import org.postgresql.core.BaseConnection
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 class ReplicatorTest {
 
-    companion object {
-        private val injector = Guice.createInjector(DefaultInjector())!!
-        val cfgSvc = injector.getInstance(ConfigService::class.java)!!
-        val conSvc = injector.getInstance(ConnectionService::class.java)!!
-        val snapSvc = injector.getInstance(SnapshotService::class.java)!!
+    private val injector = Guice.createInjector(DefaultInjector())!!
+    private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
+    private val conSvc = injector.getInstance(ConnectionService::class.java)!!
+    private val snapSvc = injector.getInstance(SnapshotService::class.java)!!
 
-        @BeforeClass
-        @JvmStatic
-        @Throws(Exception::class)
-        fun setup() {
-            val dbName = cfgSvc.getAppDbName()
-            val url = cfgSvc.getJdbcDatabaseUrl()
-            DbService(url, conSvc).use {
-                if (it.list().contains(dbName)) it.drop(dbName)
-                it.create(dbName)
-                val flyway = Flyway()
-                flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
-                flyway.migrate()
-            }
+    @Before
+    @Throws(Exception::class)
+    fun setup() {
+        val dbName = cfgSvc.getAppDbName()
+        val url = cfgSvc.getJdbcDatabaseUrl()
+        DbService(url, conSvc).use {
+            if (it.list().contains(dbName)) it.drop(dbName)
+            it.create(dbName)
+            val flyway = Flyway()
+            flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
+            flyway.migrate()
         }
+    }
+
+    @After
+    fun tearDown() {
+        conSvc.reset()
     }
 
     @Test
@@ -47,7 +48,7 @@ class ReplicatorTest {
         val conString = cfgSvc.getAppDbUrl()
         var snap: Snapshot? = null
         conSvc.getConnection(conString).use {
-            snap = snapSvc.takeSnapshot(it)
+            snap = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
         }
         val actual = mutableListOf<String>()
         val spy = { lsn: Long, json: String ->
@@ -110,7 +111,6 @@ class ReplicatorTest {
         )
         val expectedJson = gson.toJson(expectedAr)
         Assert.assertEquals("Replicator should send notifications", expectedJson, actualJson)
-        conSvc.audit()
     }
 
 }

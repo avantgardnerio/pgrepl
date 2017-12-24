@@ -2,6 +2,7 @@ package net.squarelabs.pgrepl.services
 
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -10,6 +11,11 @@ class DbServiceTest {
     private val injector = Guice.createInjector(DefaultInjector())!!
     private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
     private val conSvc = injector.getInstance(ConnectionService::class.java)!!
+
+    @After
+    fun tearDown() {
+        conSvc.reset()
+    }
 
     @Test
     fun shouldCrud() {
