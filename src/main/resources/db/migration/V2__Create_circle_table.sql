@@ -1,8 +1,8 @@
 CREATE TABLE circles (
   id          CHARACTER VARYING NOT NULL PRIMARY KEY, -- TODO: UUID keys, multi-column keys
-  cx          INT,
-  cy          INT,
-  r           INT,
+  cx          INT               NOT NULL,
+  cy          INT               NOT NULL,
+  r           INT               NOT NULL,
   stroke      CHARACTER VARYING,
   strokeWidth CHARACTER VARYING,
   fill        CHARACTER VARYING,

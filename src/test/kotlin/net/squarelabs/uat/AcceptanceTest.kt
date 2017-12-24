@@ -3,6 +3,7 @@ package net.squarelabs.uat
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.App
 import net.squarelabs.pgrepl.DefaultInjector
+import net.squarelabs.pgrepl.model.Circle
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
@@ -18,6 +19,7 @@ import org.openqa.selenium.interactions.Actions
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
+import java.util.*
 
 class AcceptanceTest {
 
@@ -100,6 +102,15 @@ class AcceptanceTest {
         Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
                 leftCount.text, rghtCount.text
         )
+    }
+
+    @Test
+    fun `state of two clients should converge on update`() {
+        // Setup
+        val id = UUID.randomUUID().toString()
+        val curTxnId = UUID.randomUUID().toString()
+        val circle = Circle(id, 10, 10, 20, "red", "1px", "blue", curTxnId, null)
+        dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
     }
 
     fun browseAndWaitForConnect() {

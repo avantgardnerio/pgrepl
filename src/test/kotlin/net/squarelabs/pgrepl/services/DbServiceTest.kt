@@ -27,4 +27,5 @@ class DbServiceTest {
         dbSvc.create(name)
         assertEquals("should have test db after create", true, dbSvc.list().contains(name))
     }
+
 }
