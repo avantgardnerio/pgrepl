@@ -105,6 +105,7 @@ class AcceptanceTest {
         val rghtCircleCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
         val leftCount = leftCircleCount.text.toLong()
         val rghtCount = rghtCircleCount.text.toLong()
+        println("left=${leftCount} right=${rghtCount}")
         Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal", leftCount, rghtCount)
     }
 

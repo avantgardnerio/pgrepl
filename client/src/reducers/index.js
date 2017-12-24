@@ -17,7 +17,7 @@ const initialState = {
 export default (state = initialState, action) => {
     switch (action.type) {
         case 'COMMIT':
-            return handleLocalCommit(state, action);
+            return handleLocalCommit(state, action.txn);
         case 'SNAP':
             return handleSnapshot(state, action);
         case 'TXN':
@@ -54,13 +54,16 @@ const handleSnapshot = (state, action) => {
 const handleServerTxn = (state, action) => {
     // validate
     const payload = action.payload;
-    const newState = JSON.parse(JSON.stringify(state));
+    let newState = JSON.parse(JSON.stringify(state));
     if (payload.lsn < state.lsn || payload.xid < state.xid)
         throw new Error(`Received old txn from server: ${payload.lsn}`);
     if (payload.lsn === state.lsn || payload.xid === state.xid)
         throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
     if (payload.xid !== state.xid + 1)
         console.warn(`Skipping ${payload.xid - state.xid - 1} transactions :/`); // TODO: get initial xid?
+
+    // rollback
+    newState = rollbackLog(newState);
 
     // Apply
     newState.lsn = payload.lsn;
@@ -70,7 +73,47 @@ const handleServerTxn = (state, action) => {
     for (let change of changes) {
         handleChange(newState, change);
     }
+
+    // Remove duplicate transactions
+    newState.log = newState.log.filter(txn => txn.id !== payload.clientTxnId);
+
+    // Replay log
+    replayLog(newState);
+
     return newState;
+};
+
+const invert = (txn) => {
+    const newTxn = JSON.parse(JSON.stringify(txn));
+    for(let change of newTxn.changes) {
+        switch(change.type) {
+            case 'INSERT':
+                change.type = 'DELETE';
+                break;
+            default:
+                throw new Error(`Type not implemented: ${change.type}`)
+        }
+    }
+    return newTxn;
+};
+
+const replayLog = (state) => {
+    let newState = state;
+    for(let txn of state.log) {
+        newState = handleLocalCommit(newState, txn);
+    }
+    return newState;
+};
+
+const rollbackLog = (state) => {
+    const log = state.log.slice();
+    let txn = log.pop();
+    while(txn !== undefined) {
+        txn = invert(txn);
+        state = handleLocalCommit(state, txn);
+        txn = log.pop();
+    }
+    return state;
 };
 
 const handleChange = (state, change) => {
@@ -91,9 +134,8 @@ const handleChange = (state, change) => {
     }
 };
 
-const handleLocalCommit = (state, action) => {
+const handleLocalCommit = (state, txn) => {
     const newState = JSON.parse(JSON.stringify(state));
-    const txn = action.txn;
     for (let change of txn.changes) {
         applyChange(txn, newState, change);
     }
