@@ -10,15 +10,19 @@ import java.sql.Connection
 class ConnectionService @Inject constructor() {
 
     val pools = HashMap<String, HikariDataSource>()
+    val connections = HashMap<Connection, Exception>() // TODO: evict closed
 
     @Synchronized
     fun getConnection(url: String): Connection {
         val ds = pools.getOrPut(url, {
             val config = HikariConfig()
+            config.leakDetectionThreshold = 3
             config.jdbcUrl = url
             HikariDataSource(config)
         })
-        return ds.connection
+        val con = ds.connection
+        connections.put(con, Exception())
+        return con
     }
 
     @Synchronized
@@ -27,6 +31,14 @@ class ConnectionService @Inject constructor() {
             pool.close()
         }
         pools.clear()
+    }
+
+    @Synchronized
+    fun audit() {
+        for ((connection, ex) in connections) {
+            if (connection.isClosed) continue
+            ex.printStackTrace()
+        }
     }
 
 }

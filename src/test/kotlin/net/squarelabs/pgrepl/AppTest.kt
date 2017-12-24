@@ -22,6 +22,7 @@ class AppTest {
     private val conSvc = injector.getInstance(ConnectionService::class.java)!!
     private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
     private val snapSvc = injector.getInstance(SnapshotService::class.java)!!
+    private val dbSvc = injector.getInstance(DbService::class.java)!!
 
     @After
     fun tearDown() {
@@ -35,15 +36,13 @@ class AppTest {
         conSvc.getConnection(conString).use {
             val dbName = cfgSvc.getAppDbName()
             val url = cfgSvc.getJdbcDatabaseUrl()
-            DbService(url, conSvc).use {
-                if (it.list().contains(dbName)) it.drop(dbName)
-                it.create(dbName)
-                val flyway = Flyway()
-                flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
-                flyway.migrate()
-            }
+            if (dbSvc.list().contains(dbName)) dbSvc.drop(dbName)
+            dbSvc.create(dbName)
+            val flyway = Flyway()
+            flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
+            flyway.migrate()
         }
-        var expected : Snapshot? = null
+        var expected: Snapshot? = null
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use {
             val sql = "INSERT INTO person (id, name, curTxnId) VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');"
             it.prepareStatement(sql).use {

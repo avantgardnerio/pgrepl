@@ -5,12 +5,12 @@ import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.model.Snapshot
 import net.squarelabs.pgrepl.model.Transaction
-import net.squarelabs.pgrepl.services.ConfigService
-import net.squarelabs.pgrepl.services.ConnectionService
-import net.squarelabs.pgrepl.services.DbService
-import net.squarelabs.pgrepl.services.SnapshotService
+import net.squarelabs.pgrepl.services.*
 import org.flywaydb.core.Flyway
-import org.junit.*
+import org.junit.After
+import org.junit.Assert
+import org.junit.Before
+import org.junit.Test
 import org.postgresql.core.BaseConnection
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -21,19 +21,19 @@ class ReplicatorTest {
     private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
     private val conSvc = injector.getInstance(ConnectionService::class.java)!!
     private val snapSvc = injector.getInstance(SnapshotService::class.java)!!
+    private val dbSvc = injector.getInstance(DbService::class.java)!!
+    private val slotSvc = injector.getInstance(SlotService::class.java)!!
 
     @Before
     @Throws(Exception::class)
     fun setup() {
         val dbName = cfgSvc.getAppDbName()
         val url = cfgSvc.getJdbcDatabaseUrl()
-        DbService(url, conSvc).use {
-            if (it.list().contains(dbName)) it.drop(dbName)
-            it.create(dbName)
-            val flyway = Flyway()
-            flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
-            flyway.migrate()
-        }
+        if (dbSvc.list().contains(dbName)) dbSvc.drop(dbName)
+        dbSvc.create(dbName)
+        val flyway = Flyway()
+        flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
+        flyway.migrate()
     }
 
     @After
@@ -55,7 +55,7 @@ class ReplicatorTest {
             actual.add(json)
             Unit
         }
-        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, conSvc).use {
+        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, slotSvc, conSvc).use {
             it.addListener(spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->

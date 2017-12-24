@@ -19,7 +19,8 @@ class Replicator(
         val dbName: String,
         val clientId: UUID,
         val lsn: Long,
-        val cfgService: ConfigService,
+        val cfgSvc: ConfigService,
+        val slotSvc: SlotService,
         val conSvc: ConnectionService
 ) : AutoCloseable {
 
@@ -36,15 +37,13 @@ class Replicator(
         PGProperty.ASSUME_MIN_SERVER_VERSION.set(properties, "9.4")
         PGProperty.REPLICATION.set(properties, "database")
         PGProperty.PREFER_QUERY_MODE.set(properties, "simple")
-        val url = cfgService.getAppDbUrl() // TODO: Listen to dbName, not cfgService.AppDb
-        con = DriverManager.getConnection(url, properties) as BaseConnection
+        val url = cfgSvc.getAppDbUrl() // TODO: Listen to dbName, not cfgService.AppDb
+        con = DriverManager.getConnection(url, properties) as BaseConnection // TODO: Share connection, cache, don't flush
 
         // Create a slot
         val slotName = "slot_${clientId.toString().replace("-", "_")}"
-        SlotService(url, conSvc).use {
-            it.drop(slotName)
-            it.create(slotName, plugin)
-        }
+        slotSvc.drop(slotName)
+        slotSvc.create(url, slotName, plugin)
 
         // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
         stream = con
@@ -88,8 +87,6 @@ class Replicator(
     override fun close() {
         LOG.info("Closing Replicator ${clientId}")
         future.cancel(true)
-        executor.shutdown()
-        executor.awaitTermination(3, TimeUnit.SECONDS)
         executor.shutdownNow()
 
         try {

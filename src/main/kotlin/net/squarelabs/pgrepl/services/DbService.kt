@@ -1,63 +1,64 @@
 package net.squarelabs.pgrepl.services
 
-import java.sql.Connection
+import javax.inject.Inject
+import javax.inject.Singleton
 
-// TODO: Make real service
-class DbService(
-        private val conString: String,
-        val conSvc: ConnectionService
-) : AutoCloseable {
+@Singleton
+class DbService @Inject constructor(
+        val cfgSvc: ConfigService,
+        val conSvc: ConnectionService,
+        val slotSvc: SlotService
+) {
 
-    private val con: Connection = conSvc.getConnection(conString)
-
-    private val sqlName = "SELECT current_database();"
     private val sqlList = "SELECT datname FROM pg_database WHERE datistemplate = FALSE;"
     private val sqlSlots = "SELECT slot_name FROM pg_replication_slots WHERE database = ?;"
 
-    fun getSlots(name: String): List<String> {
-        con.prepareStatement(sqlSlots).use {
-            it.setString(1, name)
-            it.executeQuery().use {
-                val dbNames = mutableListOf<String>()
-                while (it.next()) {
-                    dbNames.add(it.getString(1))
+    fun getSlots(dbName: String): List<String> {
+        conSvc.getConnection(cfgSvc.getJdbcDatabaseUrl()).use { con ->
+            con.prepareStatement(sqlSlots).use {
+                it.setString(1, dbName)
+                it.executeQuery().use {
+                    val dbNames = mutableListOf<String>()
+                    while (it.next()) {
+                        dbNames.add(it.getString(1))
+                    }
+                    return dbNames
                 }
-                return dbNames
             }
         }
     }
 
     fun list(): List<String> {
-        con.prepareStatement(sqlList).use {
-            it.executeQuery().use {
-                val dbNames = mutableListOf<String>()
-                while (it.next()) {
-                    dbNames.add(it.getString(1))
+        conSvc.getConnection(cfgSvc.getJdbcDatabaseUrl()).use { con ->
+            con.prepareStatement(sqlList).use {
+                it.executeQuery().use {
+                    val dbNames = mutableListOf<String>()
+                    while (it.next()) {
+                        dbNames.add(it.getString(1))
+                    }
+                    return dbNames
                 }
-                return dbNames
             }
         }
     }
 
-    fun drop(name: String) {
-        SlotService(conString, conSvc).use {
-            getSlots(name).forEach { s -> it.drop(s) }
-        }
-        con.prepareStatement("drop database $name;").use {
-            // TODO: SQL injection
-            it.execute()
-        }
-    }
-
-    fun create(name: String) {
-        con.prepareStatement("create database $name;").use {
-            // TODO: SQL injection
-            it.execute()
+    fun drop(dbName: String) {
+        getSlots(dbName).forEach { s -> slotSvc.drop(s) }
+        conSvc.getConnection(cfgSvc.getJdbcDatabaseUrl()).use { con ->
+            con.prepareStatement("drop database $dbName;").use {
+                // TODO: SQL injection
+                it.execute()
+            }
         }
     }
 
-    override fun close() {
-        con.close()
+    fun create(dbName: String) {
+        conSvc.getConnection(cfgSvc.getJdbcDatabaseUrl()).use { con ->
+            con.prepareStatement("create database $dbName;").use {
+                // TODO: SQL injection
+                it.execute()
+            }
+        }
     }
 
 }

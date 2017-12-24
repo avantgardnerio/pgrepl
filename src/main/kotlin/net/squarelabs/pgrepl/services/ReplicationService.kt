@@ -8,8 +8,9 @@ import java.util.*
 
 @Singleton
 class ReplicationService @Inject constructor(
-        val configService: ConfigService,
-        val conSvc: ConnectionService
+        val cfgSvc: ConfigService,
+        val conSvc: ConnectionService,
+        val slotSvc: SlotService
 ) : AutoCloseable {
 
     val listeners = HashMap<String, Replicator>()
@@ -20,7 +21,7 @@ class ReplicationService @Inject constructor(
         // TODO: global audit for subscribe after close
         if (closed) throw Exception("Can't subscribe while closing!")
 
-        val repl = listeners.getOrPut(dbName, { Replicator(dbName, clientId, lsn, configService, conSvc) })
+        val repl = listeners.getOrPut(dbName, { Replicator(dbName, clientId, lsn, cfgSvc, slotSvc, conSvc) })
         repl.addListener(handler)
     }
 

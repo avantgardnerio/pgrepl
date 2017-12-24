@@ -29,6 +29,7 @@ class AcceptanceTest {
         private val injector = Guice.createInjector(DefaultInjector())!!
         private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
         private val conSvc = injector.getInstance(ConnectionService::class.java)!!
+        private val dbSvc = injector.getInstance(DbService::class.java)!!
         private val app = injector.getInstance(App::class.java)!!
 
         @BeforeClass
@@ -63,24 +64,19 @@ class AcceptanceTest {
     fun setup() {
         // Database
         val dbName = cfgSvc.getAppDbName()
-        val url = cfgSvc.getJdbcDatabaseUrl()
-        DbService(url, conSvc).use {
-            if (it.list().contains(dbName)) it.drop(dbName)
-            it.create(dbName)
-            val flyway = Flyway()
-            flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
-            flyway.migrate()
-        }
+        if (dbSvc.list().contains(dbName)) dbSvc.drop(dbName)
+        dbSvc.create(dbName)
+        val flyway = Flyway()
+        flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
+        flyway.migrate()
     }
 
     @After
     fun tearDown() {
+        conSvc.audit()
         conSvc.reset()
         val dbName = cfgSvc.getAppDbName()
-        val url = cfgSvc.getJdbcDatabaseUrl()
-        DbService(url, conSvc).use {
-            it.drop(dbName)
-        }
+        dbSvc.drop(dbName)
         conSvc.reset()
     }
 

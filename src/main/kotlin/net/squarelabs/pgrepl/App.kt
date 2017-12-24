@@ -21,10 +21,11 @@ import javax.websocket.server.ServerEndpointConfig
 
 @Singleton
 class App @Inject constructor(
-        val cfgService: ConfigService,
+        val cfgSvc: ConfigService,
         val socket: ReplicationSocketFactory,
         val conSvc: ConnectionService,
-        val replSvc: ReplicationService
+        val replSvc: ReplicationService,
+        val dbSvc: DbService
 ) : AutoCloseable {
 
     companion object {
@@ -36,13 +37,10 @@ class App @Inject constructor(
     @Throws(Exception::class)
     fun start() {
         // Database
-        val dbName = cfgService.getAppDbName()
-        val url = cfgService.getJdbcDatabaseUrl()
-        DbService(url, conSvc).use {
-            if (!it.list().contains(dbName)) it.create(dbName)
-        }
+        val dbName = cfgSvc.getAppDbName()
+        if (!dbSvc.list().contains(dbName)) dbSvc.create(dbName)
         val flyway = Flyway()
-        flyway.setDataSource(cfgService.getAppDbUrl(), null, null)
+        flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
         flyway.migrate()
 
         // Jetty

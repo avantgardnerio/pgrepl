@@ -11,6 +11,7 @@ class DbServiceTest {
     private val injector = Guice.createInjector(DefaultInjector())!!
     private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
     private val conSvc = injector.getInstance(ConnectionService::class.java)!!
+    private val dbSvc = injector.getInstance(DbService::class.java)!!
 
     @After
     fun tearDown() {
@@ -21,11 +22,9 @@ class DbServiceTest {
     fun shouldCrud() {
         val name = cfgSvc.getAppDbName()
         val conString = cfgSvc.getJdbcDatabaseUrl()
-        DbService(conString, conSvc).use {
-            if (it.list().contains(name)) it.drop(name)
-            assertEquals("should not have test db after drop", false, it.list().contains(name))
-            it.create(name)
-            assertEquals("should have test db after create", true, it.list().contains(name))
-        }
+        if (dbSvc.list().contains(name)) dbSvc.drop(name)
+        assertEquals("should not have test db after drop", false, dbSvc.list().contains(name))
+        dbSvc.create(name)
+        assertEquals("should have test db after create", true, dbSvc.list().contains(name))
     }
 }
