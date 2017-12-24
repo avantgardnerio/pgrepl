@@ -6,6 +6,7 @@ import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
+import org.apache.commons.lang3.StringUtils
 import org.eclipse.jetty.util.log.Log
 import org.junit.AfterClass
 import org.junit.Assert
@@ -19,7 +20,6 @@ import org.openqa.selenium.interactions.Actions
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
-
 
 class AcceptanceTest {
 
@@ -47,13 +47,13 @@ class AcceptanceTest {
 
             // Selenium
             val chromeOptions = ChromeOptions()
-            chromeOptions.addArguments("--headless") // TODO: override with env var for local testing
+            if(StringUtils.equalsIgnoreCase("true", System.getenv("headless"))) {
+                chromeOptions.addArguments("--headless")
+            }
             chromeOptions.addArguments("--disable-gpu")
             val dc = DesiredCapabilities()
             dc.isJavascriptEnabled = true
-            dc.setCapability(
-                    ChromeOptions.CAPABILITY, chromeOptions
-            )
+            dc.setCapability(ChromeOptions.CAPABILITY, chromeOptions)
             driver = ChromeDriver(dc)
 
             // Guice
@@ -75,38 +75,30 @@ class AcceptanceTest {
     }
 
     @Test
-    fun twoClientsShouldConvergeOnSameState() {
-        // Browse
-        val baseUrl = "http://127.0.0.1:8080/"
-        driver.get(baseUrl)
+    fun `state of two clients should converge on insert`() {
+
+        // Setup
+        browseAndWaitForConnect()
         val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
-        Assert.assertNotNull("given I am on the home page, then I see a canvas", svg)
-
-        // Wait for initial sync
         val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
-        WebDriverWait(driver, 20).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        val rghtLsnField = driver.findElement(By.cssSelector("#rightRoot .lsn"))
         val originalLsnText = leftLsnField.text
-        val originalLsn = originalLsnText.toLong()
 
-        // Click and wait for left client to update
+        // Exercise
         Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
         WebDriverWait(driver, 20).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
-        val newLsnText = leftLsnField.text
-        val newLsn = newLsnText.toLong()
-        val diff = newLsn - originalLsn
-        Assert.assertTrue("given an initial LSN, when the canvas is clicked, then the LSN increases monotonically", diff > 0)
-
-        // Wait for update to reach right client, and when it does, ensure states are identical
-        val rghtLsnField = driver.findElement(By.cssSelector("#rightRoot .lsn"))
-        WebDriverWait(driver, 20).until(textToBePresentInElement(rghtLsnField, newLsnText))
+        WebDriverWait(driver, 20).until(textToBePresentInElement(rghtLsnField, leftLsnField.text))
 
         // Assert state convergence
-        val leftCircleCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
-        val rghtCircleCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
-        val leftCount = leftCircleCount.text.toLong()
-        val rghtCount = rghtCircleCount.text.toLong()
-        println("left=${leftCount} right=${rghtCount}")
-        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal", leftCount, rghtCount)
+        val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal", leftCount.text, rghtCount.text)
+    }
+
+    fun browseAndWaitForConnect() {
+        val baseUrl = "http://127.0.0.1:8080/"
+        driver.get(baseUrl)
+        WebDriverWait(driver, 20).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
     }
 
 }

@@ -1,6 +1,8 @@
 dist: trusty
 language: java
 sudo: true
+env:
+  - headless=true
 jdk:
   - openjdk8
 services:
