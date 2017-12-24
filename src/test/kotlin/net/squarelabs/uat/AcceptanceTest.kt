@@ -16,6 +16,8 @@ import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.interactions.Actions
+import org.openqa.selenium.interactions.HasInputDevices
+import org.openqa.selenium.internal.Locatable
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
@@ -112,6 +114,9 @@ class AcceptanceTest {
         val curTxnId = UUID.randomUUID().toString()
         val circle = Circle(id, 10, 10, 20, "red", "1px", "blue", curTxnId, null)
         dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
+
+        val circleEl = driver.findElement(By.id(id))
+        (driver as HasInputDevices).mouse.mouseDown((circleEl as Locatable).coordinates)
     }
 
     fun browseAndWaitForConnect() {
