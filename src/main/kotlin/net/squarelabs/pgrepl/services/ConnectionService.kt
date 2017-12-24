@@ -16,7 +16,9 @@ class ConnectionService @Inject constructor() {
     fun getConnection(url: String): Connection {
         val ds = pools.getOrPut(url, {
             val config = HikariConfig()
-            config.leakDetectionThreshold = 3
+            config.idleTimeout = 15000
+            config.maxLifetime = 30000
+            config.leakDetectionThreshold = 30000
             config.jdbcUrl = url
             HikariDataSource(config)
         })
