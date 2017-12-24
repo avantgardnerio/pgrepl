@@ -105,6 +105,7 @@ class AcceptanceTest {
     }
 
     @Test
+    @Ignore
     fun `state of two clients should converge on update`() {
         // Setup
         val id = UUID.randomUUID().toString()
