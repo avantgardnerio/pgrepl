@@ -132,8 +132,12 @@ class AcceptanceTest {
         mouse.mouseUp(svg.coordinates)
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
 
-        // Assert
-
+        // Assert state convergence
+        val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
+                leftCount.text, rghtCount.text
+        )
     }
 
     fun browseAndWaitForConnect() {
