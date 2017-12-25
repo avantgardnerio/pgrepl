@@ -1,6 +1,7 @@
 package net.squarelabs.uat
 
 import com.google.inject.Guice
+import com.google.inject.Injector
 import net.squarelabs.pgrepl.App
 import net.squarelabs.pgrepl.DefaultInjector
 import net.squarelabs.pgrepl.model.Circle
@@ -25,16 +26,16 @@ import java.util.*
 
 class AcceptanceTest {
 
+    lateinit var injector: Injector
+    lateinit var cfgSvc: ConfigService
+    lateinit var conSvc: ConnectionService
+    lateinit var dbSvc: DbService
+    lateinit var app: App
+
     companion object {
 
         private val LOG = Log.getLogger(AcceptanceTest::class.java)
         lateinit var driver: WebDriver
-
-        private val injector = Guice.createInjector(DefaultInjector())!!
-        private val cfgSvc = injector.getInstance(ConfigService::class.java)!!
-        private val conSvc = injector.getInstance(ConnectionService::class.java)!!
-        private val dbSvc = injector.getInstance(DbService::class.java)!!
-        private val app = injector.getInstance(App::class.java)!!
 
         @BeforeClass
         @JvmStatic
@@ -52,31 +53,37 @@ class AcceptanceTest {
             driver = ChromeDriver(dc)
 
             // Guice
-            app.start()
         }
 
         @AfterClass
         @JvmStatic
         fun close() {
             LOG.info("Shutting down AcceptanceTest...")
-            app.close()
             driver.close()
         }
     }
 
     @Before
     fun setup() {
-        // Database
+        injector = Guice.createInjector(DefaultInjector())!!
+        cfgSvc = injector.getInstance(ConfigService::class.java)!!
+        conSvc = injector.getInstance(ConnectionService::class.java)!!
+        dbSvc = injector.getInstance(DbService::class.java)!!
+        app = injector.getInstance(App::class.java)!!
+
         val dbName = cfgSvc.getAppDbName()
         if (dbSvc.list().contains(dbName)) dbSvc.drop(dbName)
         dbSvc.create(dbName)
         val flyway = Flyway()
         flyway.setDataSource(cfgSvc.getAppDbUrl(), null, null)
         flyway.migrate()
+
+        app.start()
     }
 
     @After
     fun tearDown() {
+        app.close()
         conSvc.audit()
         conSvc.reset()
         val dbName = cfgSvc.getAppDbName()
@@ -126,7 +133,7 @@ class AcceptanceTest {
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
 
         // Assert
-        
+
     }
 
     fun browseAndWaitForConnect() {
