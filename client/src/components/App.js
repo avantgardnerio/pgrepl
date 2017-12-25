@@ -52,7 +52,7 @@ export default class App extends Component {
     };
 
     onKeyPress = (e) => {
-        if(e.key === 'Delete' && this.state.selectedId ) {
+        if(e.key === 'd' && this.state.selectedId ) {
             const change = deleteRow("circles", this.selectedCircle);
             const txn = createTxn([change]);
             this.props.commit(txn);

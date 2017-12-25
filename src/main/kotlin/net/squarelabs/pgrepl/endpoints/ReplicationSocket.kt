@@ -50,6 +50,9 @@ class ReplicationSocket @Inject constructor(
     fun onTxn(lsn: Long, json: String) {
         val mapper = Gson()
         val txn: Transaction = mapper.fromJson(json, Transaction::class.java)
+        if(txn.change.size <= 0) {
+            return // Not sure why this happens
+        }
 
         // TODO: cache!
         val url = cfgSvc.getAppDbUrl()
@@ -58,7 +61,7 @@ class ReplicationSocket @Inject constructor(
                 stmt.setLong(1, txn.xid)
                 stmt.executeQuery().use { rs ->
                     if (!rs.next()) {
-                        // TODO: This happens sometimes, like the WAL notification comes in before the transaction is written to the DB
+                        // TODO: Does this still happen, now that we excluded zero size changes above?
                         throw Exception("Error reading client_txn_id: ${txn.xid}!")
                     }
                     val txnId = rs.getString(1)
@@ -117,6 +120,7 @@ class ReplicationSocket @Inject constructor(
                 when (change.type) {
                     "INSERT" -> handleInsert(change, msg, con)
                     "UPDATE" -> handleUpdate(change, con, snap)
+                    "DELETE" -> handleDelete(change, con, snap)
                     else -> throw Exception("Unknown change type: ${change.type}")
                 }
             })
@@ -127,6 +131,24 @@ class ReplicationSocket @Inject constructor(
                 if (res != 1) throw Exception("Unable update txn map!")
             }
             con.commit()
+        }
+    }
+
+    private fun handleDelete(change: ClientChange, con: BaseConnection, snap: Snapshot) {
+        val table = snap.tables.find { t -> t.name == change.table }!!
+        val pkCols = table.columns
+                .filter { col -> col.pkOrdinal != null }
+                .sortedBy { col -> col.pkOrdinal }
+        val whereClause = pkCols
+                .map { col -> col.name + "=?" }
+                .joinToString(" and ") + " and curtxnid=?"
+        val row = change.record
+        val sql = "delete from ${table.name} where $whereClause"
+        con.prepareStatement(sql).use { stmt ->
+            pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + 1, row[col.name]) })
+            stmt.setObject(pkCols.size + 1, row["prvtxnid"])
+            val res = stmt.executeUpdate()
+            if (res != 1) throw Exception("Unable to play txn on server!")
         }
     }
 

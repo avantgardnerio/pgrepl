@@ -95,6 +95,9 @@ const invert = (txn) => {
                 change.record = change.prior;
                 change.prior = post;
                 break;
+            case 'DELETE':
+                change.type = 'INSERT';
+                break;
             default:
                 throw new Error(`Type not implemented: ${change.type}`)
         }
@@ -133,9 +136,20 @@ const handleChange = (state, change) => {
         case 'update':
             handleUpdate(table, change);
             break;
+        case 'delete':
+            handleDelete(table, change);
+            break;
         default:
             throw new Error(`Unknown type: ${change.type}`);
     }
+};
+
+const handleDelete = (table, change) => {
+    const names = change.oldkeys.keynames;
+    const values = change.oldkeys.keyvalues;
+    const row = names
+        .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
+    removeRow(row, table);
 };
 
 const handleUpdate = (table, change) => {

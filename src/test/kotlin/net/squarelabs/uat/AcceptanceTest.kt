@@ -13,6 +13,7 @@ import org.eclipse.jetty.util.log.Log
 import org.flywaydb.core.Flyway
 import org.junit.*
 import org.openqa.selenium.By
+import org.openqa.selenium.Keys
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
@@ -23,6 +24,7 @@ import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class AcceptanceTest {
 
@@ -130,6 +132,35 @@ class AcceptanceTest {
         // Exercise
         mouse.mouseDown(circleEl.coordinates)
         mouse.mouseUp(svg.coordinates)
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
+
+        // Assert state convergence
+        val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
+                leftCount.text, rghtCount.text
+        )
+    }
+
+    @Test
+    fun `state of two clients should converge on delete`() {
+        // Setup
+        val id = UUID.randomUUID().toString()
+        val curtxnid = UUID.randomUUID().toString()
+        val circle = Circle(id, 10, 10, 20, "blue", "1px", "red", curtxnid, null)
+        dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
+        browseAndWaitForConnect()
+        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
+        val circleEl = driver.findElement(By.id(id)) as Locatable
+        val mouse = (driver as HasInputDevices).mouse
+        val keyboard = (driver as HasInputDevices).keyboard
+        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
+        val originalLsnText = leftLsnField.text
+        mouse.mouseDown(circleEl.coordinates)
+        mouse.mouseUp(circleEl.coordinates)
+
+        // Exercise
+        svg.sendKeys("d")
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
 
         // Assert state convergence
