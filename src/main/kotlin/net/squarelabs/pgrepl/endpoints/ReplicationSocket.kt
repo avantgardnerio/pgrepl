@@ -113,10 +113,10 @@ class ReplicationSocket @Inject constructor(
                         }
                     })
                 }
-                else -> throw Exception("Unknown message: ${msg::class}") // TODO: Error handling
+                else -> throw Exception("Unknown message: ${msg::class}") 
             }
         } catch (ex: Exception) {
-            LOG.warn("Error handling message!", ex)
+            LOG.warn("Error handling message!", ex) // TODO: Close the socket with error status
         }
     }
 
