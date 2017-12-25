@@ -110,17 +110,20 @@ class AcceptanceTest {
     fun `state of two clients should converge on update`() {
         // Setup
         val id = UUID.randomUUID().toString()
-        val curTxnId = UUID.randomUUID().toString()
-        val circle = Circle(id, 10, 10, 20, "red", "1px", "blue", curTxnId, null)
+        val curtxnid = UUID.randomUUID().toString()
+        val circle = Circle(id, 10, 10, 20, "red", "1px", "blue", curtxnid, null)
         dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
         browseAndWaitForConnect()
         val svg = driver.findElement(By.cssSelector("#leftRoot svg")) as Locatable
         val circleEl = driver.findElement(By.id(id)) as Locatable
         val mouse = (driver as HasInputDevices).mouse
+        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
+        val originalLsnText = leftLsnField.text
 
         // Exercise
         mouse.mouseDown(circleEl.coordinates)
         mouse.mouseUp(svg.coordinates)
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
 
         // Assert
         

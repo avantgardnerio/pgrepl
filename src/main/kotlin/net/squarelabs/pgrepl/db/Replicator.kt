@@ -8,6 +8,7 @@ import org.postgresql.PGProperty
 import org.postgresql.core.BaseConnection
 import org.postgresql.replication.LogSequenceNumber
 import org.postgresql.replication.PGReplicationStream
+import org.postgresql.util.PSQLException
 import java.nio.ByteBuffer
 import java.sql.DriverManager
 import java.util.*
@@ -77,6 +78,11 @@ class Replicator(
                 stream.setFlushedLSN(lsn) // TODO: never flush?
                 buffer = stream.readPending()
             }
+        } catch (ex: PSQLException) {
+            if("Database connection failed when reading from copy" != ex.message) {
+                LOG.warn("Error reading from database for client $clientId", ex)
+                close()
+            }
         } catch (ex: Exception) {
             LOG.warn("Error reading from database for client $clientId", ex)
             close()
@@ -94,17 +100,22 @@ class Replicator(
     }
 
     override fun close() {
-        LOG.info("Closing Replicator ${clientId}")
+        LOG.info("Closing Replicator $clientId")
         future.cancel(true)
         executor.shutdownNow()
 
         try {
-            stream.close()
+            if (!stream.isClosed) stream.close()
+        } catch (ex: PSQLException) {
+            // Postgres always seems to throw this error
+            if("Database connection failed when ending copy" != ex.message) {
+                LOG.warn("Error closing stream!", ex)
+            }
         } catch (ex: Exception) {
             LOG.warn("Error closing stream!", ex)
         }
         try {
-            con.close()
+            if(!con.isClosed) con.close()
         } catch (ex: Exception) {
             LOG.warn("Error closing connection!", ex)
         }

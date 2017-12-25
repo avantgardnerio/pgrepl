@@ -85,10 +85,15 @@ const handleServerTxn = (state, action) => {
 
 const invert = (txn) => {
     const newTxn = JSON.parse(JSON.stringify(txn));
-    for(let change of newTxn.changes) {
-        switch(change.type) {
+    for (let change of newTxn.changes) {
+        switch (change.type) {
             case 'INSERT':
                 change.type = 'DELETE';
+                break;
+            case 'UPDATE':
+                const post = change.record;
+                change.record = change.prior;
+                change.prior = post;
                 break;
             default:
                 throw new Error(`Type not implemented: ${change.type}`)
@@ -99,7 +104,7 @@ const invert = (txn) => {
 
 const replayLog = (state) => {
     let newState = state;
-    for(let txn of state.log) {
+    for (let txn of state.log) {
         newState = handleLocalCommit(newState, txn);
     }
     return newState;
@@ -108,7 +113,7 @@ const replayLog = (state) => {
 const rollbackLog = (state) => {
     const log = state.log.slice();
     let txn = log.pop();
-    while(txn !== undefined) {
+    while (txn !== undefined) {
         txn = invert(txn);
         state = handleLocalCommit(state, txn);
         txn = log.pop();
@@ -123,15 +128,30 @@ const handleChange = (state, change) => {
     state.tables[change.table] = table;
     switch (change.kind) {
         case 'insert':
-            const names = change.columnnames;
-            const values = change.columnvalues;
-            const row = names
-                .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
-            table.rows.push(row);
+            handleInsert(table, change);
+            break;
+        case 'update':
+            handleUpdate(table, change);
             break;
         default:
             throw new Error(`Unknown type: ${change.type}`);
     }
+};
+
+const handleUpdate = (table, change) => {
+    const names = change.columnnames;
+    const values = change.columnvalues;
+    const row = names
+        .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
+    updateRow(row, table);
+};
+
+const handleInsert = (table, change) => {
+    const names = change.columnnames;
+    const values = change.columnvalues;
+    const row = names
+        .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
+    table.rows.push(row);
 };
 
 const handleLocalCommit = (state, txn) => {

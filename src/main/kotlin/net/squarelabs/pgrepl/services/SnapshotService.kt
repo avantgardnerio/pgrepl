@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
 
 class SnapshotService {
 
-    fun takeSnapshot(con: BaseConnection): Snapshot {
+    fun takeSnapshot(con: BaseConnection, includeRows: Boolean = true): Snapshot {
         val getSchema = this.javaClass.getResource("/queries/getSchema.sql").readText()
         val schema: List<SchemaRow> = query(getSchema, SchemaRow::class, con)
         val tableNames = schema
@@ -23,7 +23,7 @@ class SnapshotService {
                             .sortedBy { it.ordinalPosition }
                             .map { Column(it.columnName, it.dataType, it.pkOrdinal) }
                     val colNames = columns.map { it.name }
-                    val rows = selectAll(tableName, colNames, con)
+                    val rows = if(includeRows) selectAll(tableName, colNames, con) else ArrayList()
                     Table(tableName, columns, rows)
                 }
         val lsn = getCurrentLSN(con)
@@ -70,10 +70,10 @@ class SnapshotService {
         val constructor = clazz.constructors.first()
         val params = constructor.parameters
         val rows = ArrayList<T>()
-        con.prepareStatement(query).use {
-            it.executeQuery().use {
-                while (it.next()) {
-                    val args = params.map { param -> it.getObject(param.name) }
+        con.prepareStatement(query).use { stmt ->
+            stmt.executeQuery().use { rs ->
+                while (rs.next()) {
+                    val args = params.map { param -> rs.getObject(param.name) }
                     val inst: T = constructor.call(*args.toTypedArray()) as T
                     rows.add(inst)
                 }

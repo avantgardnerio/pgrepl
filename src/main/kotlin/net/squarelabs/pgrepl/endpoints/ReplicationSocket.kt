@@ -5,6 +5,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import net.squarelabs.pgrepl.messages.*
 import net.squarelabs.pgrepl.model.ClientChange
+import net.squarelabs.pgrepl.model.Snapshot
 import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
@@ -12,6 +13,7 @@ import net.squarelabs.pgrepl.services.ReplicationService
 import net.squarelabs.pgrepl.services.SnapshotService
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.core.BaseConnection
+import java.sql.Connection
 import java.util.*
 import javax.websocket.*
 
@@ -22,6 +24,10 @@ class ReplicationSocket @Inject constructor(
         val snapSvc: SnapshotService,
         val conSvc: ConnectionService
 ) : Endpoint(), MessageHandler.Whole<String> {
+
+    companion object {
+        private val LOG = Log.getLogger(ReplicationSocket::class.java)
+    }
 
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
@@ -76,7 +82,7 @@ class ReplicationSocket @Inject constructor(
             when (msg) {
                 is HelloMsg -> handleHello(msg, mapper)
                 is CommitMsg -> handleMsg(msg)
-                else -> throw Exception("Unknown message: ${msg::class}") 
+                else -> throw Exception("Unknown message: ${msg::class}")
             }
         } catch (ex: Exception) {
             LOG.warn("Error handling message!", ex)
@@ -96,37 +102,65 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    private fun handleMsg(msg: CommitMsg) {
-        msg.txn.changes.forEach({ change ->
-            when (change.type) {
-                "INSERT" -> handleInsert(change, msg)
-                else -> throw Exception("Unknown change type: ${change.type}")
-            }
-        })
+    fun snapshot(): Snapshot {
+        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
+            val snap = snapSvc.takeSnapshot(con, false)
+            return snap
+        }
     }
 
-    private fun handleInsert(change: ClientChange, msg: CommitMsg) {
-        val row = change.record
-        val url = cfgSvc.getAppDbUrl()
-        conSvc.getConnection(url).use { con ->
+    private fun handleMsg(msg: CommitMsg) {
+        val snap = snapshot()
+        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             con.autoCommit = false
-            val colNames = row.keys.joinToString(",")
-            val values = row.values.map { "?" }.joinToString(",")
-            val sql = "insert into ${change.table} ($colNames) values ($values)"
-            con.prepareStatement(sql).use {
-                row.values.forEachIndexed({ i, v -> it.setObject(i + 1, v) })
-                val res = it.executeUpdate()
-                // TODO: use txnId and prevTxnId for optimistic concurrency
-                // TODO: refactor into service
-                if (res != 1) throw Exception("Unable to play txn on server!")
-            }
-            con.prepareStatement(txnMapSql).use {
-                it.setString(1, msg.txn.id)
-                val res = it.executeUpdate()
+            msg.txn.changes.forEach({ change ->
+                when (change.type) {
+                    "INSERT" -> handleInsert(change, msg, con)
+                    "UPDATE" -> handleUpdate(change, con, snap)
+                    else -> throw Exception("Unknown change type: ${change.type}")
+                }
+            })
+            // TODO: Handle transaction failures
+            con.prepareStatement(txnMapSql).use { stmt ->
+                stmt.setString(1, msg.txn.id)
+                val res = stmt.executeUpdate()
                 if (res != 1) throw Exception("Unable update txn map!")
             }
-            // TODO: Handle transaction failures
             con.commit()
+        }
+    }
+
+    private fun handleUpdate(change: ClientChange, con: BaseConnection, snap: Snapshot) {
+        val table = snap.tables.find { t -> t.name == change.table }!!
+        val pkCols = table.columns
+                .filter { col -> col.pkOrdinal != null }
+                .sortedBy { col -> col.pkOrdinal }
+        val whereClause = pkCols
+                .map { col -> col.name + "=?" }
+                .joinToString(" and ") + " and curtxnid=?"
+        val row = change.record
+        val updateClause = row.keys
+                .map { colName -> colName + "=?" }
+                .joinToString(",")
+        val sql = "update ${table.name} set $updateClause where $whereClause"
+        con.prepareStatement(sql).use { stmt ->
+            row.values.forEachIndexed({ idx, value -> stmt.setObject(idx + 1, value) })
+            pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + row.values.size + 1, row[col.name]) })
+            stmt.setObject(row.values.size + pkCols.size + 1, row["prvtxnid"])
+            val res = stmt.executeUpdate()
+            if (res != 1) throw Exception("Unable to play txn on server!")
+        }
+    }
+
+    private fun handleInsert(change: ClientChange, msg: CommitMsg, con: Connection) {
+        val row = change.record
+        val colNames = row.keys.joinToString(",")
+        val values = row.values.map { "?" }.joinToString(",")
+        val sql = "insert into ${change.table} ($colNames) values ($values)"
+        con.prepareStatement(sql).use { stmt ->
+            row.values.forEachIndexed({ i, v -> stmt.setObject(i + 1, v) })
+            val res = stmt.executeUpdate()
+            if (res != 1) throw Exception("Unable to play txn on server!")
         }
     }
 
@@ -144,7 +178,4 @@ class ReplicationSocket @Inject constructor(
         // TODO: Unsubscribe from replSvc
     }
 
-    companion object {
-        private val LOG = Log.getLogger(ReplicationSocket::class.java)
-    }
 }
