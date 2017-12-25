@@ -56,7 +56,7 @@ class ReplicatorTest {
             Unit
         }
         Replicator(dbName, clientId, snap!!.lsn, cfgSvc, slotSvc, conSvc).use {
-            it.addListener(spy)
+            it.addListener(clientId, spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->
                     // test interleave

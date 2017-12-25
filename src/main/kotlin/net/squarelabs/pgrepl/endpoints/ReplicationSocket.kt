@@ -39,20 +39,22 @@ class ReplicationSocket @Inject constructor(
         } catch (ex: Exception) {
             LOG.warn("Error opening websocket!", ex) // TODO: Error handling
         }
-
     }
 
     fun onTxn(lsn: Long, json: String) {
         val mapper = Gson()
         val txn: Transaction = mapper.fromJson(json, Transaction::class.java)
 
-        // TODO: connection pool and cache!
+        // TODO: cache!
         val url = cfgSvc.getAppDbUrl()
         conSvc.getConnection(url).use { con ->
             con.prepareStatement(getTxnSql).use { stmt ->
                 stmt.setLong(1, txn.xid)
                 stmt.executeQuery().use { rs ->
-                    if (!rs.next()) throw Exception("Error reading client_txn_id!")
+                    if (!rs.next()) {
+                        // TODO: This happens sometimes, like the WAL notification comes in before the transaction is written to the DB
+                        throw Exception("Error reading client_txn_id: ${txn.xid}!")
+                    }
                     val txnId = rs.getString(1)
                     val msg = TxnMsg(txn.copy(lsn = lsn, clientTxnId = txnId))
                     remote!!.sendText(mapper.toJson(msg))
@@ -77,7 +79,9 @@ class ReplicationSocket @Inject constructor(
                 else -> throw Exception("Unknown message: ${msg::class}") 
             }
         } catch (ex: Exception) {
-            LOG.warn("Error handling message!", ex) // TODO: Close the socket with error status
+            LOG.warn("Error handling message!", ex)
+            replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
+            session!!.close()
         }
     }
 

@@ -14,6 +14,7 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashMap
 
 class Replicator(
         val dbName: String,
@@ -26,7 +27,7 @@ class Replicator(
 
     private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
-    val listeners = ArrayList<(Long, String) -> Unit>()
+    val listeners = HashMap<UUID, (Long, String) -> Unit>()
     val con: BaseConnection
     val stream: PGReplicationStream
     val future: Future<*>
@@ -69,19 +70,27 @@ class Replicator(
             while (buffer != null) {
                 val lsn = stream.lastReceiveLSN
                 val str = toString(buffer)
-                listeners.forEach({ l -> l(lsn.asLong(), str) })
+                synchronized(this, {
+                    listeners.values.forEach({ l -> l(lsn.asLong(), str) })
+                })
                 stream.setAppliedLSN(lsn)
                 stream.setFlushedLSN(lsn) // TODO: never flush?
                 buffer = stream.readPending()
             }
         } catch (ex: Exception) {
-            LOG.warn("Error reading from database for client ${clientId}", ex)
+            LOG.warn("Error reading from database for client $clientId", ex)
             close()
         }
     }
 
-    fun addListener(listener: (Long, String) -> Unit) {
-        listeners.add { lng, str -> listener(lng, str) }
+    @Synchronized
+    fun addListener(clientId: UUID, listener: (Long, String) -> Unit) {
+        listeners.put(clientId, listener)
+    }
+
+    @Synchronized
+    fun removeListener(clientId: UUID) {
+        listeners.remove(clientId)
     }
 
     override fun close() {
