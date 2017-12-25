@@ -105,7 +105,7 @@ class AcceptanceTest {
 
         // Exercise
         Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
-        WebDriverWait(driver, 3).until(textToBePresentInElement(rghtLsnField, originalLsnText))
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
 
         // Assert state convergence
         val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
@@ -153,7 +153,6 @@ class AcceptanceTest {
         val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
         val circleEl = driver.findElement(By.id(id)) as Locatable
         val mouse = (driver as HasInputDevices).mouse
-        val keyboard = (driver as HasInputDevices).keyboard
         val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
         val originalLsnText = leftLsnField.text
         mouse.mouseDown(circleEl.coordinates)
