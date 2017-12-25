@@ -109,7 +109,7 @@ class ReplicationSocket @Inject constructor(
                                     con.commit()
                                 }
                             }
-                            else -> throw Exception("Unknown change type${it.type}")
+                            else -> throw Exception("Unknown change type: ${it.type}")
                         }
                     })
                 }
