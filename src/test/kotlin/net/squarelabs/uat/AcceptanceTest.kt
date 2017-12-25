@@ -113,13 +113,17 @@ class AcceptanceTest {
         val curTxnId = UUID.randomUUID().toString()
         val circle = Circle(id, 10, 10, 20, "red", "1px", "blue", curTxnId, null)
         dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
-
         browseAndWaitForConnect()
-        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
-        val circleEl = driver.findElement(By.id(id))
-        (driver as HasInputDevices).mouse.mouseDown((circleEl as Locatable).coordinates)
-        (driver as HasInputDevices).mouse.mouseMove((circleEl as Locatable).coordinates, 20, 20)
-        (driver as HasInputDevices).mouse.mouseUp((svg as Locatable).coordinates)
+        val svg = driver.findElement(By.cssSelector("#leftRoot svg")) as Locatable
+        val circleEl = driver.findElement(By.id(id)) as Locatable
+        val mouse = (driver as HasInputDevices).mouse
+
+        // Exercise
+        mouse.mouseDown(circleEl.coordinates)
+        mouse.mouseUp(svg.coordinates)
+
+        // Assert
+        
     }
 
     fun browseAndWaitForConnect() {
