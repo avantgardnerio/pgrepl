@@ -8,7 +8,8 @@ RUN apt-get install -y \
     git \
     postgresql-9.5 \
     postgresql-server-dev-9.5 \
-    curl
+    curl \
+    sudo
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
     apt-get install -y nodejs
 RUN git clone https://github.com/eulerto/wal2json.git && \
@@ -23,8 +24,9 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
     echo "local replication postgres peer" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
     echo "host replication postgres 127.0.0.1/32 md5" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
     echo "host replication postgres ::1/128 md5" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
-    service postgresql restart
+    service postgresql restart && \
+    sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
 RUN git clone https://github.com/bgard6977/pgrepl.git && \
     cd pgrepl && \
     ./gradlew fatJar -x test
-ENTRYPOINT java -jar ./pgrepl/build/libs/pgrepl-all.jar
+ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-all.jar
