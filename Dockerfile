@@ -11,8 +11,6 @@ RUN apt-get install -y \
     curl
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
     apt-get install -y nodejs
-ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
-ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
 RUN git clone https://github.com/eulerto/wal2json.git && \
     cd wal2json && \
     USE_PGXS=1 make && \
@@ -29,4 +27,4 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
 RUN git clone https://github.com/bgard6977/pgrepl.git && \
     cd pgrepl && \
     ./gradlew fatJar -x test
-ENTRYPOINT java -jar ./build/libs/pgrepl-all.jar
+ENTRYPOINT java -jar ./pgrepl/build/libs/pgrepl-all.jar
