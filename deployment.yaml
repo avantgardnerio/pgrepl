@@ -1,0 +1,19 @@
+apiVersion: apps/v1beta1 # for versions before 1.8.0 use apps/v1beta1
+kind: Deployment
+metadata:
+  name: pgrepl-deployment
+spec:
+  selector:
+    matchLabels:
+      app: pgrepl
+  replicas: 1 # tells deployment to run 2 pods matching the template
+  template: # create pods using pod definition in this template
+    metadata:
+      labels:
+        app: pgrepl
+    spec:
+      containers:
+      - name: pgrepl
+        image: bgard6977/pgrepl
+        ports:
+        - containerPort: 8080
