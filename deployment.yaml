@@ -6,6 +6,7 @@ metadata:
     app: pgrepl
     tier: frontend
 spec:
+  type: LoadBalancer
   ports:
   - port: 80
     targetPort: 8080
@@ -13,12 +14,11 @@ spec:
     app: pgrepl
     tier: frontend
 ---
-apiVersion: v1beta1
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: pgrepl-deployment
 spec:
-  type: LoadBalancer
   replicas: 1
   template:
     metadata:
