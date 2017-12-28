@@ -29,4 +29,5 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
 RUN git clone https://github.com/bgard6977/pgrepl.git && \
     cd pgrepl && \
     ./gradlew fatJar -x test
+EXPOSE 8080
 ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-all.jar
