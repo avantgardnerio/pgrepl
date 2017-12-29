@@ -21,3 +21,17 @@ export const disconnect = () => {
         type: 'DISCONNECT'
     }
 };
+
+export const snapshotRequest = () => {
+    return {
+        type: 'SNAPSHOT_REQUEST'
+    }
+};
+
+export const subscribeRequest = (clientId, lsn) => {
+    return {
+        type: 'SUBSCRIBE_REQUEST',
+        clientId,
+        lsn
+    }
+};
