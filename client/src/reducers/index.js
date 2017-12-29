@@ -14,19 +14,27 @@ const initialState = {
     xid: 0
 };
 
-export default (state = initialState, action) => {
-    switch (action.type) {
-        case 'COMMIT':
-            return handleLocalCommit(state, action.txn);
-        case 'SNAP':
-            return handleSnapshot(state, action);
-        case 'TXN':
-            return handleServerTxn(state, action);
-        default:
-            console.log(`unknown action: ${action.type}`);
-            return state;
-    }
-}
+const createReducer = (metadata) => {
+    initialState.lsn = metadata.lsn;
+    initialState.xid = metadata.xid;
+    console.log('Creating reducer with initial lsn=', initialState.lsn);
+    const reducer = (state = initialState, action) => {
+        switch (action.type) {
+            case 'COMMIT':
+                return handleLocalCommit(state, action.txn);
+            case 'SNAP':
+                return handleSnapshot(state, action);
+            case 'TXN':
+                return handleServerTxn(state, action);
+            default:
+                console.log(`unknown action: ${action.type}`);
+                return state;
+        }
+    };
+    return reducer;
+};
+
+export default createReducer;
 
 const handleSnapshot = (state, action) => {
     const newState = JSON.parse(JSON.stringify(state));
@@ -47,7 +55,7 @@ const handleSnapshot = (state, action) => {
             stateTable.rows.push(record);
         }
     }
-    console.log(action);
+    //console.log(action);
     return newState;
 };
 

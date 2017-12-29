@@ -37,7 +37,7 @@ export default class SocketService {
     };
 
     _send = (message) => {
-        console.log('Sending message on WebSocket', this.id, this._ws)
+        console.log('Sending message on WebSocket', this.id);
         this._ws.send(message);
     };
 

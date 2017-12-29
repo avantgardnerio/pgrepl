@@ -1,10 +1,11 @@
-export const createLogSender = (socket) => {
-    const logSender = () => {
+export const createWebSocketSender = (socket) => {
+    const webSocketSender = () => {
         const wrapDispatch = (next) => {
             const dispatch = (action) => {
                 switch (action.type) {
                     case 'COMMIT':
                         try {
+                            console.log('Sending', action.txn.id);
                             socket.write(action);
                             return next(action);
                         } catch (ex) {
@@ -20,5 +21,5 @@ export const createLogSender = (socket) => {
         };
         return wrapDispatch;
     };
-    return logSender;
+    return webSocketSender;
 };
