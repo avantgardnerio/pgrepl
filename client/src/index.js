@@ -7,32 +7,21 @@ import './index.css';
 import App from './containers/App';
 import { logSender } from './middleware/logSender';
 import reducer from './reducers';
-import WsTool from './websocket';
+import SocketService from './SocketService';
 
-// TODO: DRY-out initialization
-const leftSocket = new WsTool();
-const rightSocket = new WsTool();
-leftSocket.connect();
-rightSocket.connect();
-const leftMiddleware = logSender(leftSocket);
-const rightMiddleware = logSender(leftSocket);
+const elementIds = ['leftRoot','rightRoot'];
+elementIds.forEach((elementId) => {
+    const ws = new SocketService();
+    ws.onConnect = () => ws.write({type: 'HELLO', payload: ws.id});
+    const ls = logSender(ws);
+    const store = createStore(reducer, applyMiddleware(ls));
+    ws.onMsg = (msg) => store.dispatch(msg);
+    ws.connect();
 
-const leftStore = createStore(reducer, applyMiddleware(leftMiddleware));
-const rightStore = createStore(reducer, applyMiddleware(rightMiddleware));
-
-// TODO: find a way to avoid circular reference
-leftSocket.store = leftStore;
-rightSocket.store = rightStore;
-
-ReactDOM.render(
-    <Provider store={leftStore}>
-        <App />
-    </Provider>
-    , document.getElementById('leftRoot')
-);
-ReactDOM.render(
-    <Provider store={rightStore}>
-        <App />
-    </Provider>,
-    document.getElementById('rightRoot')
-);
+    ReactDOM.render(
+        <Provider store={store}>
+            <App name={elementId} />
+        </Provider>
+        , document.getElementById(elementId)
+    );
+});

@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import uuidv4 from 'uuid/v4';
 
 import {add, subtract, equals} from '../util/math';
-import {createTxn, insertRow, updateRow, deleteRow} from '../actions';
+import {createTxn, insertRow, updateRow, deleteRow} from '../actions/database';
 
 export default class App extends Component {
 

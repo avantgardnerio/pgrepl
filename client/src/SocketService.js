@@ -1,18 +1,7 @@
 import uuidv4 from 'uuid/v4';
 
-/*
-Inspired by https://medium.freecodecamp.org/an-introduction-to-the-redux-first-routing-model-98926ebf53cb
- */
-if (!window.WebSocket && window.MozWebSocket) {
-    window.WebSocket = window.MozWebSocket;
-}
-if (!window.WebSocket) {
-    alert("WebSocket not supported by this browser");
-}
-
-export default class WsTool {
-    constructor(store) {
-        this.store = store;
+export default class SocketService {
+    constructor() {
         this.id = uuidv4();
     }
 
@@ -21,14 +10,12 @@ export default class WsTool {
                 .replace('http://', 'ws://')
                 .replace(":3000", ":8080")
             + "echo";
-        console.info("Document URI: " + document.location);
-        console.info("WS URI: " + location);
-        this._scount = 0;
         try {
             this._ws = new WebSocket(location);
             this._ws.onopen = this._onopen;
             this._ws.onmessage = this._onmessage;
             this._ws.onclose = this._onclose;
+            console.log('Connecting WebSocket', this.id);
         } catch (exception) {
             console.error("Connect Error: " + exception);
         }
@@ -36,31 +23,32 @@ export default class WsTool {
 
     close() {
         this._ws.close(1000);
+        this._ws = undefined;
     }
 
     write(msg) {
         const json = JSON.stringify(msg);
-        console.log(json);
         this._send(json);
     };
 
     _onopen = () => {
         console.info("Websocket Connected");
-        this.write({type: 'HELLO', payload: this.id})
+        if(this.onConnect) this.onConnect();
     };
 
     _send = (message) => {
+        console.log('Sending message on WebSocket', this.id, this._ws)
         this._ws.send(message);
     };
 
     _onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
-        this.store.dispatch(msg);
+        if(this.onMsg) this.onMsg(msg);
     };
 
-    _onclose = (closeEvent) => {
+    _onclose = (ev) => {
         this._ws = undefined;
-        console.info("Websocket Closed");
+        console.log('Closing WebSocket', this.id);
 
         let codeMap = {};
         codeMap[1000] = "(NORMAL)";
@@ -76,8 +64,8 @@ export default class WsTool {
         codeMap[1010] = "(HANDSHAKE/EXT_FAILURE)";
         codeMap[1011] = "(SERVER/UNEXPECTED_CONDITION)";
         codeMap[1015] = "(INTERNAL/TLS_ERROR)";
-        const codeStr = codeMap[closeEvent.code];
-        console.info("  .code = " + closeEvent.code + "  " + codeStr);
-        console.info("  .reason = " + closeEvent.reason);
+        const codeStr = codeMap[ev.code];
+        console.info("  .code = " + ev.code + "  " + codeStr);
+        console.info("  .reason = " + ev.reason);
     }
 }
