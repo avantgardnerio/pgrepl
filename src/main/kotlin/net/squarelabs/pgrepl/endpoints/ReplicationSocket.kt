@@ -50,7 +50,7 @@ class ReplicationSocket @Inject constructor(
     fun onTxn(lsn: Long, json: String) {
         val mapper = Gson()
         val txn: Transaction = mapper.fromJson(json, Transaction::class.java)
-        if(txn.change.size <= 0) {
+        if (txn.change.size <= 0) {
             return // Not sure why this happens
         }
 
@@ -77,14 +77,16 @@ class ReplicationSocket @Inject constructor(
             val mapper = Gson()
             val baseMsg = mapper.fromJson(json, Message::class.java)
             val clazz = when (baseMsg.type) {
-                "HELLO" -> HelloMsg::class.java
+                "SUBSCRIBE_REQUEST" -> SubscribeRequest::class.java
                 "COMMIT" -> CommitMsg::class.java
+                "SNAPSHOT_REQUEST" -> SnapshotRequest::class.java
                 else -> throw Exception("Unknown message: ${baseMsg.type}")
             }
             val msg = mapper.fromJson(json, clazz)
             when (msg) {
-                is HelloMsg -> handleHello(msg, mapper)
+                is SubscribeRequest -> handleSubscribe(msg)
                 is CommitMsg -> handleMsg(msg)
+                is SnapshotRequest -> handleSnapshotReq(mapper)
                 else -> throw Exception("Unknown message: ${msg::class}")
             }
         } catch (ex: Exception) {
@@ -94,14 +96,19 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    private fun handleHello(msg: HelloMsg, mapper: Gson) {
-        clientId = UUID.fromString(msg.payload)
+    private fun handleSnapshotReq(mapper: Gson) {
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             val snap = snapSvc.takeSnapshot(con.unwrap(BaseConnection::class.java))
-            val response = SnapMsg(snap)
+            val response = SnapshotResponse(snap)
             remote!!.sendText(mapper.toJson(response))
+        }
+    }
+
+    private fun handleSubscribe(req: SubscribeRequest) {
+        clientId = UUID.fromString(req.clientId)
+        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             val dbName = cfgSvc.getAppDbName()
-            replSvc.subscribe(dbName, clientId!!, snap.lsn, { lsn, json -> onTxn(lsn, json) })
+            replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> onTxn(lsn, json) })
         }
     }
 

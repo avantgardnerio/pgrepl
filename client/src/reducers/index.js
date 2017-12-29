@@ -23,7 +23,7 @@ const createReducer = (metadata) => {
         switch (action.type) {
             case 'COMMIT':
                 return handleLocalCommit(state, action.txn);
-            case 'SNAP':
+            case 'SNAPSHOT_RESPONSE':
                 return handleSnapshot(state, action);
             case 'TXN':
                 return handleServerTxn(state, action);

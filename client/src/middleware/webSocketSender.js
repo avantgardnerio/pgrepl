@@ -1,5 +1,7 @@
+import {subscribeRequest} from "../actions/websocket";
+
 export const createWebSocketSender = (socket) => {
-    const webSocketSender = () => {
+    const webSocketSender = (store) => {
         const wrapDispatch = (next) => {
             const dispatch = (action) => {
                 try {
@@ -10,6 +12,9 @@ export const createWebSocketSender = (socket) => {
                         case 'DISCONNECT':
                             socket.close();
                             break;
+                        case 'SNAPSHOT_RESPONSE':
+                            socket.write(subscribeRequest(socket.id, store.getState().lsn));
+                            return next(action);
                         case 'COMMIT':
                             console.log('Sending', action.txn.id);
                             socket.write(action);

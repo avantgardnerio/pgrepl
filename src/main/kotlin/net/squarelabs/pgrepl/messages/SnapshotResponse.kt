@@ -2,8 +2,8 @@ package net.squarelabs.pgrepl.messages
 
 import net.squarelabs.pgrepl.model.Snapshot
 
-data class SnapMsg(
+data class SnapshotResponse(
         val payload: Snapshot
 ) {
-    val type = "SNAP"
+    val type = "SNAPSHOT_RESPONSE"
 }

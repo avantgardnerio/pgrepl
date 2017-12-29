@@ -1,0 +1,203 @@
+{
+  "type": "SNAPSHOT_RESPONSE",
+  "payload": {
+    "lsn": 527030080,
+    "tables": [
+      {
+        "name": "circles",
+        "columns": [
+          {
+            "name": "id",
+            "type": "character varying",
+            "pkOrdinal": 1
+          },
+          {
+            "name": "cx",
+            "type": "integer"
+          },
+          {
+            "name": "cy",
+            "type": "integer"
+          },
+          {
+            "name": "r",
+            "type": "integer"
+          },
+          {
+            "name": "stroke",
+            "type": "character varying"
+          },
+          {
+            "name": "strokewidth",
+            "type": "character varying"
+          },
+          {
+            "name": "fill",
+            "type": "character varying"
+          },
+          {
+            "name": "curtxnid",
+            "type": "character varying"
+          },
+          {
+            "name": "prvtxnid",
+            "type": "character varying"
+          }
+        ],
+        "rows": [
+          {
+            "data": [
+              "0ae8b01b-1787-4dcb-991e-2464102de335",
+              101.0,
+              216.0,
+              40.0,
+              "green",
+              "4",
+              "yellow",
+              "d8e885ad-cdf5-43d2-bbb8-67b98fb1c9b5",
+              "31bcfa1b-d6d1-4b71-bce9-dea416dba0e8"
+            ]
+          },
+          {
+            "data": [
+              "cdedec58-1c47-48f3-8056-eac2cc4741f4",
+              163.0,
+              341.0,
+              40.0,
+              "green",
+              "4",
+              "yellow",
+              "06992c00-e713-49f3-ae7e-746805cf13ec",
+              null
+            ]
+          },
+          {
+            "data": [
+              "fe70de33-ec16-4686-82dc-7c2ee42313bf",
+              250.0,
+              104.0,
+              40.0,
+              "green",
+              "4",
+              "yellow",
+              "fc08e819-af2e-4fb1-a003-c450d884c89e",
+              null
+            ]
+          },
+          {
+            "data": [
+              "e3c0c4b7-b1a8-4456-b7ff-63d579c52008",
+              392.0,
+              197.0,
+              40.0,
+              "green",
+              "4",
+              "yellow",
+              "71aaa564-7930-4ec2-9e0d-27f5f03bd91a",
+              "84eb24ca-e23a-48bb-99cd-3e1581d2c7f5"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "person",
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "pkOrdinal": 1
+          },
+          {
+            "name": "name",
+            "type": "character varying"
+          },
+          {
+            "name": "curtxnid",
+            "type": "character varying"
+          },
+          {
+            "name": "prvtxnid",
+            "type": "character varying"
+          }
+        ],
+        "rows": []
+      },
+      {
+        "name": "txn_id_map",
+        "columns": [
+          {
+            "name": "xid",
+            "type": "bigint",
+            "pkOrdinal": 1
+          },
+          {
+            "name": "client_txn_id",
+            "type": "character varying"
+          }
+        ],
+        "rows": [
+          {
+            "data": [
+              14010,
+              "31bcfa1b-d6d1-4b71-bce9-dea416dba0e8"
+            ]
+          },
+          {
+            "data": [
+              14011,
+              "3502125c-b500-4fb2-8980-b09f9cb3b6e3"
+            ]
+          },
+          {
+            "data": [
+              14012,
+              "d8e885ad-cdf5-43d2-bbb8-67b98fb1c9b5"
+            ]
+          },
+          {
+            "data": [
+              14013,
+              "2d3ecddc-780e-4c3c-ae93-33041177c731"
+            ]
+          },
+          {
+            "data": [
+              14014,
+              "3a4add67-8786-4c55-bfe8-2224530d83c5"
+            ]
+          },
+          {
+            "data": [
+              14015,
+              "06992c00-e713-49f3-ae7e-746805cf13ec"
+            ]
+          },
+          {
+            "data": [
+              14016,
+              "fc08e819-af2e-4fb1-a003-c450d884c89e"
+            ]
+          },
+          {
+            "data": [
+              14017,
+              "84eb24ca-e23a-48bb-99cd-3e1581d2c7f5"
+            ]
+          },
+          {
+            "data": [
+              14018,
+              "71aaa564-7930-4ec2-9e0d-27f5f03bd91a"
+            ]
+          },
+          {
+            "data": [
+              14019,
+              "f8080367-9d28-4adc-8fde-c71892523092"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
