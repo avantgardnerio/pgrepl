@@ -9,3 +9,15 @@ export const disconnected = () => {
         type: 'DISCONNECTED'
     }
 };
+
+export const connect = () => {
+    return {
+        type: 'CONNECT'
+    }
+};
+
+export const disconnect = () => {
+    return {
+        type: 'DISCONNECT'
+    }
+};

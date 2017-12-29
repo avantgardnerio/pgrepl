@@ -13,7 +13,6 @@ import org.eclipse.jetty.util.log.Log
 import org.flywaydb.core.Flyway
 import org.junit.*
 import org.openqa.selenium.By
-import org.openqa.selenium.Keys
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
@@ -24,7 +23,6 @@ import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class AcceptanceTest {
 
@@ -175,6 +173,8 @@ class AcceptanceTest {
         driver.get(baseUrl)
         WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
         WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), "0")))
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot svg")))
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot svg")))
     }
 
 }

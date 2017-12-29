@@ -10,6 +10,7 @@ import createReducer from './reducers';
 import SocketService from './SocketService';
 import Database from "./Database";
 import {createIndexedDbSyncer} from "./middleware/indexedDbSyncer";
+import {connected, disconnected} from "./actions/websocket";
 
 const elementIds = ['leftRoot', 'rightRoot'];
 elementIds.forEach((elementId) => {
@@ -21,12 +22,18 @@ elementIds.forEach((elementId) => {
         const reducer = createReducer(metadata);
 
         const ws = new SocketService();
-        ws.onConnect = () => ws.write({type: 'HELLO', payload: ws.id});
+        ws.onConnect = () => {
+            ws.write({type: 'HELLO', payload: ws.id});
+            store.dispatch(connected());
+        };
+        ws.onClose = () => {
+            store.dispatch(disconnected());
+        };
         const socketSender = createWebSocketSender(ws);
         const dbSyncer = createIndexedDbSyncer(db);
         const store = createStore(reducer, applyMiddleware(socketSender, dbSyncer));
         ws.onMsg = (msg) => store.dispatch(msg);
-        ws.connect();
+        //ws.connect();
 
         ReactDOM.render(
             <Provider store={store}>

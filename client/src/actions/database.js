@@ -29,6 +29,12 @@ export const deleteRow = (table, record) => {
     }
 };
 
+export const clearDb = () => {
+    return {
+        type: 'CLEAR_DB'
+    }
+};
+
 export const createTxn = (changes) => {
     const txnId = uuidv4();
     for(let change of changes) {

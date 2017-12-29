@@ -48,6 +48,7 @@ export default class SocketService {
 
     _onclose = (ev) => {
         this._ws = undefined;
+        if(this.onClose) this.onClose();
         console.log('Closing WebSocket', this.id);
 
         let codeMap = {};

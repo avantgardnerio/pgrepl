@@ -2,19 +2,23 @@ export const createIndexedDbSyncer = (db) => {
     const indexedDbSyncer = () => {
         const wrapDispatch = (next) => {
             const dispatch = (action) => {
-                switch (action.type) {
-                    case 'COMMIT':
-                        try {
-                            // TODO: Save to DB
-                            console.log('Saving', action.txn.id);
+                try {
+                    switch (action.type) {
+                        case 'CLEAR_DB':
+                            clearDb(db);
+                            break;
+                        case 'COMMIT':
+                            saveCommit(db, action.txn);
                             return next(action);
-                        } catch (ex) {
-                            // TODO: retry on reconnect
-                            console.error("Error committing to IndexedDb!", ex);
-                        }
-                        break;
-                    default:
-                        return next(action);
+                        case 'SNAP':
+                            saveSnapshot(db, action.payload);
+                            return next(action);
+                        default:
+                            return next(action);
+                    }
+                } catch (ex) {
+                    // TODO: retry on reconnect
+                    console.error("Error committing to IndexedDb!", ex);
                 }
             };
             return dispatch;
@@ -22,4 +26,21 @@ export const createIndexedDbSyncer = (db) => {
         return wrapDispatch;
     };
     return indexedDbSyncer;
+};
+
+const clearDb = async (db) => {
+    await db.clear();
+    // window.location.reload();
+};
+
+const saveCommit = async (db, txn) => {
+    console.log(`Saving txn ${txn.id} to IndexedDB...`);
+};
+
+const saveSnapshot = async (db, snapshot) => {
+    console.log(`Saving snapshot ${snapshot.lsn} to IndexedDB...`);
+    const metadata = await db.getMetadata();
+    metadata.lsn = snapshot.lsn;
+    db.setMetadata(metadata);
+    db.saveSnapshot(snapshot);
 };

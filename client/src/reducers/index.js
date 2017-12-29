@@ -11,7 +11,8 @@ const initialState = {
     },
     log: [],
     lsn: 0,
-    xid: 0
+    xid: 0,
+    connected: false
 };
 
 const createReducer = (metadata) => {
@@ -26,6 +27,10 @@ const createReducer = (metadata) => {
                 return handleSnapshot(state, action);
             case 'TXN':
                 return handleServerTxn(state, action);
+            case 'CONNECTED':
+                return {...state, connected: true};
+            case 'DISCONNECTED':
+                return {...state, connected: false};
             default:
                 console.log(`unknown action: ${action.type}`);
                 return state;
