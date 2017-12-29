@@ -1,0 +1,50 @@
+{
+  "type": "TXN",
+  "payload": {
+    "xid": 14020,
+    "nextlsn": "0/1F6A7970",
+    "timestamp": "2017-12-29 18:31:46.711952-05",
+    "clientTxnId": "b7a7aff5-c302-4c10-8fc7-07a59426845d",
+    "lsn": 527068104,
+    "change": [
+      {
+        "kind": "insert",
+        "table": "circles",
+        "columnnames": [
+          "id",
+          "cx",
+          "cy",
+          "r",
+          "stroke",
+          "strokewidth",
+          "fill",
+          "curtxnid",
+          "prvtxnid"
+        ],
+        "columnvalues": [
+          "2a78e2e2-5710-414a-adfc-bb7b4c9dc66e",
+          274.0,
+          338.0,
+          40.0,
+          "green",
+          "4",
+          "yellow",
+          "b7a7aff5-c302-4c10-8fc7-07a59426845d",
+          null
+        ]
+      },
+      {
+        "kind": "insert",
+        "table": "txn_id_map",
+        "columnnames": [
+          "xid",
+          "client_txn_id"
+        ],
+        "columnvalues": [
+          14020.0,
+          "b7a7aff5-c302-4c10-8fc7-07a59426845d"
+        ]
+      }
+    ]
+  }
+}
