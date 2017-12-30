@@ -214,6 +214,40 @@ class AcceptanceTest {
         Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "0", logLength.text)
     }
 
+    @Test
+    fun `log entries should be removed from indexedDb`() {
+
+        // Setup
+        clearIndexedDb()
+        navigateAndWaitForLoad()
+        driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        val lsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
+        val originalLsnText = lsnField.text
+
+        // Exercise: create a circle
+        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
+        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(lsnField, originalLsnText)))
+
+        // Assert
+        val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val logLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
+        val circleEl = driver.findElement(By.cssSelector("#leftRoot circle"))
+        Assert.assertNotNull("given a server has a circle, when the user connects, then they should see the circle", circleEl)
+        Assert.assertEquals("given a server has a circle, when the user connects, then the circle should be in the database", "1", numCircles.text)
+        Assert.assertEquals("given online mode, when a circle is created, then there should be a transaction in the log", "0", logLength.text)
+
+        // Exercise: reload
+        navigateAndWaitForLoad()
+        val numCircles2 = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val logLength2 = driver.findElement(By.cssSelector("#leftRoot .logLength"))
+        val circleEl2 = driver.findElement(By.cssSelector("#leftRoot circle"))
+        Assert.assertNotNull("given there is a circle, when the browser is refreshed, then there should still be a circle on the screen", circleEl2)
+        Assert.assertEquals("given there is a circle, when the browser is refreshed, then there should still be a circle in the DB", "1", numCircles2.text)
+        Assert.assertEquals("given there is no log, when the browser is refreshed, there should still be no log", "0", logLength2.text)
+    }
+
     // ------------------------------------------- helpers ------------------------------------------------------------
     private fun navigateAndWaitForLoad() {
         driver.get("http://127.0.0.1:8080/")
