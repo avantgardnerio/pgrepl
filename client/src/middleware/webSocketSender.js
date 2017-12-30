@@ -13,6 +13,7 @@ export const createWebSocketSender = (socket) => {
                             socket.close();
                             break;
                         case 'SNAPSHOT_RESPONSE':
+                            console.log('Got snapshot, subscribing for changes');
                             socket.write(subscribeRequest(socket.id, store.getState().lsn));
                             return next(action);
                         case 'COMMIT':

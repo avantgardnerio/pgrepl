@@ -18,8 +18,8 @@ elementIds.forEach((elementId) => {
     const init = async () => {
         const db = new Database(elementId);
         await db.connect();
-        const metadata = await db.getMetadataOrDefault();
-        const reducer = createReducer(metadata);
+        const initialState = await db.getInitialState();
+        const reducer = createReducer(initialState);
 
         const ws = new SocketService();
         const socketSender = createWebSocketSender(ws);
@@ -27,7 +27,9 @@ elementIds.forEach((elementId) => {
         const store = createStore(reducer, applyMiddleware(socketSender, dbSyncer));
         ws.onMsg = (msg) => store.dispatch(msg);
         ws.onConnect = () => {
+            console.log('Connected!');
             const lsn = store.getState().lsn; // TODO: should be in another file?
+            console.log(lsn ? 'Found initial state, subcribing to changes' : 'Requesting snapshot');
             const msg = lsn ? subscribeRequest(ws.id, lsn) : snapshotRequest();
             ws.write(msg);
             store.dispatch(connected());

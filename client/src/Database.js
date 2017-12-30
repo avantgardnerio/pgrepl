@@ -90,6 +90,41 @@ export default class Database {
         });
     }
 
+    async getInitialState() {
+        const metadata = await this.getMetadataOrDefault();
+        const tables = await this.getTableData();
+        const initialState = {
+            tables,
+            log: [],
+            lsn: metadata.lsn,
+            xid: metadata.xid,
+            connected: false
+        };
+        return initialState;
+    }
+
+    getTableData() {
+        return new Promise((resolve, reject) => {
+            const tables = {};
+            const tableNames = [...this.db.objectStoreNames];
+            const txn = this.db.transaction(tableNames, 'readonly');
+            txn.oncomplete = (ev) => resolve(tables);
+            txn.onerror = (ev) => reject(ev);
+            tableNames.forEach(tableName => {
+                const table = {rows: []};
+                const store = txn.objectStore(tableName);
+                store.openCursor().onsuccess = (ev) => {
+                    const cursor = ev.target.result;
+                    if (cursor) {
+                        table.rows.push(cursor.value);
+                        cursor.continue();
+                    }
+                };
+                tables[tableName] = table;
+            });
+        })
+    }
+
     // --------------------------------------- transactions -----------------------------------------------------------
     saveTxn(txn) {
         return new Promise((resolve, reject) => {

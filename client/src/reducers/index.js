@@ -1,23 +1,6 @@
 import {removeRow, updateRow} from '../util/db';
 
-const initialState = {
-    tables: {
-        circles: {
-            rows: []
-        },
-        rectangles: {
-            rows: []
-        }
-    },
-    log: [],
-    lsn: 0,
-    xid: 0,
-    connected: false
-};
-
-const createReducer = (metadata) => {
-    initialState.lsn = metadata.lsn;
-    initialState.xid = metadata.xid;
+const createReducer = (initialState) => {
     console.log('Creating reducer with initial lsn=', initialState.lsn);
     const reducer = (state = initialState, action) => {
         switch (action.type) {
