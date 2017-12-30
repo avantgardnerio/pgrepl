@@ -1,0 +1,30 @@
+{
+  "tables": {
+    "circles": {
+      "rows": []
+    },
+    "metadata": {
+      "rows": [
+        {
+          "id": 1,
+          "lsn": 0,
+          "xid": 0
+        }
+      ]
+    },
+    "person": {
+      "rows": []
+    },
+    "txnLog": {
+      "rows": []
+    },
+    "txn_id_map": {
+      "rows": []
+    }
+  },
+  "log": [],
+  "lsn": 0,
+  "xid": 0,
+  "connected": false,
+  "cleared": false
+}

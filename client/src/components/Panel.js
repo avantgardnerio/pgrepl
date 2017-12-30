@@ -18,19 +18,22 @@ export default class Panel extends Component {
                 <tr>
                     <td>WebSocket</td>
                     <td>
-                        <input type="button" value={this.connectionText} onClick={this.toggleConnection}/>
+                        <input type="button" className="btnConnect" value={this.connectionText}
+                               onClick={this.toggleConnection}/>
                     </td>
                 </tr>
                 <tr>
                     <td>IndexedDB</td>
                     <td>
-                        <input type="button" value="Clear" onClick={this.props.clearDb}/>
+                        <input type="button" className="btnClear" value="Clear" onClick={this.props.clearDb}
+                               disabled={this.props.cleared}/>
                     </td>
                 </tr>
                 <tr>
                     <td>state</td>
                     <td>
-                        <input type="text" readOnly={true} value={JSON.stringify(this.props.state)}/>
+                        <textarea readOnly="true" className="tbState"
+                                  value={JSON.stringify(this.props.state, undefined, 2)}/>
                     </td>
                 </tr>
                 <tr>

@@ -35,6 +35,12 @@ export const clearDb = () => {
     }
 };
 
+export const clearedDb = () => {
+    return {
+        type: 'CLEARED_DB'
+    }
+};
+
 export const createTxn = (changes) => {
     const txnId = uuidv4();
     for(let change of changes) {

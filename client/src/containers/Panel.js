@@ -9,6 +9,7 @@ const mapStateToProps = (state) => {
         connected: state.connected,
         rectangles: state.tables.rectangles,
         circles: state.tables.circles,
+        cleared: state.cleared,
         state: state
     }
 };

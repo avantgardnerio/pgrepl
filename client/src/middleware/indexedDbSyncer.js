@@ -1,11 +1,13 @@
+import {clearedDb} from "../actions/database";
+
 export const createIndexedDbSyncer = (db) => {
-    const indexedDbSyncer = () => {
+    const indexedDbSyncer = (store) => {
         const wrapDispatch = (next) => {
             const dispatch = (action) => {
                 try {
                     switch (action.type) {
                         case 'CLEAR_DB':
-                            clearDb(db);
+                            clearDb(store, db);
                             break;
                         case 'COMMIT':
                             saveCommit(db, action.txn);
@@ -28,9 +30,9 @@ export const createIndexedDbSyncer = (db) => {
     return indexedDbSyncer;
 };
 
-const clearDb = async (db) => {
+const clearDb = async (store, db) => {
     await db.clear();
-    // window.location.reload();
+    store.dispatch(clearedDb());
 };
 
 const saveCommit = async (db, txn) => {

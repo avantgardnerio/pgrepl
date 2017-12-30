@@ -10,6 +10,8 @@ const createReducer = (initialState) => {
                 return handleSnapshot(state, action);
             case 'TXN':
                 return handleServerTxn(state, action);
+            case 'CLEARED_DB':
+                return {...state, cleared: true};
             case 'PONG':
                 return state;
             case 'CONNECTED':

@@ -98,7 +98,8 @@ export default class Database {
             log: [],
             lsn: metadata.lsn,
             xid: metadata.xid,
-            connected: false
+            connected: false,
+            cleared: false
         };
         return initialState;
     }

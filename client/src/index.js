@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {applyMiddleware, createStore} from 'redux';
 import {Provider} from 'react-redux';
+import thunk from 'redux-thunk';
 
 import './index.css';
 import App from './containers/App';
@@ -24,7 +25,7 @@ elementIds.forEach((elementId) => {
         const ws = new SocketService();
         const socketSender = createWebSocketSender(ws);
         const dbSyncer = createIndexedDbSyncer(db);
-        const store = createStore(reducer, applyMiddleware(socketSender, dbSyncer));
+        const store = createStore(reducer, applyMiddleware(socketSender, dbSyncer, thunk));
         ws.onMsg = (msg) => store.dispatch(msg);
         ws.onConnect = () => {
             console.log('Connected!');

@@ -4,7 +4,6 @@ import com.google.inject.Guice
 import com.google.inject.Injector
 import net.squarelabs.pgrepl.App
 import net.squarelabs.pgrepl.DefaultInjector
-import net.squarelabs.pgrepl.model.Circle
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
@@ -16,13 +15,9 @@ import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
-import org.openqa.selenium.interactions.Actions
-import org.openqa.selenium.interactions.HasInputDevices
-import org.openqa.selenium.internal.Locatable
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
-import java.util.*
 
 class AcceptanceTest {
 
@@ -92,89 +87,42 @@ class AcceptanceTest {
     }
 
     @Test
-    fun `state of two clients should converge on insert`() {
+    fun `clients should begin in expected state`() {
 
         // Setup
-        browseAndWaitForConnect()
-        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
-        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
-        val rghtLsnField = driver.findElement(By.cssSelector("#rightRoot .lsn"))
-        val originalLsnText = leftLsnField.text
+        val expected = this.javaClass.getResource("/fixtures/initialState.json").readText()
+        clearIndexedDb()
 
         // Exercise
-        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
-        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
+        navigateAndWaitForLoad()
 
-        // Assert state convergence
-        val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
-        val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
-        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
-                leftCount.text, rghtCount.text
+        // Assert
+        val leftActual = driver.findElement(By.cssSelector("#leftRoot .tbState")).getAttribute("value")
+        val rghtActual = driver.findElement(By.cssSelector("#rightRoot .tbState")).getAttribute("value")
+        Assert.assertEquals(
+                "given an uninitialized IndexedDB, when a user visits the page, then the expected state is shown",
+                expected, leftActual
+        )
+        Assert.assertEquals(
+                "given an uninitialized IndexedDB, when a user visits the page, then the expected state is shown",
+                expected, rghtActual
         )
     }
 
-    @Test
-    fun `state of two clients should converge on update`() {
-        // Setup
-        val id = UUID.randomUUID().toString()
-        val curtxnid = UUID.randomUUID().toString()
-        val circle = Circle(id, 10, 10, 20, "red", "1px", "blue", curtxnid, null)
-        dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
-        browseAndWaitForConnect()
-        val svg = driver.findElement(By.cssSelector("#leftRoot svg")) as Locatable
-        val circleEl = driver.findElement(By.id(id)) as Locatable
-        val mouse = (driver as HasInputDevices).mouse
-        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
-        val originalLsnText = leftLsnField.text
-
-        // Exercise
-        mouse.mouseDown(circleEl.coordinates)
-        mouse.mouseUp(svg.coordinates)
-        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
-
-        // Assert state convergence
-        val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
-        val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
-        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
-                leftCount.text, rghtCount.text
-        )
+    // ------------------------------------------- helpers ------------------------------------------------------------
+    private fun navigateAndWaitForLoad() {
+        driver.get("http://127.0.0.1:8080/")
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot table")))
     }
 
-    @Test
-    fun `state of two clients should converge on delete`() {
-        // Setup
-        val id = UUID.randomUUID().toString()
-        val curtxnid = UUID.randomUUID().toString()
-        val circle = Circle(id, 10, 10, 20, "blue", "1px", "red", curtxnid, null)
-        dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
-        browseAndWaitForConnect()
-        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
-        val circleEl = driver.findElement(By.id(id)) as Locatable
-        val mouse = (driver as HasInputDevices).mouse
-        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
-        val originalLsnText = leftLsnField.text
-        mouse.mouseDown(circleEl.coordinates)
-        mouse.mouseUp(circleEl.coordinates)
-
-        // Exercise
-        svg.sendKeys("d")
-        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
-
-        // Assert state convergence
-        val leftCount = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
-        val rghtCount = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
-        Assert.assertEquals("given two clients, when the LSNs match, the circle count should be equal",
-                leftCount.text, rghtCount.text
-        )
-    }
-
-    fun browseAndWaitForConnect() {
-        val baseUrl = "http://127.0.0.1:8080/"
-        driver.get(baseUrl)
-        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
-        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), "0")))
-        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot svg")))
-        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot svg")))
+    private fun clearIndexedDb() {
+        navigateAndWaitForLoad()
+        val leftClear = driver.findElement(By.cssSelector("#leftRoot .btnClear"))
+        val rghtClear = driver.findElement(By.cssSelector("#rightRoot .btnClear"))
+        leftClear.click()
+        rghtClear.click()
+        WebDriverWait(driver, 3).until(not(elementToBeClickable(leftClear)))
+        WebDriverWait(driver, 3).until(not(elementToBeClickable(rghtClear)))
     }
 
 }
