@@ -4,6 +4,7 @@ import com.google.inject.Guice
 import com.google.inject.Injector
 import net.squarelabs.pgrepl.App
 import net.squarelabs.pgrepl.DefaultInjector
+import net.squarelabs.pgrepl.model.Circle
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.DbService
@@ -21,6 +22,7 @@ import org.openqa.selenium.internal.Locatable
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
+import java.util.*
 
 class AcceptanceTest {
 
@@ -186,6 +188,28 @@ class AcceptanceTest {
         Assert.assertNotNull("given offline mode, when canvas is clicked, then a circle should be created", circle)
         Assert.assertEquals("when a circle is visible, then there should be a record in the database", "1", numCircles.text)
         Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "1", logLength.text)
+    }
+
+    @Test
+    fun `client should get state from server on connect`() {
+
+        // Setup
+        val id = UUID.randomUUID().toString()
+        val curtxnid = UUID.randomUUID().toString()
+        val circle = Circle(id, 10, 10, 20, "blue", "1px", "red", curtxnid, null)
+        dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
+        clearIndexedDb()
+
+        // Exercise
+        navigateAndWaitForLoad()
+        driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+
+        // Assert
+        val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val circleEl = driver.findElement(By.cssSelector("#leftRoot circle"))
+        Assert.assertNotNull("given a server has a circle, when the user connects, then they should see the circle", circleEl)
+        Assert.assertEquals("given a server has a circle, when the user connects, then the circle should be in the database", "1", numCircles.text)
     }
 
     // ------------------------------------------- helpers ------------------------------------------------------------

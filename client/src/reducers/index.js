@@ -1,4 +1,5 @@
-import {removeRow, updateRow} from '../util/db';
+import {getPk, getRowByPk, removeRow, updateRow} from '../util/db';
+import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
     console.log('Creating reducer with initial lsn=', initialState.lsn);
@@ -53,7 +54,7 @@ const handleSnapshot = (state, action, db) => {
     return newState;
 };
 
-const handleServerTxn = (state, action) => {
+const handleServerTxn = (state, action, db) => {
     // validate
     const payload = action.payload;
     let newState = JSON.parse(JSON.stringify(state));
@@ -82,7 +83,55 @@ const handleServerTxn = (state, action) => {
     // Replay log
     replayLog(newState);
 
+    // Save to IndexedDB
+    const txn = diff(state, newState);
+    saveCommit(newState, db, txn);
+
     return newState;
+};
+
+const diff = (prior, post) => {
+    const tableNames = unique([...Object.keys(prior.tables), ...Object.keys(post.tables)]);
+    const txn = {
+        changes: []
+    };
+    tableNames.forEach(tableName => {
+        const priorTable = prior.tables[tableName];
+        const postTable = post.tables[tableName];
+        for(let postRow of postTable.rows) {
+            const pk = getPk(postRow, postTable);
+            const priorRow = getRowByPk(pk, priorTable);
+            if(!priorRow) {
+                const change = {
+                    type: 'INSERT',
+                    table: tableName,
+                    record: postRow
+                };
+                txn.changes.push(change);
+            } else if(!equals(priorRow, postRow)) {
+                const change = {
+                    type: 'UPDATE',
+                    table: tableName,
+                    record: postRow,
+                    prior: priorRow
+                };
+                txn.changes.push(change);
+            }
+        }
+        for(let priorRow of priorTable.rows) {
+            const pk = getPk(priorRow, priorTable);
+            const postRow = getRowByPk(pk, postTable);
+            if(!postRow) {
+                const change = {
+                    type: 'DELETE',
+                    table: tableName,
+                    record: priorRow
+                };
+                txn.changes.push(change);
+            }
+        }
+    });
+    return txn;
 };
 
 const invert = (txn) => {
@@ -176,7 +225,7 @@ const handleLocalCommit = (state, txn, db) => {
         applyChange(txn, newState, change);
     }
     newState.log.push(txn);
-    saveCommit(state, db, txn);
+    if(db) saveCommit(state, db, txn); // No DB during rollback and replay
     return newState;
 };
 
