@@ -42,7 +42,7 @@ open class ReplicationClient(uri: URI) : WebSocketListener {
         val baseMsg: Message = Gson().fromJson(json, Message::class.java)
         val clazz = when (baseMsg.type) {
             "TXN" -> TxnMsg::class.java
-            "SNAP" -> SnapshotResponse::class.java
+            "SNAPSHOT_RESPONSE" -> SnapshotResponse::class.java
             else -> throw Exception("Unknown type: ${baseMsg.type}")
         }
         val msg = Gson().fromJson(json, clazz)

@@ -10,7 +10,7 @@ export const createIndexedDbSyncer = (db) => {
                         case 'COMMIT':
                             saveCommit(db, action.txn);
                             return next(action);
-                        case 'SNAP':
+                        case 'SNAPSHOT_RESPONSE':
                             saveSnapshot(db, action.payload);
                             return next(action);
                         default:
