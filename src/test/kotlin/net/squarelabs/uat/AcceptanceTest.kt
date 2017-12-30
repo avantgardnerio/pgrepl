@@ -207,9 +207,11 @@ class AcceptanceTest {
 
         // Assert
         val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val logLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
         val circleEl = driver.findElement(By.cssSelector("#leftRoot circle"))
         Assert.assertNotNull("given a server has a circle, when the user connects, then they should see the circle", circleEl)
         Assert.assertEquals("given a server has a circle, when the user connects, then the circle should be in the database", "1", numCircles.text)
+        Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "0", logLength.text)
     }
 
     // ------------------------------------------- helpers ------------------------------------------------------------
