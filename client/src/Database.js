@@ -1,3 +1,4 @@
+import * as _ from "lodash";
 import {range} from "lodash";
 import {unique} from "./util/math";
 import {getPk} from "./util/db";
@@ -95,15 +96,33 @@ export default class Database {
     async getInitialState() {
         const metadata = await this.getMetadataOrDefault();
         const tables = await this.getTableData();
+        const log = await this.getTxnLog();
         const initialState = {
             tables,
-            log: [],
+            log,
             lsn: metadata.lsn,
             xid: metadata.xid,
             connected: false,
             cleared: false
         };
         return initialState;
+    }
+
+    getTxnLog() {
+        return new Promise((resolve, reject) => {
+            const log = [];
+            const txn = this.db.transaction('txnLog', 'readonly');
+            txn.oncomplete = (ev) => resolve(_.sortBy(log, 'csn'));
+            txn.onerror = (ev) => reject(ev);
+            const store = txn.objectStore('txnLog');
+            store.openCursor().onsuccess = (ev) => {
+                const cursor = ev.target.result;
+                if (cursor) {
+                    log.push(cursor.value);
+                    cursor.continue();
+                }
+            };
+        })
     }
 
     getTableData() {
