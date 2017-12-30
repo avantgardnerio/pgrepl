@@ -50,7 +50,7 @@ export default class Panel extends Component {
                 </tr>
                 <tr>
                     <td>log length</td>
-                    <td>{this.props.state.log.length}</td>
+                    <td className="logLength">{this.props.state.log.length}</td>
                 </tr>
                 </tbody>
             </table>

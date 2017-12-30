@@ -15,6 +15,7 @@ import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.interactions.Actions
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
@@ -107,6 +108,29 @@ class AcceptanceTest {
                 "given an uninitialized IndexedDB, when a user visits the page, then the expected state is shown",
                 expected, rghtActual
         )
+    }
+
+    @Test
+    fun `clients should insert while disconnected`() {
+
+        // Setup
+        clearIndexedDb()
+        navigateAndWaitForLoad()
+
+        // Exercise
+        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
+
+        // Exercise
+        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot circle")))
+        val circle = driver.findElement(By.cssSelector("#leftRoot circle"))
+        val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles")).text
+        val logLength = driver.findElement(By.cssSelector("#leftRoot .logLength")).text
+
+        // Assert
+        Assert.assertNotNull("given offline mode, when canvas is clicked, then a circle should be created", circle)
+        Assert.assertEquals("when a circle is visible, then there should be a record in the database", "1", numCircles)
+        Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "1", logLength)
     }
 
     // ------------------------------------------- helpers ------------------------------------------------------------

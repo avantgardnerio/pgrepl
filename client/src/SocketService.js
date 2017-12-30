@@ -32,9 +32,13 @@ export default class SocketService {
         this._send(json);
     };
 
+    get connected() {
+        return this._ws !== undefined;
+    }
+
     _onopen = () => {
         console.info("Websocket Connected");
-        if(this.onConnect) this.onConnect();
+        if (this.onConnect) this.onConnect();
         this.timer = setInterval(() => this.write({type: 'PING'}), 30000);
     };
 
@@ -45,14 +49,14 @@ export default class SocketService {
 
     _onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
-        if(this.onMsg) this.onMsg(msg);
+        if (this.onMsg) this.onMsg(msg);
     };
 
     _onclose = (ev) => {
-        if(this.timer) clearInterval(this.timer);
+        if (this.timer) clearInterval(this.timer);
         this.timer = undefined;
         this._ws = undefined;
-        if(this.onClose) this.onClose();
+        if (this.onClose) this.onClose();
         console.log('Closing WebSocket', this.id);
 
         let codeMap = {};

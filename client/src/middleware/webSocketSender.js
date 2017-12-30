@@ -14,11 +14,11 @@ export const createWebSocketSender = (socket) => {
                             break;
                         case 'SNAPSHOT_RESPONSE':
                             console.log('Got snapshot, subscribing for changes');
-                            socket.write(subscribeRequest(socket.id, store.getState().lsn));
+                            if(socket.connected) socket.write(subscribeRequest(socket.id, store.getState().lsn));
                             return next(action);
                         case 'COMMIT':
                             console.log('Sending', action.txn.id);
-                            socket.write(action);
+                            if(socket.connected) socket.write(action);
                             return next(action);
                         default:
                             return next(action);
