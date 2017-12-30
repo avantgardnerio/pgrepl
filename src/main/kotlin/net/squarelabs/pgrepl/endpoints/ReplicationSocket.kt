@@ -79,6 +79,7 @@ class ReplicationSocket @Inject constructor(
             val clazz = when (baseMsg.type) {
                 "SUBSCRIBE_REQUEST" -> SubscribeRequest::class.java
                 "COMMIT" -> CommitMsg::class.java
+                "PING" -> PingRequest::class.java
                 "SNAPSHOT_REQUEST" -> SnapshotRequest::class.java
                 else -> throw Exception("Unknown message: ${baseMsg.type}")
             }
@@ -86,6 +87,7 @@ class ReplicationSocket @Inject constructor(
             when (msg) {
                 is SubscribeRequest -> handleSubscribe(msg)
                 is CommitMsg -> handleMsg(msg)
+                is PingRequest -> handlePing(mapper)
                 is SnapshotRequest -> handleSnapshotReq(mapper)
                 else -> throw Exception("Unknown message: ${msg::class}")
             }
@@ -94,6 +96,10 @@ class ReplicationSocket @Inject constructor(
             replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
             session!!.close()
         }
+    }
+
+    private fun handlePing(mapper: Gson) {
+        remote!!.sendText(mapper.toJson(PongResponse()))
     }
 
     private fun handleSnapshotReq(mapper: Gson) {

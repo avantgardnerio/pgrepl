@@ -3,6 +3,7 @@ import uuidv4 from 'uuid/v4';
 export default class SocketService {
     constructor() {
         this.id = uuidv4();
+        this.timer = undefined;
     }
 
     connect() {
@@ -34,6 +35,7 @@ export default class SocketService {
     _onopen = () => {
         console.info("Websocket Connected");
         if(this.onConnect) this.onConnect();
+        this.timer = setInterval(() => this.write({type: 'PING'}), 30000);
     };
 
     _send = (message) => {
@@ -47,6 +49,8 @@ export default class SocketService {
     };
 
     _onclose = (ev) => {
+        if(this.timer) clearInterval(this.timer);
+        this.timer = undefined;
         this._ws = undefined;
         if(this.onClose) this.onClose();
         console.log('Closing WebSocket', this.id);

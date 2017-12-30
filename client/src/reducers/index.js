@@ -27,6 +27,8 @@ const createReducer = (metadata) => {
                 return handleSnapshot(state, action);
             case 'TXN':
                 return handleServerTxn(state, action);
+            case 'PONG':
+                return state;
             case 'CONNECTED':
                 return {...state, connected: true};
             case 'DISCONNECTED':

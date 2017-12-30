@@ -4,7 +4,6 @@ import App from '../components/App';
 
 const mapStateToProps = (state) => {
     return {
-        rectangles: state.tables.rectangles,
         circles: state.tables.circles,
         state: state
     }
