@@ -1,15 +1,15 @@
 import {removeRow, updateRow} from '../util/db';
 
-const createReducer = (initialState) => {
+const createReducer = (initialState, db) => {
     console.log('Creating reducer with initial lsn=', initialState.lsn);
     const reducer = (state = initialState, action) => {
         switch (action.type) {
             case 'COMMIT':
-                return handleLocalCommit(state, action.txn);
+                return handleLocalCommit(state, action.txn, db);
             case 'SNAPSHOT_RESPONSE':
-                return handleSnapshot(state, action);
+                return handleSnapshot(state, action, db);
             case 'TXN':
-                return handleServerTxn(state, action);
+                return handleServerTxn(state, action, db);
             case 'CLEARED_DB':
                 return {...state, cleared: true};
             case 'PONG':
@@ -28,11 +28,12 @@ const createReducer = (initialState) => {
 
 export default createReducer;
 
-const handleSnapshot = (state, action) => {
+const handleSnapshot = (state, action, db) => {
     const newState = JSON.parse(JSON.stringify(state));
     if (newState.lsn) throw new Error('Cannot play snapshot onto already initialized database!');
-    newState.lsn = action.payload.lsn;
-    for (let actionTable of action.payload.tables) {
+    const snapshot = action.payload;
+    newState.lsn = snapshot.lsn;
+    for (let actionTable of snapshot.tables) {
         const tableName = actionTable.name;
         const stateTable = newState.tables[tableName] || {
             rows: []
@@ -48,6 +49,7 @@ const handleSnapshot = (state, action) => {
         }
     }
     //console.log(action);
+    saveSnapshot(db, snapshot);
     return newState;
 };
 
@@ -168,12 +170,13 @@ const handleInsert = (table, change) => {
     table.rows.push(row);
 };
 
-const handleLocalCommit = (state, txn) => {
+const handleLocalCommit = (state, txn, db) => {
     const newState = JSON.parse(JSON.stringify(state));
     for (let change of txn.changes) {
         applyChange(txn, newState, change);
     }
     newState.log.push(txn);
+    saveCommit(state, db, txn);
     return newState;
 };
 
@@ -195,4 +198,18 @@ const applyChange = (txn, state, change) => {
         default:
             throw new Error(`Unknown type: ${change.type}`);
     }
+};
+
+// ---------------------------------------- IndexedDB -----------------------------------------------------------------
+const saveCommit = async (state, db, txn) => {
+    console.log(`Saving txn ${txn.id} to IndexedDB...`);
+    db.saveTxn(txn, state);
+};
+
+const saveSnapshot = async (db, snapshot) => {
+    console.log(`Saving snapshot ${snapshot.lsn} to IndexedDB...`);
+    const metadata = await db.getMetadata();
+    metadata.lsn = snapshot.lsn;
+    db.setMetadata(metadata);
+    db.saveSnapshot(snapshot);
 };

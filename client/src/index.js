@@ -20,7 +20,7 @@ elementIds.forEach((elementId) => {
         const db = new Database(elementId);
         await db.connect();
         const initialState = await db.getInitialState();
-        const reducer = createReducer(initialState);
+        const reducer = createReducer(initialState, db);
 
         const ws = new SocketService();
         const socketSender = createWebSocketSender(ws);

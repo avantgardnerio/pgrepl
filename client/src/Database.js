@@ -1,8 +1,10 @@
 import {range} from "lodash";
+import {unique} from "./util/math";
+import {getPk} from "./util/db";
 
 const migrations = [
     (db) => { // v1: system data
-        db.createObjectStore('txnLog', {keyPath: 'id'});
+        db.createObjectStore('txnLog', {keyPath: 'csn'});
         db.createObjectStore('txn_id_map', {keyPath: 'xid'});
         db.createObjectStore('metadata', {keyPath: 'id'});
     },
@@ -44,7 +46,7 @@ export default class Database {
         const metadata = await this.getMetadata();
         console.log('metadata=', metadata);
         if (metadata) return metadata;
-        const md = {id: 1, lsn: 0, xid: 0};
+        const md = {id: 1, lsn: 0, xid: 0, csn: 0};
         await this.setMetadata(md);
         return md;
     }
@@ -127,9 +129,47 @@ export default class Database {
     }
 
     // --------------------------------------- transactions -----------------------------------------------------------
-    saveTxn(txn) {
+    saveTxn(transaction, db) {
+        const changes = transaction.changes;
         return new Promise((resolve, reject) => {
+            const tableNames = [...unique(changes.map(change => change.table)), 'metadata', 'txnLog'];
+            const txn = this.db.transaction(tableNames, 'readwrite');
+            txn.oncomplete = (ev) => resolve(ev);
+            txn.onerror = (ev) => reject(ev);
 
+            // rows
+            for (let change of changes) {
+                const tableName = change.table;
+                const store = txn.objectStore(tableName);
+                const table = db.tables[tableName];
+                switch (change.type) {
+                    case 'INSERT':
+                        store.put(change.record);
+                        break;
+                    case 'UPDATE':
+                        store.put(change.record);
+                        break;
+                    case 'DELETE':
+                        const pk = getPk(change.record, table);
+                        store.delete(pk);
+                        break;
+                    default:
+                        throw new Error(`Unknown type: ${change.type}`);
+                }
+            }
+
+            // log
+            const req1 = txn.objectStore('metadata').get(1);
+            req1.onerror = (ev) => reject(ev);
+            req1.onsuccess = () => {
+                const metadata = req1.result;
+                metadata.csn++;
+                const req2 = txn.objectStore('metadata').put(metadata);
+                req2.onerror = (ev) => reject(ev);
+                req2.onsuccess = () => {
+                    txn.objectStore('txnLog').put({...transaction, csn: metadata.csn});
+                };
+            };
         });
     }
 
