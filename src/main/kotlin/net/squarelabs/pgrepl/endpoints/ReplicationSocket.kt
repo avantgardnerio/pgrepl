@@ -210,7 +210,7 @@ class ReplicationSocket @Inject constructor(
         this.session = null
         this.remote = null
         LOG.info("WebSocket Close: {} - {}", close!!.closeCode, close.reasonPhrase)
-        // TODO: Unsubscribe from replSvc
+        replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
     }
 
 }
