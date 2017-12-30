@@ -74,7 +74,7 @@ export default class Canvas extends Component {
         if (!this.state.selectedId) return [];
         const selPos = [this.selectedCircle.cx, this.selectedCircle.cy];
         const pos = this.state.downPos ? add(selPos, subtract(this.state.curPos, this.state.downPos)) : selPos;
-        return <circle key="dragItem" cx={pos[0]} cy={pos[1]}
+        return <circle key="dragItem" className="dragItem" cx={pos[0]} cy={pos[1]}
                        r="40" fill="blue" fillOpacity="0.5"/>
     }
 

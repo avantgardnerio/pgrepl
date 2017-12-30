@@ -148,6 +148,19 @@ class AcceptanceTest {
         Assert.assertNotEquals("given an existing circle, when it is dragged, then it moves to the new coordinates",
                 oldY, circle.getAttribute("cy")
         )
+        Assert.assertEquals("given offline mode, when a circle is moved, then there should be a transaction in the log", "2", logLength.text)
+
+        // Exercise: delete
+        circle.click()
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot .dragItem")))
+        svg.sendKeys("d")
+        WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "3"))
+        val circles = driver.findElements(By.cssSelector("#leftRoot circle"))
+
+        // Assert delete
+        Assert.assertEquals("when all circles have been deleted, then there should be none on the screen", 0, circles.size)
+        Assert.assertEquals("when all circles have been deleted, then there should be none in the DB", "0", numCircles.text)
+        Assert.assertEquals("given offline mode, when a circle is deleted, then there should be a transaction in the log", "3", logLength.text)
     }
 
     // ------------------------------------------- helpers ------------------------------------------------------------
