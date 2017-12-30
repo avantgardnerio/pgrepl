@@ -16,6 +16,8 @@ import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.interactions.Actions
+import org.openqa.selenium.interactions.HasInputDevices
+import org.openqa.selenium.internal.Locatable
 import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
@@ -110,27 +112,42 @@ class AcceptanceTest {
         )
     }
 
+    // Black box test by necessity: can't populate indexeddb from selenium
     @Test
-    fun `clients should insert while disconnected`() {
+    fun `clients should CRUD while disconnected`() {
 
         // Setup
         clearIndexedDb()
         navigateAndWaitForLoad()
 
-        // Exercise
+        // Exercise: insert
         val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
-
-        // Exercise
         Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
         WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot circle")))
         val circle = driver.findElement(By.cssSelector("#leftRoot circle"))
-        val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles")).text
-        val logLength = driver.findElement(By.cssSelector("#leftRoot .logLength")).text
+        val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val logLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
 
         // Assert
         Assert.assertNotNull("given offline mode, when canvas is clicked, then a circle should be created", circle)
-        Assert.assertEquals("when a circle is visible, then there should be a record in the database", "1", numCircles)
-        Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "1", logLength)
+        Assert.assertEquals("when a circle is visible, then there should be a record in the database", "1", numCircles.text)
+        Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "1", logLength.text)
+
+        // Exercise: update
+        val oldX = circle.getAttribute("cx")
+        val oldY = circle.getAttribute("cy")
+        val mouse = (driver as HasInputDevices).mouse
+        mouse.mouseDown((circle as Locatable).coordinates)
+        mouse.mouseUp((svg as Locatable).coordinates)
+        WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "2"))
+
+        // Assert: update
+        Assert.assertNotEquals("given an existing circle, when it is dragged, then it moves to the new coordinates",
+                oldX, circle.getAttribute("cx")
+        )
+        Assert.assertNotEquals("given an existing circle, when it is dragged, then it moves to the new coordinates",
+                oldY, circle.getAttribute("cy")
+        )
     }
 
     // ------------------------------------------- helpers ------------------------------------------------------------
