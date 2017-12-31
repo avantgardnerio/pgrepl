@@ -39,8 +39,8 @@ export default class Canvas extends Component {
         if (this.state.selectedId === undefined) {
             const circle = {
                 id: uuidv4(),
-                cx: e.clientX,
-                cy: e.clientY,
+                cx: e.clientX - Math.round(e.target.getBoundingClientRect().x),
+                cy: e.clientY - Math.round(e.target.getBoundingClientRect().y),
                 r: 40,
                 stroke: "green",
                 strokeWidth: 4,
