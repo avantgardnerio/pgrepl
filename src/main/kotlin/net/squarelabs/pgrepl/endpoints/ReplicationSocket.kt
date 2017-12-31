@@ -115,6 +115,7 @@ class ReplicationSocket @Inject constructor(
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             val dbName = cfgSvc.getAppDbName()
             replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> onTxn(lsn, json) })
+            // TODO: send subscribe response
         }
     }
 

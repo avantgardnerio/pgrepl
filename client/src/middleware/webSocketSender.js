@@ -16,6 +16,9 @@ export const createWebSocketSender = (socket) => {
                             console.log('Got snapshot, subscribing for changes');
                             if(socket.connected) socket.write(subscribeRequest(socket.id, store.getState().lsn));
                             return next(action);
+                        case 'SUBSCRIBE_RESPONSE':
+                            // TODO: flush client log to server
+                            break;
                         case 'COMMIT':
                             console.log('Sending', action.txn.id);
                             if(socket.connected) socket.write(action);
