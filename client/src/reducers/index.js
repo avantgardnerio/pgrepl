@@ -58,23 +58,29 @@ const handleServerTxn = (state, action, db) => {
     // validate
     const payload = action.payload;
     let newState = JSON.parse(JSON.stringify(state));
-    if (payload.lsn < state.lsn || payload.xid < state.xid)
-        throw new Error(`Received old txn from server: ${payload.lsn}`);
-    if (payload.lsn === state.lsn || payload.xid === state.xid)
-        throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
-    if (payload.xid !== state.xid + 1)
-        console.warn(`Skipping ${payload.xid - state.xid - 1} transactions :/`); // TODO: get initial xid?
+    if(payload.lsn !== 0) { // zero for transaction failures
+        if (payload.lsn < state.lsn || payload.xid < state.xid)
+            throw new Error(`Received old txn from server: ${payload.lsn}`);
+        if (payload.lsn === state.lsn || payload.xid === state.xid)
+            throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
+        if (payload.xid !== state.xid + 1)
+            console.warn(`Skipping ${payload.xid - state.xid - 1} transactions :/`); // TODO: get initial xid?
+    } else {
+        console.log(`Rolling back txn ${payload.clientTxnId} due to conflict!`);
+    }
 
     // rollback
     newState = rollbackLog(newState);
 
     // Apply
-    newState.lsn = payload.lsn;
-    newState.xid = payload.xid;
-    console.log('handleTxn action=', action);
-    const changes = payload.change;
-    for (let change of changes) {
-        handleChange(newState, change);
+    if(payload.lsn !== 0) {
+        newState.lsn = payload.lsn;
+        newState.xid = payload.xid;
+        console.log('handleTxn action=', action);
+        const changes = payload.change;
+        for (let change of changes) {
+            handleChange(newState, change);
+        }
     }
 
     // Remove duplicate transactions

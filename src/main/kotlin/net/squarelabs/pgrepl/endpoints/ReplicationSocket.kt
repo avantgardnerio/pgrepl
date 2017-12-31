@@ -88,8 +88,8 @@ class ReplicationSocket @Inject constructor(
             val msg = mapper.fromJson(json, clazz)
             when (msg) {
                 is SubscribeRequest -> handleSubscribe(msg, mapper)
-                is CommitMsg -> handleTxns(listOf(msg.txn))
-                is MultiCommit -> handleTxns(msg.txns)
+                is CommitMsg -> handleTxns(listOf(msg.txn), mapper)
+                is MultiCommit -> handleTxns(msg.txns, mapper)
                 is PingRequest -> handlePing(mapper)
                 is SnapshotRequest -> handleSnapshotReq(mapper)
                 else -> throw Exception("Unknown message: ${msg::class}")
@@ -129,26 +129,31 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    private fun handleTxns(txns: List<ClientTxn>) {
+    private fun handleTxns(txns: List<ClientTxn>, mapper: Gson) {
         val snap = snapshot()
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             con.autoCommit = false
             for (txn in txns) {
-                txn.changes.forEach({ change ->
-                    when (change.type) {
-                        "INSERT" -> handleInsert(change, con)
-                        "UPDATE" -> handleUpdate(change, con, snap)
-                        "DELETE" -> handleDelete(change, con, snap)
-                        else -> throw Exception("Unknown change type: ${change.type}")
+                try {
+                    txn.changes.forEach({ change ->
+                        when (change.type) {
+                            "INSERT" -> handleInsert(change, con)
+                            "UPDATE" -> handleUpdate(change, con, snap)
+                            "DELETE" -> handleDelete(change, con, snap)
+                            else -> throw Exception("Unknown change type: ${change.type}")
+                        }
+                    })
+                    con.prepareStatement(txnMapSql).use { stmt ->
+                        stmt.setString(1, txn.id)
+                        val res = stmt.executeUpdate()
+                        if (res != 1) throw Exception("Unable update txn map!")
                     }
-                })
-                // TODO: Handle transaction failures
-                con.prepareStatement(txnMapSql).use { stmt ->
-                    stmt.setString(1, txn.id)
-                    val res = stmt.executeUpdate()
-                    if (res != 1) throw Exception("Unable update txn map!")
+                    con.commit()
+                } catch (ex: Exception) {
+                    con.rollback()
+                    val t = Transaction(0, null, null, txn.id, 0, ArrayList())
+                    remote!!.sendText(mapper.toJson(TxnMsg(t)))
                 }
-                con.commit()
             }
         }
     }
