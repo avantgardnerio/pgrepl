@@ -240,6 +240,8 @@ class AcceptanceTest {
 
         // Exercise: reload
         navigateAndWaitForLoad()
+
+        // Assert: log is the same
         val numCircles2 = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
         val logLength2 = driver.findElement(By.cssSelector("#leftRoot .logLength"))
         val circleEl2 = driver.findElement(By.cssSelector("#leftRoot circle"))

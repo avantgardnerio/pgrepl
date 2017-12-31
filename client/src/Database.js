@@ -5,9 +5,10 @@ import {getPk} from "./util/db";
 
 const migrations = [
     (db) => { // v1: system data
-        db.createObjectStore('txnLog', {keyPath: 'csn'});
         db.createObjectStore('txn_id_map', {keyPath: 'xid'});
         db.createObjectStore('metadata', {keyPath: 'id'});
+        const txnLog = db.createObjectStore('txnLog', {keyPath: 'csn'});
+        txnLog.createIndex('txnId', 'id');
     },
     (db) => { // v2: app data
         db.createObjectStore('circles', {keyPath: 'id'});
@@ -178,17 +179,41 @@ export default class Database {
             }
 
             // log
-            const req1 = txn.objectStore('metadata').get(1);
-            req1.onerror = (ev) => reject(ev);
-            req1.onsuccess = () => {
-                const metadata = req1.result;
+            if(transaction.id === undefined) {
+                console.log('Skipping composite txn...');
+                return; // rollback and replay diff txns don't have an ID and shouldn't be logged
+            }
+            const getReq = txn.objectStore('metadata').get(1);
+            getReq.onerror = (ev) => reject(ev);
+            getReq.onsuccess = () => {
+                const metadata = getReq.result;
                 metadata.csn++;
-                const req2 = txn.objectStore('metadata').put(metadata);
-                req2.onerror = (ev) => reject(ev);
-                req2.onsuccess = () => {
+                const putReq = txn.objectStore('metadata').put(metadata);
+                putReq.onerror = (ev) => reject(ev);
+                putReq.onsuccess = () => {
                     txn.objectStore('txnLog').put({...transaction, csn: metadata.csn});
                 };
             };
+        });
+    }
+
+    removeFromLog(txnId) {
+        return new Promise((resolve, reject) => {
+            const txn = this.db.transaction('txnLog', 'readwrite');
+            const store = txn.objectStore('txnLog');
+            const idx = store.index('txnId');
+            const req = idx.get(txnId);
+            req.onsuccess = () => {
+                if(req.result) {
+                    console.log('deleting txn', req.result.csn, txnId);
+                    const delReq = store.delete(req.result.csn);
+                    delReq.onsuccess = () => resolve(req.result);
+                    delReq.onerror = (ev) => reject(ev);
+                } else {
+                    resolve(undefined);
+                }
+            };
+            req.onerror = (ev) => reject(ev);
         });
     }
 

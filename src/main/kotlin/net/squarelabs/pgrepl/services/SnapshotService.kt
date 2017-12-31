@@ -23,7 +23,7 @@ class SnapshotService {
                             .sortedBy { it.ordinalPosition }
                             .map { Column(it.columnName, it.dataType, it.pkOrdinal) }
                     val colNames = columns.map { it.name }
-                    val rows = if(includeRows) selectAll(tableName, colNames, con) else ArrayList()
+                    val rows = if (includeRows) selectAll(tableName, colNames, con) else ArrayList()
                     Table(tableName, columns, rows)
                 }
         val lsn = getCurrentLSN(con)
@@ -40,7 +40,7 @@ class SnapshotService {
             st.executeQuery(sql).use { rs ->
                 return if (rs.next()) {
                     val lsn = rs.getString(1)
-                    LogSequenceNumber.valueOf(lsn).asLong() + 1L
+                    LogSequenceNumber.valueOf(lsn).asLong() - 1
                 } else {
                     LogSequenceNumber.INVALID_LSN.asLong()
                 }
@@ -57,7 +57,7 @@ class SnapshotService {
                 while (it.next()) {
                     val args = columns
                             .map { col -> it.getObject(col) }
-                            .map { if(it is Int) it.toDouble() else it } // JSON will turn to double anyway
+                            .map { if (it is Int) it.toDouble() else it } // JSON will turn to double anyway
                     val row = Row(args)
                     rows.add(row)
                 }

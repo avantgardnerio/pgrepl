@@ -79,6 +79,7 @@ const handleServerTxn = (state, action, db) => {
 
     // Remove duplicate transactions
     newState.log = newState.log.filter(txn => txn.id !== payload.clientTxnId);
+    db.removeFromLog(payload.clientTxnId);
 
     // Replay log
     replayLog(newState);
@@ -98,17 +99,17 @@ const diff = (prior, post) => {
     tableNames.forEach(tableName => {
         const priorTable = prior.tables[tableName];
         const postTable = post.tables[tableName];
-        for(let postRow of postTable.rows) {
+        for (let postRow of postTable.rows) {
             const pk = getPk(postRow, postTable);
             const priorRow = getRowByPk(pk, priorTable);
-            if(!priorRow) {
+            if (!priorRow) {
                 const change = {
                     type: 'INSERT',
                     table: tableName,
                     record: postRow
                 };
                 txn.changes.push(change);
-            } else if(!equals(priorRow, postRow)) {
+            } else if (!equals(priorRow, postRow)) {
                 const change = {
                     type: 'UPDATE',
                     table: tableName,
@@ -118,10 +119,10 @@ const diff = (prior, post) => {
                 txn.changes.push(change);
             }
         }
-        for(let priorRow of priorTable.rows) {
+        for (let priorRow of priorTable.rows) {
             const pk = getPk(priorRow, priorTable);
             const postRow = getRowByPk(pk, postTable);
-            if(!postRow) {
+            if (!postRow) {
                 const change = {
                     type: 'DELETE',
                     table: tableName,
@@ -225,7 +226,7 @@ const handleLocalCommit = (state, txn, db) => {
         applyChange(txn, newState, change);
     }
     newState.log.push(txn);
-    if(db) saveCommit(state, db, txn); // No DB during rollback and replay
+    if (db) saveCommit(state, db, txn); // No DB during rollback and replay
     return newState;
 };
 
