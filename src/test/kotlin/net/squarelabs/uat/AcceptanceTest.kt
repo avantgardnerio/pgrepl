@@ -191,6 +191,40 @@ class AcceptanceTest {
     }
 
     @Test
+    fun `offline work should flush to server on connect`() {
+        // Setup
+        clearIndexedDb()
+        navigateAndWaitForLoad()
+
+        // Exercise: insert
+        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
+        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot circle")))
+
+        // Exercise: connect
+        driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        driver.findElement(By.cssSelector("#rightRoot .btnConnect")).click()
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), "0")))
+
+        // Assert: left
+        val leftNumCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
+        val leftLogLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
+        val leftCircleEl = driver.findElement(By.cssSelector("#leftRoot circle"))
+        Assert.assertNotNull("given a client has a circle, when they connect, then the circle should remain on screen", leftCircleEl)
+        Assert.assertEquals("given a client has a circle, when they connect, then the circle should remain in DB", "1", leftNumCircles.text)
+        Assert.assertEquals("given a client with offline change, when they connect, changes should flush to server", "0", leftLogLength.text)
+
+        // Assert: right
+        val rightNumCircles = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        val rightLogLength = driver.findElement(By.cssSelector("#rightRoot .logLength"))
+        val rightCircleEl = driver.findElement(By.cssSelector("#rightRoot circle"))
+        Assert.assertNotNull("given a client connects to the server, when there is a circle, the client should receive it", rightCircleEl)
+        Assert.assertEquals("given a circle is on the screen, then it should also be in the DB", "1", rightNumCircles.text)
+        Assert.assertEquals("given a client connects to a server with a change, it is not stored in the local log", "0", rightLogLength.text)
+    }
+
+    @Test
     fun `client should get state from server on connect`() {
 
         // Setup
