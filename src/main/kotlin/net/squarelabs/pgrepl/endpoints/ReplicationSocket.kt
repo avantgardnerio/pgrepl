@@ -5,6 +5,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import net.squarelabs.pgrepl.messages.*
 import net.squarelabs.pgrepl.model.ClientChange
+import net.squarelabs.pgrepl.model.ClientTxn
 import net.squarelabs.pgrepl.model.Snapshot
 import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.ConfigService
@@ -79,14 +80,16 @@ class ReplicationSocket @Inject constructor(
             val clazz = when (baseMsg.type) {
                 "SUBSCRIBE_REQUEST" -> SubscribeRequest::class.java
                 "COMMIT" -> CommitMsg::class.java
+                "MULTI_COMMIT" -> MultiCommit::class.java
                 "PING" -> PingRequest::class.java
                 "SNAPSHOT_REQUEST" -> SnapshotRequest::class.java
                 else -> throw Exception("Unknown message: ${baseMsg.type}")
             }
             val msg = mapper.fromJson(json, clazz)
             when (msg) {
-                is SubscribeRequest -> handleSubscribe(msg)
-                is CommitMsg -> handleMsg(msg)
+                is SubscribeRequest -> handleSubscribe(msg, mapper)
+                is CommitMsg -> handleTxns(listOf(msg.txn))
+                is MultiCommit -> handleTxns(msg.txns)
                 is PingRequest -> handlePing(mapper)
                 is SnapshotRequest -> handleSnapshotReq(mapper)
                 else -> throw Exception("Unknown message: ${msg::class}")
@@ -110,12 +113,12 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    private fun handleSubscribe(req: SubscribeRequest) {
+    private fun handleSubscribe(req: SubscribeRequest, mapper: Gson) {
         clientId = UUID.fromString(req.clientId)
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             val dbName = cfgSvc.getAppDbName()
             replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> onTxn(lsn, json) })
-            // TODO: send subscribe response
+            remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
         }
     }
 
@@ -126,23 +129,25 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    private fun handleMsg(msg: CommitMsg) {
+    private fun handleTxns(txns: List<ClientTxn>) {
         val snap = snapshot()
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             con.autoCommit = false
-            msg.txn.changes.forEach({ change ->
-                when (change.type) {
-                    "INSERT" -> handleInsert(change, msg, con)
-                    "UPDATE" -> handleUpdate(change, con, snap)
-                    "DELETE" -> handleDelete(change, con, snap)
-                    else -> throw Exception("Unknown change type: ${change.type}")
+            for (txn in txns) {
+                txn.changes.forEach({ change ->
+                    when (change.type) {
+                        "INSERT" -> handleInsert(change, con)
+                        "UPDATE" -> handleUpdate(change, con, snap)
+                        "DELETE" -> handleDelete(change, con, snap)
+                        else -> throw Exception("Unknown change type: ${change.type}")
+                    }
+                })
+                // TODO: Handle transaction failures
+                con.prepareStatement(txnMapSql).use { stmt ->
+                    stmt.setString(1, txn.id)
+                    val res = stmt.executeUpdate()
+                    if (res != 1) throw Exception("Unable update txn map!")
                 }
-            })
-            // TODO: Handle transaction failures
-            con.prepareStatement(txnMapSql).use { stmt ->
-                stmt.setString(1, msg.txn.id)
-                val res = stmt.executeUpdate()
-                if (res != 1) throw Exception("Unable update txn map!")
             }
             con.commit()
         }
@@ -188,7 +193,7 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    private fun handleInsert(change: ClientChange, msg: CommitMsg, con: Connection) {
+    private fun handleInsert(change: ClientChange, con: Connection) {
         val row = change.record
         val colNames = row.keys.joinToString(",")
         val values = row.values.map { "?" }.joinToString(",")

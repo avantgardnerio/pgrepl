@@ -14,14 +14,19 @@ export const createWebSocketSender = (socket) => {
                             break;
                         case 'SNAPSHOT_RESPONSE':
                             console.log('Got snapshot, subscribing for changes');
-                            if(socket.connected) socket.write(subscribeRequest(socket.id, store.getState().lsn));
+                            if (socket.connected) socket.write(subscribeRequest(socket.id, store.getState().lsn));
                             return next(action);
                         case 'SUBSCRIBE_RESPONSE':
-                            // TODO: flush client log to server
+                            console.log('Subscribed for change notifications from server!');
+                            const msg = {
+                                type: 'MULTI_COMMIT',
+                                txns: store.getState().log
+                            };
+                            socket.write(msg);
                             break;
                         case 'COMMIT':
                             console.log('Sending', action.txn.id);
-                            if(socket.connected) socket.write(action);
+                            if (socket.connected) socket.write(action);
                             return next(action);
                         default:
                             return next(action);
