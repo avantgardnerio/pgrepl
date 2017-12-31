@@ -5,7 +5,7 @@ export const insertRow = (table, record) => {
     return {
         type: "INSERT",
         table,
-        record
+        record: {...record}
     }
 };
 
@@ -16,7 +16,7 @@ export const updateRow = (tableName, record, db) => {
     return {
         type: "UPDATE",
         table: tableName,
-        record,
+        record: {...record},
         prior
     }
 };
@@ -25,7 +25,7 @@ export const deleteRow = (table, record) => {
     return {
         type: "DELETE",
         table,
-        record
+        record: {...record}
     }
 };
 

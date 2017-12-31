@@ -1,4 +1,4 @@
-import {getPk, getRowByPk, removeRow, updateRow} from '../util/db';
+import {getPk, getRowByPk, insertRow, removeRow, updateRow} from '../util/db';
 import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
@@ -228,12 +228,17 @@ const handleInsert = (table, change) => {
 
 const handleLocalCommit = (state, txn, db) => {
     const newState = JSON.parse(JSON.stringify(state));
-    for (let change of txn.changes) {
-        applyChange(txn, newState, change);
+    try {
+        for (let change of txn.changes) {
+            applyChange(txn, newState, change);
+        }
+        newState.log.push(txn);
+        if (db) saveCommit(state, db, txn); // No DB during rollback and replay
+        return newState;
+    } catch(ex) {
+        console.log('Conflict while applying local commit txnId=', txn.id);
+        return state;
     }
-    newState.log.push(txn);
-    if (db) saveCommit(state, db, txn); // No DB during rollback and replay
-    return newState;
 };
 
 const applyChange = (txn, state, change) => {
@@ -243,7 +248,7 @@ const applyChange = (txn, state, change) => {
     state.tables[change.table] = table;
     switch (change.type) {
         case 'INSERT':
-            table.rows.push(change.record); // TODO: Don't mutate?
+            insertRow(change.record, table);
             break;
         case 'UPDATE':
             updateRow(change.record, table);
