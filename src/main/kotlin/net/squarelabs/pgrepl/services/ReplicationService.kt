@@ -20,13 +20,14 @@ class ReplicationService @Inject constructor(
     fun subscribe(dbName: String, clientId: UUID, lsn: Long, handler: (Long, String) -> Unit) {
         // TODO: global audit for subscribe after close
         if (closed) throw Exception("Can't subscribe while closing!")
-        val repl = listeners.getOrPut(dbName, { Replicator(dbName, clientId, lsn, cfgSvc, slotSvc, conSvc) })
+        val repl = listeners.getOrPut(clientId.toString(), { Replicator(dbName, clientId, lsn, cfgSvc, slotSvc, conSvc) })
         repl.addListener(clientId, handler)
     }
 
     @Synchronized
     fun unsubscribe(dbName: String, clientId: UUID) {
-        listeners.get(dbName)!!.removeListener(clientId)
+        listeners.get(clientId.toString())!!.close()
+        listeners.remove(clientId.toString())
     }
 
     @Synchronized

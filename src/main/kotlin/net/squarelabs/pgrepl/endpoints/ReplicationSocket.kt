@@ -67,7 +67,9 @@ class ReplicationSocket @Inject constructor(
                     }
                     val txnId = rs.getString(1)
                     val msg = TxnMsg(txn.copy(lsn = lsn, clientTxnId = txnId))
-                    remote!!.sendText(mapper.toJson(msg))
+
+                    // TODO: ReplicationSockets with null remotes
+                    if(remote != null) remote!!.sendText(mapper.toJson(msg))
                 }
             }
         }

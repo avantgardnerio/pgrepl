@@ -44,8 +44,12 @@ class Replicator(
 
         // Create a slot
         val slotName = "slot_${clientId.toString().replace("-", "_")}"
-        slotSvc.drop(slotName)
-        slotSvc.create(url, slotName, plugin)
+        if(!slotSvc.list().contains(slotName)) {
+            slotSvc.create(url, slotName, plugin)
+            LOG.info("Created slot $slotName")
+        } else {
+            LOG.info("Reconnected slot $slotName @ LSN=$lsn")
+        }
 
         // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
         stream = con
@@ -59,7 +63,7 @@ class Replicator(
                 .withSlotOption("include-timestamp", true)
                 .withSlotOption("include-schemas", false)
                 .withSlotOption("include-lsn", true)
-                .withStatusInterval(20, TimeUnit.SECONDS)
+                //.withStatusInterval(20, TimeUnit.SECONDS)
                 .start()
         future = executor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
     }
@@ -75,7 +79,7 @@ class Replicator(
                     listeners.values.forEach({ l -> l(lsn.asLong(), str) })
                 })
                 stream.setAppliedLSN(lsn)
-                stream.setFlushedLSN(lsn) // TODO: never flush?
+                //stream.setFlushedLSN(lsn) // TODO: never flush?
                 buffer = stream.readPending()
             }
         } catch (ex: PSQLException) {
