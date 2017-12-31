@@ -148,8 +148,8 @@ class ReplicationSocket @Inject constructor(
                     val res = stmt.executeUpdate()
                     if (res != 1) throw Exception("Unable update txn map!")
                 }
+                con.commit()
             }
-            con.commit()
         }
     }
 
