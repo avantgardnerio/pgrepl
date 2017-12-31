@@ -284,6 +284,48 @@ class AcceptanceTest {
         Assert.assertEquals("given there is no log, when the browser is refreshed, there should still be no log", "0", logLength2.text)
     }
 
+    @Test
+    fun `conflicting edits should be rolled back`() {
+        // Setup
+        clearIndexedDb()
+        navigateAndWaitForLoad()
+        driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
+        driver.findElement(By.cssSelector("#rightRoot .btnConnect")).click()
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#leftRoot .lsn"), "0")))
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), "0")))
+        val leftLsnField = driver.findElement(By.cssSelector("#leftRoot .lsn"))
+        val rghtLsnField = driver.findElement(By.cssSelector("#rightRoot .lsn"))
+        val originalLsnText = leftLsnField.text
+
+        // Setup: create circle
+        val leftSvg = driver.findElement(By.cssSelector("#leftRoot svg"))
+        val rghtSvg = driver.findElement(By.cssSelector("#rightRoot svg"))
+        Actions(driver).moveToElement(leftSvg, 10, 25).click().build().perform()
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(rghtLsnField, originalLsnText)))
+
+        // Exercise: go offline and make change
+        driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
+        val mouse = (driver as HasInputDevices).mouse
+        val leftCircle = driver.findElement(By.cssSelector("#leftRoot circle"))
+        val rghtCircle = driver.findElement(By.cssSelector("#rightRoot circle"))
+        val leftLogLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
+        mouse.mouseDown((leftCircle as Locatable).coordinates)
+        mouse.mouseUp((leftSvg as Locatable).coordinates)
+        mouse.mouseDown((rghtCircle as Locatable).coordinates)
+        mouse.mouseUp((rghtSvg as Locatable).coordinates)
+        WebDriverWait(driver, 3).until(textToBePresentInElement(leftLogLength, "1"))
+
+        // Exercise: go back online
+        driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
+        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, rghtLsnField.text)))
+
+        // Assert
+        Assert.assertEquals("given a conflicting change has been made, when a client goes back online, then the change is rolled back",
+                "0", leftLogLength.text
+        )
+    }
+
     // ------------------------------------------- helpers ------------------------------------------------------------
     private fun navigateAndWaitForLoad() {
         driver.get("http://127.0.0.1:8080/")
