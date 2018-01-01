@@ -38,7 +38,7 @@ export default class Panel extends Component {
                 </tr>
                 <tr>
                     <td>lsn</td>
-                    <td className="lsn">{new Number(this.props.state.lsn).toLocaleString()}</td>
+                    <td className="lsn">{this.props.state.lsn.toLocaleString()}</td>
                 </tr>
                 <tr>
                     <td>xid</td>

@@ -47,8 +47,9 @@ export default class Canvas extends Component {
                 fill: "yellow"
             };
             const change = insertRow("circles", circle);
-            const txn = createTxn([change]);
-            this.props.commit(txn);
+            const action = createTxn([change]);
+            console.log(`Inserting a circle at [${circle.cx}, ${circle.cy}] as TXN=${action.txn.id}`);
+            this.props.commit(action);
         } else {
             if (!this.state.selectedId) return;
             if (equals(this.state.curPos, this.state.downPos)) {

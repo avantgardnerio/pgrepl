@@ -11,26 +11,26 @@ export const getRowByPk = (pk, table) => table.rows.find(row => arrayEq(pk, getP
 
 export const getPk = (rec, table) => getPkCols(table).map(key => rec[key]);
 
-export const arrayEq = (a,b) => _.range(Math.max(a.length, b.length))
+export const arrayEq = (a, b) => _.range(Math.max(a.length, b.length))
     .reduce((acc, cur) => acc && a[cur] === b[cur], true);
 
-export const removeRow = (row, table) => {
+export const removeRow = (row, table, force = false) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    if(row.prvtxnid !== oldRow.curtxnid) throw new Error("Can't delete, curTxnId mismatch!");
+    if (!force && row.prvtxnid !== oldRow.curtxnid) throw new Error("Can't delete, curTxnId mismatch!");
     table.rows = table.rows.filter(row => !arrayEq(pk, getPk(row, table)));
 };
 
-export const updateRow = (row, table) => {
+export const updateRow = (row, table, force = false) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    if(row.prvtxnid !== oldRow.curtxnid) throw new Error("Can't update, curTxnId mismatch!");
+    if (!force && row.prvtxnid !== oldRow.curtxnid) throw new Error("Can't update, curTxnId mismatch!");
     table.rows = table.rows.map(r => arrayEq(pk, getPk(r, table)) ? row : r);
 };
 
-export const insertRow = (row, table) => {
+export const insertRow = (row, table, force = false) => {
     const pk = getPk(row, table);
     const existing = getRowByPk(pk, table);
-    if(existing) throw new Error("Can't insert, row already exists!");
+    if (!force && existing) throw new Error("Can't insert, row already exists!");
     table.rows.push(row);
 };

@@ -28,6 +28,7 @@ export default class SocketService {
     }
 
     write(msg) {
+        console.log(`Sending ${msg.type} on WebSocket ${this.id}`);
         const json = JSON.stringify(msg);
         this._send(json);
     };
@@ -37,18 +38,18 @@ export default class SocketService {
     }
 
     _onopen = () => {
-        console.info("Websocket Connected");
+        console.info(`WebSocket ${this.id} Connected`);
         if (this.onConnect) this.onConnect();
         this.timer = setInterval(() => this.write({type: 'PING'}), 30000);
     };
 
     _send = (message) => {
-        console.log('Sending message on WebSocket', this.id);
         this._ws.send(message);
     };
 
     _onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
+        console.log(`Received ${msg.type} on WebSocket ${this.id}`);
         if (this.onMsg) this.onMsg(msg);
     };
 

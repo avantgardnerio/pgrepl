@@ -18,14 +18,15 @@ export const createWebSocketSender = (socket) => {
                             return next(action);
                         case 'SUBSCRIBE_RESPONSE':
                             console.log('Subscribed for change notifications from server!');
-                            const msg = {
-                                type: 'MULTI_COMMIT',
-                                txns: store.getState().log
-                            };
-                            socket.write(msg);
+                            const log = store.getState().log;
+                            if (log.length > 0) {
+                                console.log(`Flushing ${log.length} local transactions to server`);
+                                const msg = {type: 'MULTI_COMMIT', txns: log};
+                                socket.write(msg);
+                            }
                             break;
                         case 'COMMIT':
-                            console.log('Sending', action.txn.id);
+                            console.log(`Sending txnId=${action.txn.id} to server`);
                             if (socket.connected) socket.write(action);
                             return next(action);
                         default:

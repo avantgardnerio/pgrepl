@@ -2,7 +2,7 @@ import {getPk, getRowByPk, insertRow, removeRow, updateRow} from '../util/db';
 import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
-    console.log('Creating reducer with initial lsn=', initialState.lsn);
+    console.log(`Creating reducer with initial LSN=${initialState.lsn}`);
     const reducer = (state = initialState, action) => {
         switch (action.type) {
             case 'COMMIT':
@@ -33,6 +33,7 @@ const handleSnapshot = (state, action, db) => {
     const newState = JSON.parse(JSON.stringify(state));
     if (newState.lsn) throw new Error('Cannot play snapshot onto already initialized database!');
     const snapshot = action.payload;
+    console.log(`Initalizing redux store with snapshot LSN=${snapshot.lsn}`);
     newState.lsn = snapshot.lsn;
     for (let actionTable of snapshot.tables) {
         const tableName = actionTable.name;
@@ -49,7 +50,8 @@ const handleSnapshot = (state, action, db) => {
             stateTable.rows.push(record);
         }
     }
-    //console.log(action);
+
+    console.log(`Saving snapshot LSN=${snapshot.lsn} to IndexedDb`);
     saveSnapshot(db, snapshot);
     return newState;
 };
@@ -68,15 +70,17 @@ const handleServerTxn = (state, action, db) => {
     } else {
         console.log(`Rolling back txn ${payload.clientTxnId} due to conflict!`);
     }
+    console.log(`Applying transaction from server LSN=${payload.lsn} txnId=${payload.clientTxnId}`);
 
     // rollback
+    console.log(`Rolling back ${state.log.length} local transactions...`);
     newState = rollbackLog(newState);
 
     // Apply
     if(payload.lsn !== 0) {
         newState.lsn = payload.lsn;
         newState.xid = payload.xid;
-        console.log('handleTxn action=', action);
+        console.log(`Rollback complete, applying server transaction LSN=${payload.lsn} txnId=${payload.clientTxnId}`);
         const changes = payload.change;
         for (let change of changes) {
             handleChange(newState, change);
@@ -86,12 +90,15 @@ const handleServerTxn = (state, action, db) => {
     // Remove duplicate transactions
     newState.log = newState.log.filter(txn => txn.id !== payload.clientTxnId);
     db.removeFromLog(payload.clientTxnId);
+    console.log(`Filtered log from ${state.log.length} transactions to ${newState.log.length}`);
 
     // Replay log
+    console.log(`Replaying ${newState.log.length} local transactions`);
     replayLog(newState);
 
     // Save to IndexedDB
     const txn = diff(state, newState);
+    console.log(`Updating IndexedDb with a diff of ${txn.changes.length} changes`);
     saveCommit(newState, db, txn);
 
     return newState;
@@ -176,7 +183,7 @@ const rollbackLog = (state) => {
     let txn = log.pop();
     while (txn !== undefined) {
         txn = invert(txn);
-        state = handleLocalCommit(state, txn);
+        state = handleLocalCommit(state, txn, undefined, true);
         txn = log.pop();
     }
     return state;
@@ -226,11 +233,12 @@ const handleInsert = (table, change) => {
     table.rows.push(row);
 };
 
-const handleLocalCommit = (state, txn, db) => {
+const handleLocalCommit = (state, txn, db, force = false) => {
+    console.log(`Committing txnId=${txn.id} to redux store`);
     const newState = JSON.parse(JSON.stringify(state));
     try {
         for (let change of txn.changes) {
-            applyChange(txn, newState, change);
+            applyChange(txn, newState, change, force);
         }
         newState.log.push(txn);
         if (db) saveCommit(state, db, txn); // No DB during rollback and replay
@@ -241,20 +249,20 @@ const handleLocalCommit = (state, txn, db) => {
     }
 };
 
-const applyChange = (txn, state, change) => {
+const applyChange = (txn, state, change, force = false) => {
     const table = state.tables[change.table] || {
         rows: []
     };
     state.tables[change.table] = table;
     switch (change.type) {
         case 'INSERT':
-            insertRow(change.record, table);
+            insertRow(change.record, table, force);
             break;
         case 'UPDATE':
-            updateRow(change.record, table);
+            updateRow(change.record, table, force);
             break;
         case 'DELETE':
-            removeRow(change.record, table);
+            removeRow(change.record, table, force);
             break;
         default:
             throw new Error(`Unknown type: ${change.type}`);
@@ -268,7 +276,7 @@ const saveCommit = async (state, db, txn) => {
 };
 
 const saveSnapshot = async (db, snapshot) => {
-    console.log(`Saving snapshot ${snapshot.lsn} to IndexedDB...`);
+    console.log(`Saving snapshot LSN=${snapshot.lsn} to IndexedDB...`);
     const metadata = await db.getMetadata();
     metadata.lsn = snapshot.lsn;
     db.setMetadata(metadata);

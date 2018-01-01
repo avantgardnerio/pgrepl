@@ -46,10 +46,13 @@ export default class Database {
     // --------------------------------------------- metadata ---------------------------------------------------------
     async getMetadataOrDefault() {
         const metadata = await this.getMetadata();
-        console.log('metadata=', metadata);
-        if (metadata) return metadata;
+        if (metadata) {
+            console.log(`Found initialized IndexedDB, loaded metadata`, metadata);
+            return metadata;
+        }
         const md = {id: 1, lsn: 0, xid: 0, csn: 0};
         await this.setMetadata(md);
+        console.log(`Successfully initialized IndexedDb with metadata`, md);
         return md;
     }
 
@@ -179,7 +182,7 @@ export default class Database {
             }
 
             // log
-            if(transaction.id === undefined) {
+            if (transaction.id === undefined) {
                 console.log('Skipping composite txn...');
                 return; // rollback and replay diff txns don't have an ID and shouldn't be logged
             }
@@ -204,8 +207,8 @@ export default class Database {
             const idx = store.index('txnId');
             const req = idx.get(txnId);
             req.onsuccess = () => {
-                if(req.result) {
-                    console.log('deleting txn', req.result.csn, txnId);
+                if (req.result) {
+                    console.log(`Removing transaction from IndexedDb log csn=${req.result.csn}, txnId=${txnId}`);
                     const delReq = store.delete(req.result.csn);
                     delReq.onsuccess = () => resolve(req.result);
                     delReq.onerror = (ev) => reject(ev);
