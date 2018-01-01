@@ -91,11 +91,18 @@ class AcceptanceTest {
         conSvc.reset()
     }
 
+    private fun loadResource(path: String): String {
+        var text = this.javaClass.getResource(path)
+        if(text != null) return text.readText() // Gradle
+        text = this.javaClass.getResource("/" + path)
+        return text.readText() // IntelliJ
+    }
+
     @Test
     fun `clients should begin in expected state`() {
 
         // Setup
-        val expected = this.javaClass.getResource("/fixtures/initialState.json").readText()
+        val expected = loadResource("fixtures/initialState.json")
         clearIndexedDb()
 
         // Exercise
