@@ -17,20 +17,32 @@ export const arrayEq = (a, b) => _.range(Math.max(a.length, b.length))
 export const removeRow = (row, table, force = false) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    if (!force && row.prvtxnid !== oldRow.curtxnid) throw new Error("Can't delete, curTxnId mismatch!");
+    if (!force && row.prvtxnid !== oldRow.curtxnid) {
+        console.log(`tried to update oldRow=`, oldRow, ` with newRow=`, row);
+        throw new Error("Can't delete, curTxnId mismatch!");
+    }
+    console.log(`Deleting oldRow=`, oldRow, ` pk=`, pk);
     table.rows = table.rows.filter(row => !arrayEq(pk, getPk(row, table)));
 };
 
 export const updateRow = (row, table, force = false) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    if (!force && row.prvtxnid !== oldRow.curtxnid) throw new Error("Can't update, curTxnId mismatch!");
+    if (!force && row.prvtxnid !== oldRow.curtxnid) {
+        console.log(`tried to update oldRow=`, oldRow, ` with newRow=`, row);
+        throw new Error(`Can't update ${table.name}, change is meant to be played on ${row.prvtxnid} but ${oldRow.curtxnid} was present in DB`);
+    }
+    console.log(`Updating oldRow=`, oldRow, ` newRow=`, row);
     table.rows = table.rows.map(r => arrayEq(pk, getPk(r, table)) ? row : r);
 };
 
 export const insertRow = (row, table, force = false) => {
     const pk = getPk(row, table);
-    const existing = getRowByPk(pk, table);
-    if (!force && existing) throw new Error("Can't insert, row already exists!");
+    const oldRow = getRowByPk(pk, table);
+    if (!force && oldRow) {
+        console.log(`tried to update oldRow=`, oldRow, ` with newRow=`, row);
+        throw new Error("Can't insert, row already exists!");
+    }
+    console.log(`Inserting row`, row);
     table.rows.push(row);
 };

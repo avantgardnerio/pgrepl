@@ -19,8 +19,9 @@ export default class Canvas extends Component {
     onKeyPress = (e) => {
         if (e.key === 'd' && this.state.selectedId) {
             const change = deleteRow("circles", this.selectedCircle);
-            const txn = createTxn([change]);
-            this.props.commit(txn);
+            const action = createTxn([change]);
+            console.log(`Deleting a circle at [${this.selectedCircle.cx}, ${this.selectedCircle.cy}] as TXN=${action.txn.id}`);
+            this.props.commit(action);
             this.setState({selectedId: undefined});
         }
     };
@@ -59,8 +60,9 @@ export default class Canvas extends Component {
                 // drag
                 const newCircle = {...this.selectedCircle, cx: e.clientX, cy: e.clientY};
                 const change = updateRow("circles", newCircle, this.props.state);
-                const txn = createTxn([change]);
-                this.props.commit(txn);
+                const action = createTxn([change]);
+                console.log(`Moving a circle to [${newCircle.cx}, ${newCircle.cy}] as TXN=${action.txn.id}`);
+                this.props.commit(action);
                 this.setState({selectedId: undefined, downPos: undefined});
             }
         }

@@ -25,7 +25,8 @@ export const deleteRow = (table, record) => {
     return {
         type: "DELETE",
         table,
-        record: {...record}
+        record: {...record},
+        prior: {...record}
     }
 };
 

@@ -29,10 +29,17 @@ elementIds.forEach((elementId) => {
         ws.onMsg = (msg) => store.dispatch(msg);
         ws.onConnect = () => {
             console.log('Connected!');
-            const lsn = store.getState().lsn; // TODO: should be in another file?
-            console.log(lsn ? 'Found initial state, subcribing to changes' : 'Requesting snapshot');
-            const msg = lsn ? subscribeRequest(ws.id, lsn) : snapshotRequest();
-            ws.write(msg);
+            const lsn = store.getState().lsn; // TODO: should be in another file?\
+            if (lsn > 0) {
+                console.log(`Found initial state in IndexedDb`);
+                console.log(`Subscribing to all changes from server where LSN > ${lsn}`);
+                const msg = subscribeRequest(ws.id, lsn + 1);
+                ws.write(msg);
+            } else {
+                console.log(`IndexedDb is empty, requesting snapshot from server`);
+                const msg = snapshotRequest();
+                ws.write(msg);
+            }
             store.dispatch(connected());
         };
         ws.onClose = () => {

@@ -60,13 +60,18 @@ const handleServerTxn = (state, action, db) => {
     // validate
     const payload = action.payload;
     let newState = JSON.parse(JSON.stringify(state));
-    if(payload.lsn !== 0) { // zero for transaction failures
-        if (payload.lsn < state.lsn || payload.xid < state.xid)
-            throw new Error(`Received old txn from server: ${payload.lsn}`);
-        if (payload.lsn === state.lsn || payload.xid === state.xid)
-            throw new Error(`Received duplicate txn from server: ${payload.lsn}`);
-        if (payload.xid !== state.xid + 1)
-            console.warn(`Skipping ${payload.xid - state.xid - 1} transactions :/`); // TODO: get initial xid?
+    if (payload.lsn !== 0) { // zero for transaction failures
+        if (payload.lsn < state.lsn || payload.xid < state.xid) {
+            console.warn(`Received old txn from server: ${payload.lsn}`);
+            return newState;
+        }
+        if (payload.lsn === state.lsn || payload.xid === state.xid) {
+            console.log(`Ignoring duplicate txn from server: ${payload.lsn}`);
+            return newState;
+        }
+        if (payload.xid !== state.xid + 1) {
+            console.log(`Skipping ${payload.xid - state.xid - 1} transactions`); // TODO: get initial xid?
+        }
     } else {
         console.log(`Rolling back txn ${payload.clientTxnId} due to conflict!`);
     }
@@ -77,7 +82,7 @@ const handleServerTxn = (state, action, db) => {
     newState = rollbackLog(newState);
 
     // Apply
-    if(payload.lsn !== 0) {
+    if (payload.lsn !== 0) {
         newState.lsn = payload.lsn;
         newState.xid = payload.xid;
         console.log(`Rollback complete, applying server transaction LSN=${payload.lsn} txnId=${payload.clientTxnId}`);
@@ -151,20 +156,19 @@ const diff = (prior, post) => {
 const invert = (txn) => {
     const newTxn = JSON.parse(JSON.stringify(txn));
     for (let change of newTxn.changes) {
-        switch (change.type) {
-            case 'INSERT':
-                change.type = 'DELETE';
-                break;
-            case 'UPDATE':
-                const post = change.record;
-                change.record = change.prior;
-                change.prior = post;
-                break;
-            case 'DELETE':
-                change.type = 'INSERT';
-                break;
-            default:
-                throw new Error(`Type not implemented: ${change.type}`)
+        if (change.type === 'INSERT') {
+            change.type = 'DELETE';
+        } else if (change.type === 'UPDATE') {
+            const post = change.record;
+            change.record = change.prior;
+            change.prior = post;
+        } else if (change.type === 'DELETE') {
+            change.type = 'INSERT';
+            const post = change.record;
+            change.record = change.prior;
+            change.prior = post;
+        } else {
+            throw new Error(`Type not implemented: ${change.type}`)
         }
     }
     return newTxn;
@@ -230,7 +234,7 @@ const handleInsert = (table, change) => {
     const values = change.columnvalues;
     const row = names
         .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
-    table.rows.push(row);
+    insertRow(row, table);
 };
 
 const handleLocalCommit = (state, txn, db, force = false) => {
@@ -243,7 +247,7 @@ const handleLocalCommit = (state, txn, db, force = false) => {
         newState.log.push(txn);
         if (db) saveCommit(state, db, txn); // No DB during rollback and replay
         return newState;
-    } catch(ex) {
+    } catch (ex) {
         console.log('Conflict while applying local commit txnId=', txn.id);
         return state;
     }
