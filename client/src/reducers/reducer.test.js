@@ -2,9 +2,7 @@ import createReducer from './index';
 
 describe(`the reducer`, () => {
     it(`should allow insert while offline`, () => {
-        const initialState = {
-            lsn: 0
-        };
+        const initialState = {lsn: 0};
         const expected = {
             "tables": {
                 "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
@@ -64,6 +62,16 @@ describe(`the reducer`, () => {
                 ]
             }
         };
+        const reducer = createReducer(initialState);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
+    it('should be able to connect to server', () => {
+        const initialState = {lsn: 0};
+        const state = {"connected": false};
+        const action = {"type": "CONNECTED"};
+        const expected = {"connected": true};
         const reducer = createReducer(initialState);
         const actual = reducer(state, action);
         expect(actual).toEqual(expected);
