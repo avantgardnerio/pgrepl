@@ -576,6 +576,208 @@ describe(`the reducer`, () => {
         expect(actual).toEqual(expected);
     });
 
+    it(`should ignore transactions that have already been processed`, () => {
+        const state = {
+            "tables": {
+                "circles": {
+                    "rows": [],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [{
+                "id": "775bbec5-a8f6-4eff-af8a-38a813a4adfd",
+                "changes": [{
+                    "type": "DELETE",
+                    "table": "circles",
+                    "record": {
+                        "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
+                        "cx": 219,
+                        "cy": 160,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "775bbec5-a8f6-4eff-af8a-38a813a4adfd",
+                        "prvtxnid": "4a550c8a-628d-49a4-bf79-3380d35f960d"
+                    },
+                    "prior": {
+                        "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
+                        "cx": 219,
+                        "cy": 160,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "4a550c8a-628d-49a4-bf79-3380d35f960d",
+                        "prvtxnid": null
+                    }
+                }]
+            }],
+            "lsn": 877581296,
+            "xid": 17587,
+            "connected": true,
+            "cleared": false
+        };
+        const action = {
+            "type": "TXN",
+            "payload": {
+                "xid": 17587,
+                "nextlsn": "0/344ED670",
+                "timestamp": "2018-01-02 14:22:38.606025-05",
+                "clientTxnId": "4a550c8a-628d-49a4-bf79-3380d35f960d",
+                "lsn": 877581296,
+                "change": [{
+                    "kind": "insert",
+                    "table": "circles",
+                    "columnnames": ["id", "cx", "cy", "r", "stroke", "strokewidth", "fill", "curtxnid", "prvtxnid"],
+                    "columnvalues": ["36a4fada-660f-4649-803a-b2fc6fedc292", 219, 160, 40, "green", "4", "yellow", "4a550c8a-628d-49a4-bf79-3380d35f960d", null]
+                }, {
+                    "kind": "insert",
+                    "table": "txn_id_map",
+                    "columnnames": ["xid", "client_txn_id"],
+                    "columnvalues": [17587, "4a550c8a-628d-49a4-bf79-3380d35f960d"]
+                }]
+            }
+        };
+    });
+
+    it(`should revert commits that conflict with transactions from the server`, () => {
+        const state = {
+            "tables": {
+                "circles": {
+                    "rows": [],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [{
+                "id": "775bbec5-a8f6-4eff-af8a-38a813a4adfd",
+                "changes": [{
+                    "type": "DELETE",
+                    "table": "circles",
+                    "record": {
+                        "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
+                        "cx": 219,
+                        "cy": 160,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "775bbec5-a8f6-4eff-af8a-38a813a4adfd",
+                        "prvtxnid": "4a550c8a-628d-49a4-bf79-3380d35f960d"
+                    },
+                    "prior": {
+                        "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
+                        "cx": 219,
+                        "cy": 160,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "4a550c8a-628d-49a4-bf79-3380d35f960d",
+                        "prvtxnid": null
+                    }
+                }]
+            }],
+            "lsn": 877581296,
+            "xid": 17587,
+            "connected": true,
+            "cleared": false
+        };
+        const action = {
+            "type": "TXN",
+            "payload": {
+                "xid": 17588,
+                "nextlsn": "0/344F5D08",
+                "timestamp": "2018-01-02 14:22:52.058679-05",
+                "clientTxnId": "d875109a-cae4-4b25-b245-ad00e03e77bb",
+                "lsn": 877615848,
+                "change": [{
+                    "kind": "update",
+                    "table": "circles",
+                    "columnnames": ["id", "cx", "cy", "r", "stroke", "strokewidth", "fill", "curtxnid", "prvtxnid"],
+                    "columnvalues": ["36a4fada-660f-4649-803a-b2fc6fedc292", 181, 218, 40, "green", "4", "yellow", "d875109a-cae4-4b25-b245-ad00e03e77bb", "4a550c8a-628d-49a4-bf79-3380d35f960d"],
+                    "oldkeys": {
+                        "keynames": ["id", "cx", "cy", "r", "stroke", "strokewidth", "fill", "curtxnid"],
+                        "keyvalues": ["36a4fada-660f-4649-803a-b2fc6fedc292", 219, 160, 40, "green", "4", "yellow", "4a550c8a-628d-49a4-bf79-3380d35f960d"]
+                    }
+                }]
+            }
+        };
+        const expected = {
+            "tables": {
+                "circles": {
+                    "rows": [
+                        {
+                            "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
+                            "cx": 181,
+                            "cy": 218,
+                            "r": 40,
+                            "stroke": "green",
+                            "strokewidth": "4",
+                            "fill": "yellow",
+                            "curtxnid": "d875109a-cae4-4b25-b245-ad00e03e77bb",
+                            "prvtxnid": "4a550c8a-628d-49a4-bf79-3380d35f960d"
+                        }
+                    ],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [],
+            "lsn": 877615848,
+            "xid": 17588,
+            "connected": true,
+            "cleared": false
+        };
+        const initialState = {lsn: 0};
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
     it('should be able to connect to server', () => {
         const state = {"connected": false};
         const action = {"type": "CONNECTED"};
