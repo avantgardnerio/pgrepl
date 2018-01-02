@@ -440,6 +440,142 @@ describe(`the reducer`, () => {
         expect(actual).toEqual(expected);
     });
 
+    it(`should allow move while online`, () => {
+        const state = {
+            "tables": {
+                "circles": {
+                    "rows": [{
+                        "id": "52f50f04-cf7b-4d53-a3f2-60a81718545d",
+                        "cx": 189,
+                        "cy": 270,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "52b623b9-aaf8-44a9-bb73-f134d9522fb4",
+                        "prvtxnid": "e8215147-8b28-4ed5-baca-256bdbf60a17"
+                    }],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [{
+                "id": "52b623b9-aaf8-44a9-bb73-f134d9522fb4",
+                "changes": [{
+                    "type": "UPDATE",
+                    "table": "circles",
+                    "record": {
+                        "id": "52f50f04-cf7b-4d53-a3f2-60a81718545d",
+                        "cx": 189,
+                        "cy": 270,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "52b623b9-aaf8-44a9-bb73-f134d9522fb4",
+                        "prvtxnid": "e8215147-8b28-4ed5-baca-256bdbf60a17"
+                    },
+                    "prior": {
+                        "id": "52f50f04-cf7b-4d53-a3f2-60a81718545d",
+                        "cx": 226,
+                        "cy": 201,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "e8215147-8b28-4ed5-baca-256bdbf60a17",
+                        "prvtxnid": null
+                    }
+                }]
+            }],
+            "lsn": 876915288,
+            "xid": 17567,
+            "connected": true,
+            "cleared": false
+        };
+        const action = {
+            "type": "TXN",
+            "payload": {
+                "xid": 17568,
+                "nextlsn": "0/3444F230",
+                "timestamp": "2018-01-02 14:12:29.680481-05",
+                "clientTxnId": "52b623b9-aaf8-44a9-bb73-f134d9522fb4",
+                "lsn": 876933136,
+                "change": [{
+                    "kind": "update",
+                    "table": "circles",
+                    "columnnames": ["id", "cx", "cy", "r", "stroke", "strokewidth", "fill", "curtxnid", "prvtxnid"],
+                    "columnvalues": ["52f50f04-cf7b-4d53-a3f2-60a81718545d", 189, 270, 40, "green", "4", "yellow", "52b623b9-aaf8-44a9-bb73-f134d9522fb4", "e8215147-8b28-4ed5-baca-256bdbf60a17"],
+                    "oldkeys": {
+                        "keynames": ["id", "cx", "cy", "r", "stroke", "strokewidth", "fill", "curtxnid"],
+                        "keyvalues": ["52f50f04-cf7b-4d53-a3f2-60a81718545d", 226, 201, 40, "green", "4", "yellow", "e8215147-8b28-4ed5-baca-256bdbf60a17"]
+                    }
+                }]
+            }
+        };
+        const expected = {
+            "tables": {
+                "circles": {
+                    "rows": [
+                        {
+                            "id": "52f50f04-cf7b-4d53-a3f2-60a81718545d",
+                            "cx": 189,
+                            "cy": 270,
+                            "r": 40,
+                            "stroke": "green",
+                            "strokewidth": "4",
+                            "fill": "yellow",
+                            "curtxnid": "52b623b9-aaf8-44a9-bb73-f134d9522fb4",
+                            "prvtxnid": "e8215147-8b28-4ed5-baca-256bdbf60a17"
+                        }
+                    ],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [],
+            "lsn": 876933136,
+            "xid": 17568,
+            "connected": true,
+            "cleared": false
+        };
+        const initialState = {lsn: 0};
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
     it('should be able to connect to server', () => {
         const state = {"connected": false};
         const action = {"type": "CONNECTED"};
