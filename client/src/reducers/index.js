@@ -1,4 +1,4 @@
-import {getPk, getRowByPk, insertRow, removeRow, updateRow} from '../util/db';
+import {applyCommit, getPk, getRowByPk, insertRow, removeRow, updateRow} from '../util/db';
 import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
@@ -28,6 +28,11 @@ const createReducer = (initialState, db) => {
 };
 
 export default createReducer;
+
+const handleLocalCommit = (state, txn, db) => {
+    applyCommit(state, txn);
+    saveCommit(state, db, txn);
+};
 
 const handleSnapshot = (state, action, db) => {
     const newState = JSON.parse(JSON.stringify(state));
@@ -61,16 +66,9 @@ const handleServerTxn = (state, action, db) => {
     const payload = action.payload;
     let newState = JSON.parse(JSON.stringify(state));
     if (payload.lsn !== 0) { // zero for transaction failures
-        if (payload.lsn < state.lsn || payload.xid < state.xid) {
+        if (payload.lsn <= state.lsn || payload.xid <= state.xid) {
             console.warn(`Received old txn from server: ${payload.lsn}`);
             return newState;
-        }
-        if (payload.lsn === state.lsn || payload.xid === state.xid) {
-            console.log(`Ignoring duplicate txn from server: ${payload.lsn}`);
-            return newState;
-        }
-        if (payload.xid !== state.xid + 1) {
-            console.log(`Skipping ${payload.xid - state.xid - 1} transactions`); // TODO: get initial xid?
         }
     } else {
         console.log(`Rolling back txn ${payload.clientTxnId} due to conflict!`);
@@ -153,44 +151,12 @@ const diff = (prior, post) => {
     return txn;
 };
 
-const invert = (txn) => {
-    const newTxn = JSON.parse(JSON.stringify(txn));
-    for (let change of newTxn.changes) {
-        if (change.type === 'INSERT') {
-            change.type = 'DELETE';
-        } else if (change.type === 'UPDATE') {
-            const post = change.record;
-            change.record = change.prior;
-            change.prior = post;
-        } else if (change.type === 'DELETE') {
-            change.type = 'INSERT';
-            const post = change.record;
-            change.record = change.prior;
-            change.prior = post;
-        } else {
-            throw new Error(`Type not implemented: ${change.type}`)
-        }
-    }
-    return newTxn;
-};
-
 const replayLog = (state) => {
     let newState = state;
     for (let txn of state.log) {
         newState = handleLocalCommit(newState, txn);
     }
     return newState;
-};
-
-const rollbackLog = (state) => {
-    const log = state.log.slice();
-    let txn = log.pop();
-    while (txn !== undefined) {
-        txn = invert(txn);
-        state = handleLocalCommit(state, txn, undefined, true);
-        txn = log.pop();
-    }
-    return state;
 };
 
 const handleChange = (state, change) => {
@@ -235,42 +201,6 @@ const handleInsert = (table, change) => {
     const row = names
         .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
     insertRow(row, table);
-};
-
-const handleLocalCommit = (state, txn, db, force = false) => {
-    console.log(`Committing txnId=${txn.id} to redux store`);
-    const newState = JSON.parse(JSON.stringify(state));
-    try {
-        for (let change of txn.changes) {
-            applyChange(txn, newState, change, force);
-        }
-        newState.log.push(JSON.parse(JSON.stringify(txn)));
-        if (db) saveCommit(state, db, txn); // No DB during rollback and replay
-        return newState;
-    } catch (ex) {
-        console.log('Conflict while applying local commit txnId=', txn.id);
-        return state;
-    }
-};
-
-const applyChange = (txn, state, change, force = false) => {
-    const table = state.tables[change.table] || {
-        rows: []
-    };
-    state.tables[change.table] = table;
-    switch (change.type) {
-        case 'INSERT':
-            insertRow(change.record, table, force);
-            break;
-        case 'UPDATE':
-            updateRow(change.record, table, force);
-            break;
-        case 'DELETE':
-            removeRow(change.record, table, force);
-            break;
-        default:
-            throw new Error(`Unknown type: ${change.type}`);
-    }
 };
 
 // ---------------------------------------- IndexedDB -----------------------------------------------------------------
