@@ -33,7 +33,7 @@ export const updateRow = (row, table, force = false) => {
         throw new Error(`Can't update ${table.name}, change is meant to be played on ${row.prvtxnid} but ${oldRow.curtxnid} was present in DB`);
     }
     console.log(`Updating oldRow=`, oldRow, ` newRow=`, row);
-    table.rows = table.rows.map(r => arrayEq(pk, getPk(r, table)) ? row : r);
+    table.rows = table.rows.map(r => arrayEq(pk, getPk(r, table)) ? {...row} : r);
 };
 
 export const insertRow = (row, table, force = false) => {
@@ -44,5 +44,5 @@ export const insertRow = (row, table, force = false) => {
         throw new Error("Can't insert, row already exists!");
     }
     console.log(`Inserting row`, row);
-    table.rows.push(row);
+    table.rows.push({...row});
 };

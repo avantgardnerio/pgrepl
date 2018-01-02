@@ -244,7 +244,7 @@ const handleLocalCommit = (state, txn, db, force = false) => {
         for (let change of txn.changes) {
             applyChange(txn, newState, change, force);
         }
-        newState.log.push(txn);
+        newState.log.push(JSON.parse(JSON.stringify(txn)));
         if (db) saveCommit(state, db, txn); // No DB during rollback and replay
         return newState;
     } catch (ex) {
