@@ -2,7 +2,6 @@ import createReducer from './index';
 
 describe(`the reducer`, () => {
     it(`should allow insert while offline`, () => {
-        const initialState = {lsn: 0};
         const expected = {
             "tables": {
                 "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
@@ -62,15 +61,146 @@ describe(`the reducer`, () => {
                 ]
             }
         };
+        const initialState = {lsn: 0};
         const reducer = createReducer(initialState);
         const actual = reducer(state, action);
         expect(actual).toEqual(expected);
+    });
+
+    it(`should allow insert while online`, () => {
+        const state = {
+            "tables": {
+                "circles": {
+                    "rows": [{
+                        "id": "3cbd788f-5a26-49aa-b389-e1e4aedacece",
+                        "cx": 248,
+                        "cy": 144,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokeWidth": 4,
+                        "fill": "yellow",
+                        "curtxnid": "11f39b58-91cc-429a-a257-fc8ccb59415c"
+                    }],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [{
+                "id": "11f39b58-91cc-429a-a257-fc8ccb59415c",
+                "changes": [{
+                    "type": "INSERT",
+                    "table": "circles",
+                    "record": {
+                        "id": "3cbd788f-5a26-49aa-b389-e1e4aedacece",
+                        "cx": 248,
+                        "cy": 144,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokeWidth": 4,
+                        "fill": "yellow",
+                        "curtxnid": "11f39b58-91cc-429a-a257-fc8ccb59415c"
+                    }
+                }]
+            }],
+            "lsn": 875189679,
+            "xid": 0,
+            "connected": true,
+            "cleared": false
+        };
+        const action = {
+            "type": "TXN",
+            "payload": {
+                "xid": 17525,
+                "nextlsn": "0/342A9AC0",
+                "timestamp": "2018-01-02 12:02:47.403995-05",
+                "clientTxnId": "11f39b58-91cc-429a-a257-fc8ccb59415c",
+                "lsn": 875206720,
+                "change": [
+                    {
+                        "kind": "insert",
+                        "table": "circles",
+                        "columnnames": ["id", "cx", "cy", "r", "stroke", "strokewidth", "fill", "curtxnid", "prvtxnid"],
+                        "columnvalues": ["3cbd788f-5a26-49aa-b389-e1e4aedacece", 248, 144, 40, "green", "4", "yellow", "11f39b58-91cc-429a-a257-fc8ccb59415c", null]
+                    }
+                ]
+            }
+        };
+        const expected = {
+            "tables": {
+                "circles": {
+                    "rows": [{
+                        "id": "3cbd788f-5a26-49aa-b389-e1e4aedacece",
+                        "cx": 248,
+                        "cy": 144,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4", // TODO: Fix casing issue
+                        "fill": "yellow",
+                        "curtxnid": "11f39b58-91cc-429a-a257-fc8ccb59415c",
+                        "prvtxnid": null
+                    }],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [],
+            "lsn": 875206720,
+            "xid": 17525,
+            "connected": true,
+            "cleared": false
+        };
+        const initialState = {lsn: 0};
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+
     });
 
     it('should be able to connect to server', () => {
         const state = {"connected": false};
         const action = {"type": "CONNECTED"};
         const expected = {"connected": true};
+        const initialState = {lsn: 0};
+        const reducer = createReducer(initialState);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
+    it('should handle disconnects', () => {
+        const state = {"connected": true};
+        const action = {"type": "DISCONNECTED"};
+        const expected = {"connected": false};
         const initialState = {lsn: 0};
         const reducer = createReducer(initialState);
         const actual = reducer(state, action);
