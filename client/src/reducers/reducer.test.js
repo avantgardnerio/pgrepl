@@ -305,6 +305,141 @@ describe(`the reducer`, () => {
         expect(actual).toEqual(expected);
     });
 
+    it(`should allow move while offline`, () => {
+        const state = {
+            "tables": {
+                "circles": {
+                    "rows": [{
+                        "id": "e5d431f4-dea9-43f4-897b-2997d85ed976",
+                        "cx": 186,
+                        "cy": 180,
+                        "r": 40,
+                        "stroke": "green",
+                        "strokewidth": "4",
+                        "fill": "yellow",
+                        "curtxnid": "51c1176b-b026-45c4-a5b6-710c452380be",
+                        "prvtxnid": null
+                    }],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            }, "log": [], "lsn": 876236279, "xid": 0, "connected": true, "cleared": false
+        };
+        const action = {
+            "type": "COMMIT",
+            "txn": {
+                "id": "fe6a96cc-4c6f-424f-acdc-67ae789ff830",
+                "changes": [
+                    {
+                        "type": "UPDATE",
+                        "table": "circles",
+                        "record": {
+                            "id": "e5d431f4-dea9-43f4-897b-2997d85ed976",
+                            "cx": 174,
+                            "cy": 264,
+                            "r": 40,
+                            "stroke": "green",
+                            "strokewidth": "4",
+                            "fill": "yellow",
+                            "curtxnid": "fe6a96cc-4c6f-424f-acdc-67ae789ff830",
+                            "prvtxnid": "51c1176b-b026-45c4-a5b6-710c452380be"
+                        },
+                        "prior": {
+                            "id": "e5d431f4-dea9-43f4-897b-2997d85ed976",
+                            "cx": 186,
+                            "cy": 180,
+                            "r": 40,
+                            "stroke": "green",
+                            "strokewidth": "4",
+                            "fill": "yellow",
+                            "curtxnid": "51c1176b-b026-45c4-a5b6-710c452380be",
+                            "prvtxnid": null
+                        }
+                    }
+                ]
+            }
+        };
+        const expected = {
+            "tables": {
+                "circles": {
+                    "rows": [
+                        {
+                            "id": "e5d431f4-dea9-43f4-897b-2997d85ed976",
+                            "cx": 174,
+                            "cy": 264,
+                            "r": 40,
+                            "stroke": "green",
+                            "strokewidth": "4",
+                            "fill": "yellow",
+                            "curtxnid": "fe6a96cc-4c6f-424f-acdc-67ae789ff830",
+                            "prvtxnid": "51c1176b-b026-45c4-a5b6-710c452380be"
+                        }
+                    ],
+                    "columns": [
+                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
+                        {"name": "cx", "type": "integer"},
+                        {"name": "cy", "type": "integer"},
+                        {"name": "r", "type": "integer"},
+                        {"name": "stroke", "type": "character varying"},
+                        {"name": "strokewidth", "type": "character varying"},
+                        {"name": "fill", "type": "character varying"},
+                        {"name": "curtxnid", "type": "character varying"},
+                        {"name": "prvtxnid", "type": "character varying"}
+                    ]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+            },
+            "log": [
+                {
+                    "id": "fe6a96cc-4c6f-424f-acdc-67ae789ff830",
+                    "changes": [
+                        {
+                            "type": "UPDATE",
+                            "table": "circles",
+                            "record": {
+                                "id": "e5d431f4-dea9-43f4-897b-2997d85ed976",
+                                "cx": 174,
+                                "cy": 264,
+                                "r": 40,
+                                "stroke": "green",
+                                "strokewidth": "4",
+                                "fill": "yellow",
+                                "curtxnid": "fe6a96cc-4c6f-424f-acdc-67ae789ff830",
+                                "prvtxnid": "51c1176b-b026-45c4-a5b6-710c452380be"
+                            },
+                            "prior": {
+                                "id": "e5d431f4-dea9-43f4-897b-2997d85ed976",
+                                "cx": 186,
+                                "cy": 180,
+                                "r": 40,
+                                "stroke": "green",
+                                "strokewidth": "4",
+                                "fill": "yellow",
+                                "curtxnid": "51c1176b-b026-45c4-a5b6-710c452380be",
+                                "prvtxnid": null
+                            }
+                        }
+                    ]
+                }
+            ],
+            "lsn": 876236279, "xid": 0, "connected": true, "cleared": false
+        };
+        const initialState = {lsn: 0};
+        const reducer = createReducer(initialState);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
     it('should be able to connect to server', () => {
         const state = {"connected": false};
         const action = {"type": "CONNECTED"};
