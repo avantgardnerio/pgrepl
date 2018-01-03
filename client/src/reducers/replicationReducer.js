@@ -85,10 +85,7 @@ const handleServerTxn = (state, action, db) => {
         newState.lsn = payload.lsn;
         newState.xid = payload.xid;
         console.log(`Rollback complete, applying server transaction LSN=${payload.lsn} txnId=${payload.id}`);
-        const changes = payload.changes;
-        for (let change of changes) {
-            handleChange(newState, change);
-        }
+        payload.changes.forEach(change => handleChange(newState, change))
     }
 
     // Remove duplicate transactions
@@ -161,18 +158,16 @@ const replayLog = (state) => {
 };
 
 const handleChange = (state, change) => {
-    const table = state.tables[change.table] || {
-        rows: []
-    };
+    const table = state.tables[change.table] || {rows: []};
     state.tables[change.table] = table;
     switch (change.type) {
-        case 'insert':
+        case 'INSERT':
             insertRow(change.record, table);
             break;
-        case 'update':
+        case 'UPDATE':
             updateRow(change.record, table);
             break;
-        case 'delete':
+        case 'DELETE':
             deleteRow(change.record, table);
             break;
         default:

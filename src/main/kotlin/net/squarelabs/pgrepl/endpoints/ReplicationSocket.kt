@@ -83,7 +83,7 @@ class ReplicationSocket @Inject constructor(
         val size = if (change.oldkeys == null) 0 else maxOf(change.oldkeys.keynames.size, change.oldkeys.keyvalues.size)
         val prior: Map<String, Any> = (0 until size)
                 .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys!!.keyvalues[it] })
-        return ClientChange(change.kind, change.table, record, prior)
+        return ClientChange(change.kind.toUpperCase(), change.table, record, prior)
     }
 
     override fun onMessage(json: String) {
