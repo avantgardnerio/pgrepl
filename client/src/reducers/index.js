@@ -1,4 +1,4 @@
-import {applyCommit, getPk, getRowByPk, insertRow, removeRow, rollbackLog, updateRow} from '../util/db';
+import {applyCommit, getPk, getRowByPk, insertRow, deleteRow, rollbackLog, updateRow} from '../util/db';
 import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
@@ -185,7 +185,7 @@ const handleDelete = (table, change) => {
     const values = change.oldkeys.keyvalues;
     const row = names
         .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
-    removeRow(row, table);
+    deleteRow(row, table);
 };
 
 const handleUpdate = (table, change) => {

@@ -2,7 +2,7 @@ import {connect} from 'react-redux';
 import {connect as connectWs, disconnect} from '../actions/websocket';
 
 import Panel from '../components/Panel';
-import {clearDb} from "../actions/database";
+import {createClearDbAction} from "../actions/database";
 
 const mapStateToProps = (state) => {
     return {
@@ -16,7 +16,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        clearDb: () => dispatch(clearDb()),
+        clearDb: () => dispatch(createClearDbAction()),
         connect: () => dispatch(connectWs()),
         disconnect: () => dispatch(disconnect())
     }

@@ -1,4 +1,4 @@
-import {clearedDb} from "../actions/database";
+import {createDatabaseClearedAction} from "../actions/database";
 
 export const createIndexedDbSyncer = (db) => {
     const indexedDbSyncer = (store) => {
@@ -26,5 +26,5 @@ export const createIndexedDbSyncer = (db) => {
 
 const clearDb = async (store, db) => {
     await db.clear();
-    store.dispatch(clearedDb());
+    store.dispatch(createDatabaseClearedAction());
 };

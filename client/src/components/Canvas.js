@@ -1,7 +1,12 @@
 import React, {Component} from 'react';
 import uuidv4 from 'uuid/v4';
 
-import {createTxn, deleteRow, insertRow, updateRow} from "../actions/database";
+import {
+    createDeleteRowAction,
+    createInsertRowAction,
+    createTxnAction,
+    createUpdateRowAction
+} from "../actions/database";
 import {add, equals, subtract} from "../util/math";
 
 export default class Canvas extends Component {
@@ -18,8 +23,8 @@ export default class Canvas extends Component {
     // --------------------------------------------- handlers ---------------------------------------------------------
     onKeyPress = (e) => {
         if (e.key === 'd' && this.state.selectedId) {
-            const change = deleteRow("circles", this.selectedCircle);
-            const action = createTxn([change]);
+            const change = createDeleteRowAction("circles", this.selectedCircle);
+            const action = createTxnAction([change]);
             console.log(`Deleting a circle at [${this.selectedCircle.cx}, ${this.selectedCircle.cy}] as TXN=${action.txn.id}`);
             this.props.commit(action);
             this.setState({selectedId: undefined});
@@ -47,8 +52,8 @@ export default class Canvas extends Component {
                 strokeWidth: 4,
                 fill: "yellow"
             };
-            const change = insertRow("circles", circle);
-            const action = createTxn([change]);
+            const change = createInsertRowAction("circles", circle);
+            const action = createTxnAction([change]);
             console.log(`Inserting a circle at [${circle.cx}, ${circle.cy}] as TXN=${action.txn.id}`);
             this.props.commit(action);
         } else {
@@ -59,8 +64,8 @@ export default class Canvas extends Component {
             } else {
                 // drag
                 const newCircle = {...this.selectedCircle, cx: e.clientX, cy: e.clientY};
-                const change = updateRow("circles", newCircle, this.props.state);
-                const action = createTxn([change]);
+                const change = createUpdateRowAction("circles", newCircle, this.props.state);
+                const action = createTxnAction([change]);
                 console.log(`Moving a circle to [${newCircle.cx}, ${newCircle.cy}] as TXN=${action.txn.id}`);
                 this.props.commit(action);
                 this.setState({selectedId: undefined, downPos: undefined});

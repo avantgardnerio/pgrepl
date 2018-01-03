@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import {deleteRow} from "../actions/database";
 
 // TODO: cache somewhere for speed
 export const getPkCols = (table) => _
@@ -15,7 +14,7 @@ export const getPk = (rec, table) => getPkCols(table).map(key => rec[key]);
 export const arrayEq = (a, b) => _.range(Math.max(a.length, b.length))
     .reduce((acc, cur) => acc && a[cur] === b[cur], true);
 
-export const removeRow = (row, table) => {
+export const deleteRow = (row, table) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
     if (row.prvTxnId !== oldRow.curTxnId) return false;

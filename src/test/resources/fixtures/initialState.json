@@ -16,10 +16,10 @@
     "person": {
       "rows": []
     },
-    "txnLog": {
+    "txnIdMap": {
       "rows": []
     },
-    "txnIdMap": {
+    "txnLog": {
       "rows": []
     }
   },
