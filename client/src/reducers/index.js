@@ -1,4 +1,4 @@
-import {applyCommit, getPk, getRowByPk, insertRow, removeRow, updateRow} from '../util/db';
+import {applyCommit, getPk, getRowByPk, insertRow, removeRow, rollbackLog, updateRow} from '../util/db';
 import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
@@ -30,8 +30,9 @@ const createReducer = (initialState, db) => {
 export default createReducer;
 
 const handleLocalCommit = (state, txn, db) => {
-    applyCommit(state, txn);
-    saveCommit(state, db, txn);
+    const newState = applyCommit(state, txn);
+    saveCommit(newState, db, txn);
+    return newState;
 };
 
 const handleSnapshot = (state, action, db) => {

@@ -62,7 +62,18 @@ describe(`the reducer`, () => {
             }
         };
         const initialState = {lsn: 0};
-        const reducer = createReducer(initialState);
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
         const actual = reducer(state, action);
         expect(actual).toEqual(expected);
     });
@@ -300,7 +311,18 @@ describe(`the reducer`, () => {
             , "lsn": 876133360, "xid": 17547, "connected": false, "cleared": false
         };
         const initialState = {lsn: 0};
-        const reducer = createReducer(initialState);
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
         const actual = reducer(state, action);
         expect(actual).toEqual(expected);
     });
@@ -435,7 +457,18 @@ describe(`the reducer`, () => {
             "lsn": 876236279, "xid": 0, "connected": true, "cleared": false
         };
         const initialState = {lsn: 0};
-        const reducer = createReducer(initialState);
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
         const actual = reducer(state, action);
         expect(actual).toEqual(expected);
     });
