@@ -16,10 +16,10 @@
           "cy",
           "r",
           "stroke",
-          "strokewidth",
+          "strokeWidth",
           "fill",
-          "curtxnid",
-          "prvtxnid"
+          "curTxnId",
+          "prvTxnId"
         ],
         "columnvalues": [
           "2a78e2e2-5710-414a-adfc-bb7b4c9dc66e",
@@ -35,7 +35,7 @@
       },
       {
         "kind": "insert",
-        "table": "txn_id_map",
+        "table": "txnIdMap",
         "columnnames": [
           "xid",
           "client_txn_id"

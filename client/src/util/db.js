@@ -18,7 +18,7 @@ export const arrayEq = (a, b) => _.range(Math.max(a.length, b.length))
 export const removeRow = (row, table) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    if (row.prvtxnid !== oldRow.curtxnid) return false;
+    if (row.prvTxnId !== oldRow.curTxnId) return false;
     table.rows = table.rows.filter(row => !arrayEq(pk, getPk(row, table)));
     return true;
 };
@@ -26,7 +26,7 @@ export const removeRow = (row, table) => {
 export const updateRow = (row, table) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    if (row.prvtxnid !== oldRow.curtxnid) return false;
+    if (row.prvTxnId !== oldRow.curTxnId) return false;
     table.rows = table.rows.map(r => arrayEq(pk, getPk(r, table)) ? {...row} : r);
     return true;
 };

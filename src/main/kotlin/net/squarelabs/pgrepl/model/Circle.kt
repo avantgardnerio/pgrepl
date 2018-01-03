@@ -11,6 +11,6 @@ data class Circle(
         val stroke: String,
         val strokeWidth: String,
         val fill: String,
-        val curtxnid: String,
-        val prvtxnid: String?
+        val curTxnId: String,
+        val prvTxnId: String?
 )

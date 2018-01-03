@@ -5,7 +5,7 @@ import {getPk} from "./util/db";
 
 const migrations = [
     (db) => { // v1: system data
-        db.createObjectStore('txn_id_map', {keyPath: 'xid'});
+        db.createObjectStore('txnIdMap', {keyPath: 'xid'});
         db.createObjectStore('metadata', {keyPath: 'id'});
         const txnLog = db.createObjectStore('txnLog', {keyPath: 'csn'});
         txnLog.createIndex('txnId', 'id');

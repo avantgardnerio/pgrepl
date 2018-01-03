@@ -28,7 +28,7 @@
             "type": "character varying"
           },
           {
-            "name": "strokewidth",
+            "name": "strokeWidth",
             "type": "character varying"
           },
           {
@@ -36,11 +36,11 @@
             "type": "character varying"
           },
           {
-            "name": "curtxnid",
+            "name": "curTxnId",
             "type": "character varying"
           },
           {
-            "name": "prvtxnid",
+            "name": "prvTxnId",
             "type": "character varying"
           }
         ],
@@ -112,18 +112,18 @@
             "type": "character varying"
           },
           {
-            "name": "curtxnid",
+            "name": "curTxnId",
             "type": "character varying"
           },
           {
-            "name": "prvtxnid",
+            "name": "prvTxnId",
             "type": "character varying"
           }
         ],
         "rows": []
       },
       {
-        "name": "txn_id_map",
+        "name": "txnIdMap",
         "columns": [
           {
             "name": "xid",

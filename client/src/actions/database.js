@@ -47,16 +47,16 @@ export const createTxn = (changes) => {
     for(let change of changes) {
         switch(change.type) {
             case "INSERT":
-                change.record.prvtxnid = undefined;
-                change.record.curtxnid = txnId;
+                change.record.prvTxnId = undefined;
+                change.record.curTxnId = txnId;
                 break;
             case "UPDATE":
-                change.record.prvtxnid = change.prior.curtxnid;
-                change.record.curtxnid = txnId;
+                change.record.prvTxnId = change.prior.curTxnId;
+                change.record.curTxnId = txnId;
                 break;
             case "DELETE":
-                change.record.prvtxnid = change.record.curtxnid;
-                change.record.curtxnid = txnId;
+                change.record.prvTxnId = change.record.curTxnId;
+                change.record.curTxnId = txnId;
                 break;
             default:
                 throw new Error(`Type not implemented: ${change.type}`)

@@ -1,8 +1,8 @@
 CREATE TABLE PERSON (
-  ID       INT               NOT NULL PRIMARY KEY,
-  NAME     VARCHAR           NOT NULL,
-  curtxnid CHARACTER VARYING NOT NULL,
-  prvtxnid CHARACTER VARYING
+  "id"       INT               NOT NULL PRIMARY KEY,
+  "name"     VARCHAR           NOT NULL,
+  "curTxnId" CHARACTER VARYING NOT NULL,
+  "prvTxnId" CHARACTER VARYING
 );
 ALTER TABLE person
   REPLICA IDENTITY FULL;

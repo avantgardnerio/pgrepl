@@ -34,8 +34,8 @@ class ReplicationSocket @Inject constructor(
     private var remote: RemoteEndpoint.Async? = null
     var clientId: UUID? = null
 
-    val txnMapSql = "INSERT INTO txn_id_map (xid, client_txn_id) VALUES (txid_current(),?)"
-    val getTxnSql = "SELECT client_txn_id FROM txn_id_map WHERE xid=?"
+    val txnMapSql = "INSERT INTO txnIdMap (xid, client_txn_id) VALUES (txid_current(),?)"
+    val getTxnSql = "SELECT client_txn_id FROM txnIdMap WHERE xid=?"
 
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
@@ -167,12 +167,12 @@ class ReplicationSocket @Inject constructor(
                 .sortedBy { col -> col.pkOrdinal }
         val whereClause = pkCols
                 .map { col -> col.name + "=?" }
-                .joinToString(" and ") + " and curtxnid=?"
+                .joinToString(" and ") + " and curTxnId=?"
         val row = change.record
         val sql = "delete from ${table.name} where $whereClause"
         con.prepareStatement(sql).use { stmt ->
             pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + 1, row[col.name]) })
-            stmt.setObject(pkCols.size + 1, row["prvtxnid"])
+            stmt.setObject(pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
             if (res != 1) throw Exception("Unable to play txn on server!")
         }
@@ -185,7 +185,7 @@ class ReplicationSocket @Inject constructor(
                 .sortedBy { col -> col.pkOrdinal }
         val whereClause = pkCols
                 .map { col -> col.name + "=?" }
-                .joinToString(" and ") + " and curtxnid=?"
+                .joinToString(" and ") + " and curTxnId=?"
         val row = change.record
         val updateClause = row.keys
                 .map { colName -> colName + "=?" }
@@ -194,7 +194,7 @@ class ReplicationSocket @Inject constructor(
         con.prepareStatement(sql).use { stmt ->
             row.values.forEachIndexed({ idx, value -> stmt.setObject(idx + 1, value) })
             pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + row.values.size + 1, row[col.name]) })
-            stmt.setObject(row.values.size + pkCols.size + 1, row["prvtxnid"])
+            stmt.setObject(row.values.size + pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
             if (res != 1) throw Exception("Unable to play txn on server!")
         }

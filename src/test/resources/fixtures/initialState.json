@@ -19,7 +19,7 @@
     "txnLog": {
       "rows": []
     },
-    "txn_id_map": {
+    "txnIdMap": {
       "rows": []
     }
   },

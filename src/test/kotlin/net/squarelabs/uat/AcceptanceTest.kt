@@ -236,8 +236,8 @@ class AcceptanceTest {
 
         // Setup
         val id = UUID.randomUUID().toString()
-        val curtxnid = UUID.randomUUID().toString()
-        val circle = Circle(id, 10, 10, 20, "blue", "1px", "red", curtxnid, null)
+        val curTxnId = UUID.randomUUID().toString()
+        val circle = Circle(id, 10, 10, 20, "blue", "1px", "red", curTxnId, null)
         dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
         clearIndexedDb()
 

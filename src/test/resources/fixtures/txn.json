@@ -11,8 +11,8 @@
         "columnnames": [
           "id",
           "name",
-          "curtxnid",
-          "prvtxnid"
+          "curTxnId",
+          "prvTxnId"
         ],
         "columnvalues": [
           1.0,
@@ -27,8 +27,8 @@
         "columnnames": [
           "id",
           "name",
-          "curtxnid",
-          "prvtxnid"
+          "curTxnId",
+          "prvTxnId"
         ],
         "columnvalues": [
           3.0,
@@ -51,8 +51,8 @@
         "columnnames": [
           "id",
           "name",
-          "curtxnid",
-          "prvtxnid"
+          "curTxnId",
+          "prvTxnId"
         ],
         "columnvalues": [
           2.0,
@@ -67,8 +67,8 @@
         "columnnames": [
           "id",
           "name",
-          "curtxnid",
-          "prvtxnid"
+          "curTxnId",
+          "prvTxnId"
         ],
         "columnvalues": [
           4.0,
@@ -91,8 +91,8 @@
         "columnnames": [
           "id",
           "name",
-          "curtxnid",
-          "prvtxnid"
+          "curTxnId",
+          "prvTxnId"
         ],
         "columnvalues": [
           1.0,
@@ -104,7 +104,7 @@
           "keynames": [
             "id",
             "name",
-            "curtxnid"
+            "curTxnId"
           ],
           "keyvalues": [
             1.0,
@@ -128,7 +128,7 @@
           "keynames": [
             "id",
             "name",
-            "curtxnid"
+            "curTxnId"
           ],
           "keyvalues": [
             1.0,
