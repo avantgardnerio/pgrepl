@@ -44,7 +44,7 @@ class AppTest {
         }
         var expected: Snapshot? = null
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use {
-            val sql = "INSERT INTO person (id, name, curTxnId) VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');"
+            val sql = "INSERT INTO person (id, name, \"curTxnId\") VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');"
             it.prepareStatement(sql).use {
                 it.executeUpdate()
             }
