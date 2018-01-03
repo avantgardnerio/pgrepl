@@ -178,14 +178,16 @@ class ReplicationSocket @Inject constructor(
                 .sortedBy { col -> col.pkOrdinal }
         val whereClause = pkCols
                 .map { col -> "\"" + col.name + "\"=?" }
-                .joinToString(" and ") + " and curTxnId=?"
+                .joinToString(" and ") + " and \"curTxnId\"=?"
         val row = change.record
         val sql = "delete from \"${table.name}\" where $whereClause"
         con.prepareStatement(sql).use { stmt ->
             pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + 1, row[col.name]) })
             stmt.setObject(pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
-            if (res != 1) throw Exception("Unable to play txn on server!")
+            if (res != 1) {
+                throw Exception("Unable to play txn on server!")
+            }
         }
     }
 

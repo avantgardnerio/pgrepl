@@ -327,9 +327,7 @@ class AcceptanceTest {
         // Delete circle on right
         driver.findElement(By.cssSelector("#rightRoot circle")).click()
         WebDriverWait(driver, 3).until(visibilityOfElementLocated(By.cssSelector("#rightRoot .dragItem")))
-        TimeUnit.MILLISECONDS.sleep(500)
         driver.findElement(By.cssSelector("#rightRoot svg")).sendKeys("d")
-        TimeUnit.MILLISECONDS.sleep(500)
         WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), circleCreatedLsn)))
 
         // Exercise: go back online
