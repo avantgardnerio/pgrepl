@@ -78,12 +78,28 @@ class ReplicationSocket @Inject constructor(
     }
 
     fun walChangeToClientChange(change: Change): ClientChange {
-        val record: Map<String, Any> = (0 until maxOf(change.columnnames.size, change.columnvalues.size))
-                .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
-        val size = if (change.oldkeys == null) 0 else maxOf(change.oldkeys.keynames.size, change.oldkeys.keyvalues.size)
-        val prior: Map<String, Any> = (0 until size)
-                .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys!!.keyvalues[it] })
-        return ClientChange(change.kind.toUpperCase(), change.table, record, prior)
+        when (change.kind) {
+            "delete" -> {
+                val size = maxOf(change.oldkeys!!.keynames.size, change.oldkeys.keyvalues.size)
+                val prior: Map<String, Any> = (0 until size)
+                        .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys.keyvalues[it] })
+                return ClientChange(change.kind.toUpperCase(), change.table, prior, null)
+            }
+            "update" -> {
+                val record: Map<String, Any> = (0 until maxOf(change.columnnames.size, change.columnvalues.size))
+                        .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
+                val size = maxOf(change.oldkeys!!.keynames.size, change.oldkeys.keyvalues.size)
+                val prior: Map<String, Any> = (0 until size)
+                        .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys!!.keyvalues[it] })
+                return ClientChange(change.kind.toUpperCase(), change.table, record, prior)
+            }
+            "insert" -> {
+                val record: Map<String, Any> = (0 until maxOf(change.columnnames.size, change.columnvalues.size))
+                        .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
+                return ClientChange(change.kind.toUpperCase(), change.table, record, null)
+            }
+        }
+        throw IllegalArgumentException("Unknown change type: ${change.kind}")
     }
 
     override fun onMessage(json: String) {
@@ -186,7 +202,7 @@ class ReplicationSocket @Inject constructor(
             stmt.setObject(pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
             if (res != 1) {
-                throw Exception("Unable to play txn on server!")
+                throw IllegalArgumentException("Optimistic concurrency error deleting record on server!")
             }
         }
     }
@@ -209,7 +225,9 @@ class ReplicationSocket @Inject constructor(
             pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + row.values.size + 1, row[col.name]) })
             stmt.setObject(row.values.size + pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
-            if (res != 1) throw Exception("Unable to play txn on server!")
+            if (res != 1) {
+                throw IllegalArgumentException("Optimistic concurrency error updating record on server!")
+            }
         }
     }
 
@@ -223,7 +241,9 @@ class ReplicationSocket @Inject constructor(
         con.prepareStatement(sql).use { stmt ->
             row.values.forEachIndexed({ i, v -> stmt.setObject(i + 1, v) })
             val res = stmt.executeUpdate()
-            if (res != 1) throw Exception("Unable to play txn on server!")
+            if (res != 1) {
+                throw IllegalArgumentException("Optimistic concurrency error inserting record on server!")
+            }
         }
     }
 
