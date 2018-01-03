@@ -1,5 +1,8 @@
 import createReducer from './replicationReducer';
-import {createInsertRowAction, createTxnAction, createUpdateRowAction} from "../actions/database";
+import {
+    createDeleteRowAction, createInsertRowAction, createTxnAction,
+    createUpdateRowAction
+} from "../actions/database";
 
 const disconnectedNoData = {
     tables: {
@@ -256,113 +259,48 @@ describe(`the reducer`, () => {
     });
 
     it(`should revert commits that conflict with transactions from the server`, () => {
-        const state = {
-            "tables": {
-                "circles": {
-                    "rows": [],
-                    "columns": [
-                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
-                        {"name": "cx", "type": "integer"},
-                        {"name": "cy", "type": "integer"},
-                        {"name": "r", "type": "integer"},
-                        {"name": "stroke", "type": "character varying"},
-                        {"name": "strokeWidth", "type": "character varying"},
-                        {"name": "fill", "type": "character varying"},
-                        {"name": "curTxnId", "type": "character varying"},
-                        {"name": "prvTxnId", "type": "character varying"}
-                    ]
-                },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
-            },
-            "log": [{
-                "id": "775bbec5-a8f6-4eff-af8a-38a813a4adfd",
-                "changes": [{
-                    "type": "DELETE",
-                    "table": "circles",
-                    "record": {
-                        "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
-                        "cx": 219,
-                        "cy": 160,
-                        "r": 40,
-                        "stroke": "green",
-                        "strokeWidth": "4",
-                        "fill": "yellow",
-                        "curTxnId": "775bbec5-a8f6-4eff-af8a-38a813a4adfd",
-                        "prvTxnId": "4a550c8a-628d-49a4-bf79-3380d35f960d"
-                    },
-                    "prior": {
-                        "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
-                        "cx": 219,
-                        "cy": 160,
-                        "r": 40,
-                        "stroke": "green",
-                        "strokeWidth": "4",
-                        "fill": "yellow",
-                        "curTxnId": "4a550c8a-628d-49a4-bf79-3380d35f960d",
-                        "prvTxnId": null
-                    }
-                }]
-            }],
-            "lsn": 877581296,
-            "xid": 17587,
-            "connected": true,
-            "cleared": false
+        const state = JSON.parse(JSON.stringify(disconnectedNoData));
+        state.connected = true;
+        state.lsn = 1000;
+        const prior = {
+            ...alan,
+            curTxnId: "79f17574-180d-41e3-9e0f-a394e37e2846",
         };
+        const post = {
+            ...prior,
+            lastName: 'Kay',
+            curTxnId: "d875109a-cae4-4b25-b245-ad00e03e77bb",
+            prvTxnId: prior.curTxnId
+        };
+        state.tables.person.rows.push(prior);
+        const change = createDeleteRowAction("person", prior, state);
+        const txnAction = createTxnAction([change]);
+        state.tables.person.rows.pop();
+        state.log.push(txnAction.txn);
+
         const action = {
             "type": "TXN",
             "payload": {
-                "xid": 17588,
-                "nextlsn": "0/344F5D08",
-                "timestamp": "2018-01-02 14:22:52.058679-05",
-                "clientTxnId": "d875109a-cae4-4b25-b245-ad00e03e77bb",
-                "lsn": 877615848,
-                "change": [{
-                    "kind": "UPDATE",
-                    "table": "circles",
-                    "columnnames": ["id", "cx", "cy", "r", "stroke", "strokeWidth", "fill", "curTxnId", "prvTxnId"],
-                    "columnvalues": ["36a4fada-660f-4649-803a-b2fc6fedc292", 181, 218, 40, "green", "4", "yellow", "d875109a-cae4-4b25-b245-ad00e03e77bb", "4a550c8a-628d-49a4-bf79-3380d35f960d"],
-                    "oldkeys": {
-                        "keynames": ["id", "cx", "cy", "r", "stroke", "strokeWidth", "fill", "curTxnId"],
-                        "keyvalues": ["36a4fada-660f-4649-803a-b2fc6fedc292", 219, 160, 40, "green", "4", "yellow", "4a550c8a-628d-49a4-bf79-3380d35f960d"]
-                    }
+                "id": "d875109a-cae4-4b25-b245-ad00e03e77bb",
+                "xid": 1234,
+                "lsn": 1001,
+                "changes": [{
+                    "type": "UPDATE",
+                    "table": "person",
+                    record: post,
+                    prior
                 }]
             }
         };
         const expected = {
             "tables": {
-                "circles": {
-                    "rows": [
-                        {
-                            "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
-                            "cx": 181,
-                            "cy": 218,
-                            "r": 40,
-                            "stroke": "green",
-                            "strokeWidth": "4",
-                            "fill": "yellow",
-                            "curTxnId": "d875109a-cae4-4b25-b245-ad00e03e77bb",
-                            "prvTxnId": "4a550c8a-628d-49a4-bf79-3380d35f960d"
-                        }
-                    ],
-                    "columns": [
-                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
-                        {"name": "cx", "type": "integer"},
-                        {"name": "cy", "type": "integer"},
-                        {"name": "r", "type": "integer"},
-                        {"name": "stroke", "type": "character varying"},
-                        {"name": "strokeWidth", "type": "character varying"},
-                        {"name": "fill", "type": "character varying"},
-                        {"name": "curTxnId", "type": "character varying"},
-                        {"name": "prvTxnId", "type": "character varying"}
-                    ]
+                "person": {
+                    "rows": [post],
+                    "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
             },
-            "log": [],
-            "lsn": 877615848,
-            "xid": 17588,
-            "connected": true,
-            "cleared": false
+            "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
         const initialState = {lsn: 0};
         let md = undefined;
