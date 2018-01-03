@@ -6,6 +6,7 @@ import net.squarelabs.pgrepl.messages.Message
 import net.squarelabs.pgrepl.messages.SnapshotRequest
 import net.squarelabs.pgrepl.messages.SnapshotResponse
 import net.squarelabs.pgrepl.messages.TxnMsg
+import net.squarelabs.pgrepl.model.ClientTxn
 import net.squarelabs.pgrepl.model.Snapshot
 import net.squarelabs.pgrepl.model.Transaction
 import org.eclipse.jetty.websocket.api.Session
@@ -20,7 +21,7 @@ open class ReplicationClient(uri: URI) : WebSocketListener {
 
     private val id: UUID = UUID.randomUUID()
     private val mapper: ObjectMapper = ObjectMapper()
-    private val log = ArrayList<Transaction>()
+    private val log = ArrayList<ClientTxn>()
 
     private var session: Session? = null
     private var db: Snapshot? = null
@@ -59,7 +60,7 @@ open class ReplicationClient(uri: URI) : WebSocketListener {
         db = snapshot
     }
 
-    private fun onTxn(txn: Transaction) {
+    private fun onTxn(txn: ClientTxn) {
         log.add(txn)
     }
 

@@ -4,10 +4,7 @@ import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import net.squarelabs.pgrepl.messages.*
-import net.squarelabs.pgrepl.model.ClientChange
-import net.squarelabs.pgrepl.model.ClientTxn
-import net.squarelabs.pgrepl.model.Snapshot
-import net.squarelabs.pgrepl.model.Transaction
+import net.squarelabs.pgrepl.model.*
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.ReplicationService
@@ -50,8 +47,8 @@ class ReplicationSocket @Inject constructor(
 
     fun onTxn(lsn: Long, json: String) {
         val mapper = Gson()
-        val txn: Transaction = mapper.fromJson(json, Transaction::class.java)
-        if (txn.change.size <= 0) {
+        val walTxn: Transaction = mapper.fromJson(json, Transaction::class.java)
+        if (walTxn.change.size <= 0) {
             return // Not sure why this happens
         }
 
@@ -59,20 +56,34 @@ class ReplicationSocket @Inject constructor(
         val url = cfgSvc.getAppDbUrl()
         conSvc.getConnection(url).use { con ->
             con.prepareStatement(getTxnSql).use { stmt ->
-                stmt.setLong(1, txn.xid)
+                stmt.setLong(1, walTxn.xid)
                 stmt.executeQuery().use { rs ->
                     if (!rs.next()) {
                         // TODO: Does this still happen, now that we excluded zero size changes above?
-                        throw Exception("Error reading clientTxnId: ${txn.xid}!")
+                        throw Exception("Error reading clientTxnId: ${walTxn.xid}!")
                     }
                     val txnId = rs.getString(1)
-                    val msg = TxnMsg(txn.copy(lsn = lsn, clientTxnId = txnId))
+                    val msg = TxnMsg(walTxnToClientTxn(lsn, txnId, walTxn))
 
                     // TODO: ReplicationSockets with null remotes
                     if (remote != null) remote!!.sendText(mapper.toJson(msg))
                 }
             }
         }
+    }
+
+    fun walTxnToClientTxn(lsn: Long, txnId: String, walTxn: Transaction): ClientTxn {
+        val changes = walTxn.change.map { walChangeToClientChange(it) }
+        return ClientTxn(txnId, lsn, changes)
+    }
+
+    fun walChangeToClientChange(change: Change): ClientChange {
+        val record: Map<String, Any> = (0 until maxOf(change.columnnames.size, change.columnvalues.size))
+                .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
+        val size = if (change.oldkeys == null) 0 else maxOf(change.oldkeys.keynames.size, change.oldkeys.keyvalues.size)
+        val prior: Map<String, Any> = (0 until size)
+                .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys!!.keyvalues[it] })
+        return ClientChange(change.kind, change.table, record, prior)
     }
 
     override fun onMessage(json: String) {
@@ -153,7 +164,7 @@ class ReplicationSocket @Inject constructor(
                     con.commit()
                 } catch (ex: Exception) {
                     con.rollback()
-                    val t = Transaction(0, null, null, txn.id, 0, ArrayList())
+                    val t = ClientTxn(txn.id, 0, ArrayList())
                     remote!!.sendText(mapper.toJson(TxnMsg(t)))
                 }
             }

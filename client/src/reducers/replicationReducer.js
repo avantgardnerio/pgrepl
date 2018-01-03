@@ -72,9 +72,9 @@ const handleServerTxn = (state, action, db) => {
             return newState;
         }
     } else {
-        console.log(`Rolling back txn ${payload.clientTxnId} due to conflict!`);
+        console.log(`Rolling back txn ${payload.id} due to conflict!`);
     }
-    console.log(`Applying transaction from server LSN=${payload.lsn} txnId=${payload.clientTxnId}`);
+    console.log(`Applying transaction from server LSN=${payload.lsn} txnId=${payload.id}`);
 
     // rollback
     console.log(`Rolling back ${state.log.length} local transactions...`);
@@ -84,16 +84,16 @@ const handleServerTxn = (state, action, db) => {
     if (payload.lsn !== 0) {
         newState.lsn = payload.lsn;
         newState.xid = payload.xid;
-        console.log(`Rollback complete, applying server transaction LSN=${payload.lsn} txnId=${payload.clientTxnId}`);
-        const changes = payload.change;
+        console.log(`Rollback complete, applying server transaction LSN=${payload.lsn} txnId=${payload.id}`);
+        const changes = payload.changes;
         for (let change of changes) {
             handleChange(newState, change);
         }
     }
 
     // Remove duplicate transactions
-    newState.log = newState.log.filter(txn => txn.id !== payload.clientTxnId);
-    db.removeFromLog(payload.clientTxnId);
+    newState.log = newState.log.filter(txn => txn.id !== payload.id);
+    db.removeFromLog(payload.id);
     console.log(`Filtered log from ${state.log.length} transactions to ${newState.log.length}`);
 
     // Replay log
@@ -165,43 +165,19 @@ const handleChange = (state, change) => {
         rows: []
     };
     state.tables[change.table] = table;
-    switch (change.kind) {
+    switch (change.type) {
         case 'insert':
-            handleInsert(table, change);
+            insertRow(change.record, table);
             break;
         case 'update':
-            handleUpdate(table, change);
+            updateRow(change.record, table);
             break;
         case 'delete':
-            handleDelete(table, change);
+            deleteRow(change.record, table);
             break;
         default:
             throw new Error(`Unknown type: ${change.type}`);
     }
-};
-
-const handleDelete = (table, change) => {
-    const names = change.oldkeys.keynames;
-    const values = change.oldkeys.keyvalues;
-    const row = names
-        .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
-    deleteRow(row, table);
-};
-
-const handleUpdate = (table, change) => {
-    const names = change.columnnames;
-    const values = change.columnvalues;
-    const row = names
-        .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
-    updateRow(row, table);
-};
-
-const handleInsert = (table, change) => {
-    const names = change.columnnames;
-    const values = change.columnvalues;
-    const row = names
-        .reduce((acc, cur, idx) => ({...acc, [cur]: values[idx]}), {});
-    insertRow(row, table);
 };
 
 // ---------------------------------------- IndexedDB -----------------------------------------------------------------

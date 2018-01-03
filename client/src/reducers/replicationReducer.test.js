@@ -1,4 +1,4 @@
-import createReducer from './index';
+import createReducer from './replicationReducer';
 import {createInsertRowAction, createTxnAction} from "../actions/database";
 
 const disconnectedNoData = {
@@ -18,19 +18,20 @@ const disconnectedNoData = {
     cleared: false
 };
 
+const alan = {
+    id: "79cd28e5-b6e4-42a6-9da6-b605a701e1de",
+    firstName: "Alan",
+    lastName: "Turing",
+};
+
 describe(`the reducer`, () => {
     it(`should allow insert while offline`, () => {
         // Setup
-        const state = disconnectedNoData;
-        const person = {
-            id: "79cd28e5-b6e4-42a6-9da6-b605a701e1de",
-            firstName: "Alan",
-            lastName: "Turing",
-        };
-        const change = createInsertRowAction("person", person);
+        const state = JSON.parse(JSON.stringify(disconnectedNoData));
+        const change = createInsertRowAction("person", alan);
         const action = createTxnAction([change]);
         const expected = JSON.parse(JSON.stringify(state));
-        expected.tables['person'].rows.push({...person, curTxnId: action.txn.id});
+        expected.tables['person'].rows.push({...alan, curTxnId: action.txn.id});
         expected.log.push(action.txn);
         const initialState = {lsn: 0};
         let md = undefined;
@@ -54,43 +55,14 @@ describe(`the reducer`, () => {
     });
 
     it(`should allow insert while online`, () => {
-        const state = {
-            "tables": {
-                "person": {
-                    "rows": [{
-                        "id": "20d00f70-1fc6-41cf-bf4a-3a7521fa6d0c",
-                        "firstName": "Alan",
-                        "lastName": "Turing",
-                        "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"
-                    }],
-                    "columns": [
-                        {"name": "id", "type": "character varying", "pkOrdinal": 1},
-                        {"name": "firstName", "type": "character varying"},
-                        {"name": "lastName", "type": "character varying"},
-                        {"name": "curTxnId", "type": "character varying"},
-                        {"name": "prvTxnId", "type": "character varying"}
-                    ]
-                },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
-            },
-            "log": [{
-                "id": "79f17574-180d-41e3-9e0f-a394e37e2846",
-                "changes": [{
-                    "type": "INSERT",
-                    "table": "person",
-                    "record": {
-                        "id": "20d00f70-1fc6-41cf-bf4a-3a7521fa6d0c",
-                        "firstName": "Alan",
-                        "lastName": "Turing",
-                        "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"
-                    }
-                }]
-            }],
-            "lsn": 1000,
-            "xid": 0,
-            "connected": true,
-            "cleared": false
-        };
+        const state = JSON.parse(JSON.stringify(disconnectedNoData));
+        state.connected = true;
+        state.lsn = 1000;
+        state.tables.person.rows.push({...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"});
+        const change = createInsertRowAction("person", alan);
+        const txnAction = createTxnAction([change]);
+        state.log.push(txnAction.txn);
+
         const action = {
             "type": "TXN",
             "payload": {

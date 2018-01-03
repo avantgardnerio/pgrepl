@@ -7,7 +7,7 @@ import thunk from 'redux-thunk';
 import './index.css';
 import App from './containers/App';
 import {createWebSocketSender} from './middleware/webSocketSender';
-import createReducer from './reducers';
+import createReducer from './reducers/replicationReducer';
 import SocketService from './SocketService';
 import Database from "./Database";
 import {createIndexedDbSyncer} from "./middleware/indexedDbSyncer";

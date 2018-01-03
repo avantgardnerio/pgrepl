@@ -1,9 +1,9 @@
 package net.squarelabs.pgrepl.messages
 
-import net.squarelabs.pgrepl.model.Transaction
+import net.squarelabs.pgrepl.model.ClientTxn
 
 data class TxnMsg(
-        val payload: Transaction
+        val payload: ClientTxn
 ) {
     val type = "TXN"
 }
