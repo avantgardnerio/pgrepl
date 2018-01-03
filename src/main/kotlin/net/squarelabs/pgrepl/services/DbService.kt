@@ -69,9 +69,11 @@ class DbService @Inject constructor(
             val tableName = ano.name
             val keys = row.javaClass.declaredFields
                     .map { field -> field.name }
-            val keyClause = keys.joinToString(",")
+            val keyClause = keys
+                    .map { "\"" + it + "\"" }
+                    .joinToString(",")
             val values = keys.map { "?" }.joinToString(",")
-            val sql = "insert into $tableName ($keyClause) values ($values)"
+            val sql = "insert into \"$tableName\" ($keyClause) values ($values)"
             con.prepareStatement(sql).use { stmt ->
                 row.javaClass.declaredFields.forEachIndexed { idx, field ->
                     field.isAccessible = true

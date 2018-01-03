@@ -131,7 +131,7 @@
             "pkOrdinal": 1
           },
           {
-            "name": "client_txn_id",
+            "name": "clientTxnId",
             "type": "character varying"
           }
         ],

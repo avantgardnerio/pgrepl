@@ -62,16 +62,16 @@ class ReplicatorTest {
                     // test interleave
                     conA.autoCommit = false
                     conB.autoCommit = false
-                    conA.prepareStatement("INSERT INTO person (id, name, curTxnId) VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');").use {
+                    conA.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');").use {
                         it.executeUpdate()
                     }
-                    conB.prepareStatement("INSERT INTO person (id, name, curTxnId) VALUES (2, 'Rachel', '794d1570-ce12-4371-9304-0d50cce518ca');").use {
+                    conB.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (2, 'Rachel', '794d1570-ce12-4371-9304-0d50cce518ca');").use {
                         it.executeUpdate()
                     }
-                    conA.prepareStatement("INSERT INTO person (id, name, curTxnId) VALUES (3, 'Emma', 'ee52c2be-8690-4bbb-9cac-a4aa5e7ca81e');").use {
+                    conA.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (3, 'Emma', 'ee52c2be-8690-4bbb-9cac-a4aa5e7ca81e');").use {
                         it.executeUpdate()
                     }
-                    conB.prepareStatement("INSERT INTO person (id, name, curTxnId) VALUES (4, 'Annie', '36bc5f56-2c7d-4147-af72-f03bd1443e9e');").use {
+                    conB.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (4, 'Annie', '36bc5f56-2c7d-4147-af72-f03bd1443e9e');").use {
                         it.executeUpdate()
                     }
                     conA.commit()

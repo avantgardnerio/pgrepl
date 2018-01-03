@@ -34,8 +34,8 @@ class ReplicationSocket @Inject constructor(
     private var remote: RemoteEndpoint.Async? = null
     var clientId: UUID? = null
 
-    val txnMapSql = "INSERT INTO txnIdMap (xid, client_txn_id) VALUES (txid_current(),?)"
-    val getTxnSql = "SELECT client_txn_id FROM txnIdMap WHERE xid=?"
+    val txnMapSql = "INSERT INTO \"txnIdMap\" (xid, \"clientTxnId\") VALUES (txid_current(),?)"
+    val getTxnSql = "SELECT \"clientTxnId\" FROM \"txnIdMap\" WHERE xid=?"
 
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
@@ -63,13 +63,13 @@ class ReplicationSocket @Inject constructor(
                 stmt.executeQuery().use { rs ->
                     if (!rs.next()) {
                         // TODO: Does this still happen, now that we excluded zero size changes above?
-                        throw Exception("Error reading client_txn_id: ${txn.xid}!")
+                        throw Exception("Error reading clientTxnId: ${txn.xid}!")
                     }
                     val txnId = rs.getString(1)
                     val msg = TxnMsg(txn.copy(lsn = lsn, clientTxnId = txnId))
 
                     // TODO: ReplicationSockets with null remotes
-                    if(remote != null) remote!!.sendText(mapper.toJson(msg))
+                    if (remote != null) remote!!.sendText(mapper.toJson(msg))
                 }
             }
         }
@@ -166,10 +166,10 @@ class ReplicationSocket @Inject constructor(
                 .filter { col -> col.pkOrdinal != null }
                 .sortedBy { col -> col.pkOrdinal }
         val whereClause = pkCols
-                .map { col -> col.name + "=?" }
+                .map { col -> "\"" + col.name + "\"=?" }
                 .joinToString(" and ") + " and curTxnId=?"
         val row = change.record
-        val sql = "delete from ${table.name} where $whereClause"
+        val sql = "delete from \"${table.name}\" where $whereClause"
         con.prepareStatement(sql).use { stmt ->
             pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + 1, row[col.name]) })
             stmt.setObject(pkCols.size + 1, row["prvTxnId"])
@@ -184,13 +184,13 @@ class ReplicationSocket @Inject constructor(
                 .filter { col -> col.pkOrdinal != null }
                 .sortedBy { col -> col.pkOrdinal }
         val whereClause = pkCols
-                .map { col -> col.name + "=?" }
-                .joinToString(" and ") + " and curTxnId=?"
+                .map { col -> "\"" + col.name + "\"=?" }
+                .joinToString(" and ") + " and \"curTxnId\"=?"
         val row = change.record
         val updateClause = row.keys
-                .map { colName -> colName + "=?" }
+                .map { "\"" + it + "\"=?" }
                 .joinToString(",")
-        val sql = "update ${table.name} set $updateClause where $whereClause"
+        val sql = "update \"${table.name}\" set $updateClause where $whereClause"
         con.prepareStatement(sql).use { stmt ->
             row.values.forEachIndexed({ idx, value -> stmt.setObject(idx + 1, value) })
             pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + row.values.size + 1, row[col.name]) })
@@ -202,9 +202,11 @@ class ReplicationSocket @Inject constructor(
 
     private fun handleInsert(change: ClientChange, con: Connection) {
         val row = change.record
-        val colNames = row.keys.joinToString(",")
+        val colNames = row.keys
+                .map { "\"" + it + "\"" }
+                .joinToString(",")
         val values = row.values.map { "?" }.joinToString(",")
-        val sql = "insert into ${change.table} ($colNames) values ($values)"
+        val sql = "insert into \"${change.table}\" ($colNames) values ($values)"
         con.prepareStatement(sql).use { stmt ->
             row.values.forEachIndexed({ i, v -> stmt.setObject(i + 1, v) })
             val res = stmt.executeUpdate()

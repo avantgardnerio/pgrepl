@@ -678,7 +678,7 @@ describe(`the reducer`, () => {
                 }, {
                     "kind": "insert",
                     "table": "txnIdMap",
-                    "columnnames": ["xid", "client_txn_id"],
+                    "columnnames": ["xid", "clientTxnId"],
                     "columnvalues": [17587, "4a550c8a-628d-49a4-bf79-3380d35f960d"]
                 }]
             }

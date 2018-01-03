@@ -38,7 +38,7 @@
         "table": "txnIdMap",
         "columnnames": [
           "xid",
-          "client_txn_id"
+          "clientTxnId"
         ],
         "columnvalues": [
           14020.0,

@@ -49,8 +49,10 @@ class SnapshotService {
     }
 
     fun selectAll(tableName: String, columns: List<String>, con: Connection): List<Row> {
-        val colNames = columns.joinToString(",")
-        val sql = "select ${colNames} from ${tableName}"
+        val colNames = columns
+                .map { "\"" + it + "\"" }
+                .joinToString(",")
+        val sql = "select ${colNames} from \"${tableName}\""
         val rows = ArrayList<Row>()
         con.createStatement().use { st ->
             st.executeQuery(sql).use {
