@@ -93,7 +93,7 @@ class AcceptanceTest {
 
     private fun loadResource(path: String): String {
         var text = this.javaClass.getResource(path)
-        if(text != null) return text.readText() // Gradle
+        if (text != null) return text.readText() // Gradle
         text = this.javaClass.getResource("/" + path)
         return text.readText() // IntelliJ
     }
@@ -237,7 +237,7 @@ class AcceptanceTest {
         // Setup
         val id = UUID.randomUUID().toString()
         val curTxnId = UUID.randomUUID().toString()
-        val circle = Circle(id, 10, 10, 20, "blue", "1px", "red", curTxnId, null)
+        val circle = Circle(id, 10, 10, 20, "blue", 1, "red", curTxnId, null)
         dbSvc.insert(cfgSvc.getAppDbUrl(), circle)
         clearIndexedDb()
 

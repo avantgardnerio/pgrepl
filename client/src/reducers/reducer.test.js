@@ -1,66 +1,37 @@
 import createReducer from './index';
+import {createInsertRowAction, createTxnAction} from "../actions/database";
+
+const disconnectedNoData = {
+    tables: {
+        person: {
+            columns: [{"name": "id", "type": "character varying", "pkOrdinal": 1}],
+            rows: []
+        },
+        metadata: {
+            rows: {id: 1, lsn: 0, xid: 0, csn: 0}
+        }
+    },
+    log: [],
+    lsn: 0,
+    xid: 0,
+    connected: false,
+    cleared: false
+};
 
 describe(`the reducer`, () => {
     it(`should allow insert while offline`, () => {
-        const expected = {
-            "tables": {
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
-                "person": {
-                    "rows": [
-                        {
-                            "id": "79cd28e5-b6e4-42a6-9da6-b605a701e1de",
-                            "curTxnId": "8a0adc15-651a-480d-85d4-8441ee042a5e",
-                            "prevtxnid": undefined,
-                            "firstName": "Alan",
-                            "lastName": "Turing",
-                        }
-                    ]
-                },
-            },
-            "log": [
-                {
-                    "id": "8a0adc15-651a-480d-85d4-8441ee042a5e",
-                    "changes": [
-                        {
-                            "type": "INSERT",
-                            "table": "person",
-                            "record": {
-                                "id": "79cd28e5-b6e4-42a6-9da6-b605a701e1de",
-                                "curTxnId": "8a0adc15-651a-480d-85d4-8441ee042a5e",
-                                "prevtxnid": undefined,
-                                "firstName": "Alan",
-                                "lastName": "Turing",
-                            }
-                        }
-                    ]
-                }
-            ], "lsn": 0, "xid": 0, "connected": false, "cleared": false
+        // Setup
+        const state = disconnectedNoData;
+        const person = {
+            id: "79cd28e5-b6e4-42a6-9da6-b605a701e1de",
+            firstName: "Alan",
+            lastName: "Turing",
         };
-        const state = {
-            "tables": {
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
-                "person": {"rows": []},
-            }, "log": [], "lsn": 0, "xid": 0, "connected": false, "cleared": false
-        };
-        const action = {
-            "type": "COMMIT",
-            "txn": {
-                "id": "8a0adc15-651a-480d-85d4-8441ee042a5e",
-                "changes": [
-                    {
-                        "type": "INSERT",
-                        "table": "person",
-                        "record": {
-                            "id": "79cd28e5-b6e4-42a6-9da6-b605a701e1de",
-                            "curTxnId": "8a0adc15-651a-480d-85d4-8441ee042a5e",
-                            "prevtxnid": undefined,
-                            "firstName": "Alan",
-                            "lastName": "Turing",
-                        }
-                    }
-                ]
-            }
-        };
+        const change = createInsertRowAction("person", person);
+        const action = createTxnAction([change]);
+        const expected = JSON.parse(JSON.stringify(state));
+        expected.tables['person'].rows.push({...person, curTxnId: action.txn.id});
+        expected.log.push(action.txn);
         const initialState = {lsn: 0};
         let md = undefined;
         let ss = undefined;
@@ -74,56 +45,48 @@ describe(`the reducer`, () => {
             saveTxn: async (txn, state) => t = txn
         };
         const reducer = createReducer(initialState, db);
+
+        // Exercise
         const actual = reducer(state, action);
+
+        // Assert
         expect(actual).toEqual(expected);
     });
 
     it(`should allow insert while online`, () => {
         const state = {
             "tables": {
-                "circles": {
+                "person": {
                     "rows": [{
-                        "id": "3cbd788f-5a26-49aa-b389-e1e4aedacece",
-                        "cx": 248,
-                        "cy": 144,
-                        "r": 40,
-                        "stroke": "green",
-                        "strokeWidth": 4,
-                        "fill": "yellow",
-                        "curTxnId": "11f39b58-91cc-429a-a257-fc8ccb59415c"
+                        "id": "20d00f70-1fc6-41cf-bf4a-3a7521fa6d0c",
+                        "firstName": "Alan",
+                        "lastName": "Turing",
+                        "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"
                     }],
                     "columns": [
                         {"name": "id", "type": "character varying", "pkOrdinal": 1},
-                        {"name": "cx", "type": "integer"},
-                        {"name": "cy", "type": "integer"},
-                        {"name": "r", "type": "integer"},
-                        {"name": "stroke", "type": "character varying"},
-                        {"name": "strokeWidth", "type": "character varying"},
-                        {"name": "fill", "type": "character varying"},
+                        {"name": "firstName", "type": "character varying"},
+                        {"name": "lastName", "type": "character varying"},
                         {"name": "curTxnId", "type": "character varying"},
                         {"name": "prvTxnId", "type": "character varying"}
                     ]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
             },
             "log": [{
-                "id": "11f39b58-91cc-429a-a257-fc8ccb59415c",
+                "id": "79f17574-180d-41e3-9e0f-a394e37e2846",
                 "changes": [{
                     "type": "INSERT",
-                    "table": "circles",
+                    "table": "person",
                     "record": {
-                        "id": "3cbd788f-5a26-49aa-b389-e1e4aedacece",
-                        "cx": 248,
-                        "cy": 144,
-                        "r": 40,
-                        "stroke": "green",
-                        "strokeWidth": 4,
-                        "fill": "yellow",
-                        "curTxnId": "11f39b58-91cc-429a-a257-fc8ccb59415c"
+                        "id": "20d00f70-1fc6-41cf-bf4a-3a7521fa6d0c",
+                        "firstName": "Alan",
+                        "lastName": "Turing",
+                        "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"
                     }
                 }]
             }],
-            "lsn": 875189679,
+            "lsn": 1000,
             "xid": 0,
             "connected": true,
             "cleared": false
@@ -131,34 +94,31 @@ describe(`the reducer`, () => {
         const action = {
             "type": "TXN",
             "payload": {
-                "xid": 17525,
-                "nextlsn": "0/342A9AC0",
-                "timestamp": "2018-01-02 12:02:47.403995-05",
-                "clientTxnId": "11f39b58-91cc-429a-a257-fc8ccb59415c",
-                "lsn": 875206720,
-                "change": [
-                    {
-                        "kind": "insert",
-                        "table": "circles",
-                        "columnnames": ["id", "cx", "cy", "r", "stroke", "strokeWidth", "fill", "curTxnId", "prvTxnId"],
-                        "columnvalues": ["3cbd788f-5a26-49aa-b389-e1e4aedacece", 248, 144, 40, "green", "4", "yellow", "11f39b58-91cc-429a-a257-fc8ccb59415c", null]
-                    }
-                ]
+                "xid": 1234,
+                "nextlsn": "0/363678B8",
+                "timestamp": "2018-01-03 12:19:30.136103-05",
+                "clientTxnId": "90489467-8c5d-47a4-9ebf-ac71b9d4af7d",
+                "lsn": 1001,
+                "change": [{
+                    "kind": "insert",
+                    "table": "person",
+                    "columnnames": ["id", "cx", "cy", "r", "strokeWidth", "stroke", "fill", "curTxnId", "prvTxnId"],
+                    "columnvalues": ["0b026dbb-eebc-4a03-a4e5-f7aa5c8c91bf", 286, 195, 40, 4, "green", "yellow", "90489467-8c5d-47a4-9ebf-ac71b9d4af7d", null]
+                }]
             }
         };
         const expected = {
             "tables": {
                 "circles": {
                     "rows": [{
-                        "id": "3cbd788f-5a26-49aa-b389-e1e4aedacece",
-                        "cx": 248,
-                        "cy": 144,
+                        "id": "20d00f70-1fc6-41cf-bf4a-3a7521fa6d0c",
+                        "cx": 221,
+                        "cy": 195,
                         "r": 40,
                         "stroke": "green",
-                        "strokeWidth": "4", // TODO: Fix casing issue
+                        "strokeWidth": 4,
                         "fill": "yellow",
-                        "curTxnId": "11f39b58-91cc-429a-a257-fc8ccb59415c",
-                        "prvTxnId": null
+                        "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"
                     }],
                     "columns": [
                         {"name": "id", "type": "character varying", "pkOrdinal": 1},
@@ -172,11 +132,11 @@ describe(`the reducer`, () => {
                         {"name": "prvTxnId", "type": "character varying"}
                     ]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
             },
             "log": [],
-            "lsn": 875206720,
-            "xid": 17525,
+            "lsn": 909538808,
+            "xid": 18693,
             "connected": true,
             "cleared": false
         };

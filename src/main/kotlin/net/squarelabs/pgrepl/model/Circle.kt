@@ -9,7 +9,7 @@ data class Circle(
         val cy: Int,
         val r: Int,
         val stroke: String,
-        val strokeWidth: String,
+        val strokeWidth: Int,
         val fill: String,
         val curTxnId: String,
         val prvTxnId: String?

@@ -3,8 +3,8 @@ CREATE TABLE circles (
   cx            INT               NOT NULL,
   cy            INT               NOT NULL,
   r             INT               NOT NULL,
+  "strokeWidth" INT               NOT NULL,
   stroke        CHARACTER VARYING,
-  "strokeWidth" CHARACTER VARYING,
   fill          CHARACTER VARYING,
   "curTxnId"    CHARACTER VARYING NOT NULL,
   "prvTxnId"    CHARACTER VARYING
