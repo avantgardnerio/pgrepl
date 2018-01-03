@@ -23,6 +23,7 @@ import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class AcceptanceTest {
 
@@ -310,22 +311,30 @@ class AcceptanceTest {
         Actions(driver).moveToElement(leftSvg, 10, 25).click().build().perform()
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(rghtLsnField, originalLsnText)))
+        val circleCreatedLsn = leftLsnField.text
 
         // Exercise: go offline and make change
         driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
         val mouse = (driver as HasInputDevices).mouse
         val leftCircle = driver.findElement(By.cssSelector("#leftRoot circle"))
-        val rghtCircle = driver.findElement(By.cssSelector("#rightRoot circle"))
         val leftLogLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
+
+        // Move circle on left
         mouse.mouseDown((leftCircle as Locatable).coordinates)
         mouse.mouseUp((leftSvg as Locatable).coordinates)
-        mouse.mouseDown((rghtCircle as Locatable).coordinates)
-        mouse.mouseUp((rghtSvg as Locatable).coordinates)
-        WebDriverWait(driver, 3).until(textToBePresentInElement(leftLogLength, "1"))
+        WebDriverWait(driver, 3).until(textToBe(By.cssSelector("#leftRoot .logLength"), "1"))
+
+        // Delete circle on right
+        driver.findElement(By.cssSelector("#rightRoot circle")).click()
+        WebDriverWait(driver, 3).until(visibilityOfElementLocated(By.cssSelector("#rightRoot .dragItem")))
+        TimeUnit.MILLISECONDS.sleep(500)
+        driver.findElement(By.cssSelector("#rightRoot svg")).sendKeys("d")
+        TimeUnit.MILLISECONDS.sleep(500)
+        WebDriverWait(driver, 3).until(not(textToBe(By.cssSelector("#rightRoot .lsn"), circleCreatedLsn)))
 
         // Exercise: go back online
         driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
-        WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, rghtLsnField.text)))
+        WebDriverWait(driver, 3).until(textToBe(By.cssSelector("#leftRoot .lsn"), rghtLsnField.text))
 
         // Assert
         Assert.assertEquals("given a conflicting change has been made, when a client goes back online, then the change is rolled back",
