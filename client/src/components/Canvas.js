@@ -63,7 +63,12 @@ export default class Canvas extends Component {
                 this.setState({downPos: undefined});
             } else {
                 // drag
-                const newCircle = {...this.selectedCircle, cx: e.clientX, cy: e.clientY};
+                const pos = this.selectedItemPos;
+                const newCircle = {
+                    ...this.selectedCircle,
+                    cx: pos[0],
+                    cy: pos[1]
+                };
                 const change = createUpdateRowAction("circles", newCircle, this.props.state);
                 const action = createTxnAction([change]);
                 console.log(`Moving a circle to [${newCircle.cx}, ${newCircle.cy}] as TXN=${action.txn.id}`);
@@ -78,10 +83,15 @@ export default class Canvas extends Component {
         return this.props.circles.rows.find(c => c.id === this.state.selectedId);
     }
 
-    get selectedItem() {
-        if (!this.state.selectedId) return [];
+    get selectedItemPos() {
         const selPos = [this.selectedCircle.cx, this.selectedCircle.cy];
         const pos = this.state.downPos ? add(selPos, subtract(this.state.curPos, this.state.downPos)) : selPos;
+        return pos;
+    }
+
+    get selectedItem() {
+        if (!this.state.selectedId) return [];
+        const pos = this.selectedItemPos;
         return <circle key="dragItem" className="dragItem" cx={pos[0]} cy={pos[1]}
                        r="40" fill="blue" fillOpacity="0.5"/>
     }
