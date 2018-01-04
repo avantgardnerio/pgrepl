@@ -58,10 +58,11 @@ describe(`the reducer`, () => {
     });
 
     it(`should allow INSERT while online`, () => {
+        const person = {...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"};
         const state = JSON.parse(JSON.stringify(disconnectedNoData));
         state.connected = true;
         state.lsn = 1000;
-        state.tables.person.rows.push({...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"});
+        state.tables.person.rows.push(person);
         const change = createInsertRowAction("person", alan);
         const txnAction = createTxnAction([change]);
         state.log.push(txnAction.txn);
@@ -70,7 +71,7 @@ describe(`the reducer`, () => {
             "type": "TXN",
             "payload": {
                 "xid": 1234, "id": "90489467-8c5d-47a4-9ebf-ac71b9d4af7d", "lsn": 1001,
-                "changes": [{"type": "INSERT", "table": "person", "record": alan}]
+                "changes": [{"type": "INSERT", "table": "person", "record": person}]
             }
         };
         const expected = {
@@ -131,6 +132,63 @@ describe(`the reducer`, () => {
                 "person": {"rows": [], "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]},
                 "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
             }, "log": [action.txn], "lsn": 1000, "xid": 1234, "connected": false, "cleared": false
+        };
+        const initialState = {lsn: 0};
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
+    it(`should allow DELETE while online`, () => {
+        const state = JSON.parse(JSON.stringify(disconnectedNoData));
+        state.connected = true;
+        state.lsn = 1000;
+        const prior = {
+            ...alan,
+            curTxnId: "79f17574-180d-41e3-9e0f-a394e37e2846",
+        };
+        const post = {
+            ...prior,
+            curTxnId: "518e2c9d-2a32-48e4-bd1b-14c81f6b9b2a",
+            prvTxnId: prior.curTxnId
+        };
+        const change = createDeleteRowAction("person", post);
+        const txnAction = createTxnAction([change]);
+        state.log.push(txnAction.txn);
+
+        const action = {
+            "type": "TXN",
+            "payload": {
+                "xid": 1234,
+                "id": txnAction.txn.id,
+                "lsn": 1001,
+                "changes": [{
+                    "type": "DELETE",
+                    "table": "person",
+                    record: post
+                }]
+            }
+        };
+        const expected = {
+            "tables": {
+                "person": {
+                    "rows": [],
+                    "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+            },
+            "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
         const initialState = {lsn: 0};
         let md = undefined;

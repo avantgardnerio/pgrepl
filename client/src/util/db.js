@@ -16,26 +16,30 @@ export const arrayEq = (a, b) => _.range(Math.max(a.length, b.length))
 
 export const deleteRow = (row, table) => {
     const pk = getPk(row, table);
-    const oldRow = getRowByPk(pk, table);
-    if (row.prvTxnId !== oldRow.curTxnId) return false;
     table.rows = table.rows.filter(row => !arrayEq(pk, getPk(row, table)));
-    return true;
 };
 
-export const updateRow = (row, table) => {
-    const pk = getPk(row, table);
-    const oldRow = getRowByPk(pk, table);
-    if (row.prvTxnId !== oldRow.curTxnId) return false;
-    table.rows = table.rows.map(r => arrayEq(pk, getPk(r, table)) ? {...row} : r);
-    return true;
-};
-
-export const insertRow = (row, table) => {
-    const pk = getPk(row, table);
-    const oldRow = getRowByPk(pk, table);
-    if (oldRow) return false;
+export const upsertRow = (row, table) => {
+    deleteRow(row, table);
     table.rows.push({...row});
-    return true;
+};
+
+export const canInsert = (row, table) => {
+    const pk = getPk(row, table);
+    const oldRow = getRowByPk(pk, table);
+    return oldRow === undefined;
+};
+
+export const canDelete = (row, table) => {
+    const pk = getPk(row, table);
+    const oldRow = getRowByPk(pk, table);
+    return row.prvTxnId === oldRow.curTxnId;
+};
+
+export const canUpdate = (row, table) => {
+    const pk = getPk(row, table);
+    const oldRow = getRowByPk(pk, table);
+    return row.prvTxnId === oldRow.curTxnId;
 };
 
 export const rollbackLog = (state) => {
@@ -44,7 +48,7 @@ export const rollbackLog = (state) => {
         .reverse()
         .map(idx => state.log[idx])
         .map(txn => invert(txn))
-        .reduce((acc, cur) => applyCommit(acc, cur), state);
+        .reduce((acc, cur) => applyCommit(acc, cur, false), state);
     return {...newState, log: []};
 };
 
@@ -66,25 +70,41 @@ export const invert = (txn) => {
     return {...txn, changes};
 };
 
-export const applyCommit = (state, txn) => {
-    const newState = JSON.parse(JSON.stringify(state));
-    const success = txn.changes.reduce((acc, cur) => acc && applyChange(txn, newState, cur), true);
-    if(!success) {
+export const validateCommit = (state, txn) => {
+    return txn.changes.reduce((acc, cur) => acc && validateChange(txn, state, cur), true);
+};
+
+export const applyCommit = (state, txn, validate = true) => {
+    if (validate === true && validateCommit(state, txn) !== true) {
         console.log('Conflict while applying local commit txnId=', txn.id);
         return state;
     }
+    const newState = JSON.parse(JSON.stringify(state));
+    txn.changes.reduce((acc, cur) => acc && applyChange(txn, newState, cur), true);
     newState.log.push(JSON.parse(JSON.stringify(txn)));
     return newState;
 };
 
+const validators = {
+    'INSERT': canInsert,
+    'UPDATE': canUpdate,
+    'DELETE': canDelete
+};
+
+const validateChange = (txn, state, change) => {
+    const table = state.tables[change.table];
+    const func = validators[change.type];
+    return func(change.record, table);
+};
+
 const handlers = {
-    'INSERT': insertRow,
-    'UPDATE': updateRow,
+    'INSERT': upsertRow,
+    'UPDATE': upsertRow,
     'DELETE': deleteRow
 };
 
 const applyChange = (txn, state, change) => {
     const table = state.tables[change.table];
     const func = handlers[change.type];
-    return func(change.record, table);
+    func(change.record, table);
 };

@@ -1,4 +1,4 @@
-import {applyCommit, getPk, getRowByPk, insertRow, deleteRow, rollbackLog, updateRow} from '../util/db';
+import {applyCommit, getPk, getRowByPk, deleteRow, rollbackLog, upsertRow} from '../util/db';
 import {equals, unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
@@ -31,7 +31,7 @@ export default createReducer;
 
 const handleLocalCommit = (state, txn, db) => {
     const newState = applyCommit(state, txn);
-    saveCommit(newState, db, txn);
+    if(db !== undefined) saveCommit(newState, db, txn); // no db when rolling back and replaying
     return newState;
 };
 
@@ -62,47 +62,45 @@ const handleSnapshot = (state, action, db) => {
     return newState;
 };
 
+const applyChanges = (state, txn) => { // Mutates
+    if (txn.lsn === 0) return; // Conflict on server, do not apply
+    state.lsn = txn.lsn;
+    state.xid = txn.xid;
+    txn.changes.forEach(change => handleChange(state, change));
+    return state; // TODO: Don't mutate!
+};
+
+const filterTxns = (log, txn, db) => {
+    const newLog = log.filter(txn => txn.id !== txn.id);
+    db.removeFromLog(txn.id);
+    return newLog;
+};
+
 const handleServerTxn = (state, action, db) => {
     // validate
     const payload = action.payload;
-    let newState = JSON.parse(JSON.stringify(state));
     if (payload.lsn !== 0) { // zero for transaction failures
         if (payload.lsn <= state.lsn || payload.xid <= state.xid) {
             console.warn(`Received old txn from server: ${payload.lsn}`);
-            return newState;
+            return state;
         }
     } else {
         console.log(`Rolling back txn ${payload.id} due to conflict!`);
     }
     console.log(`Applying transaction from server LSN=${payload.lsn} txnId=${payload.id}`);
 
-    // rollback
-    console.log(`Rolling back ${state.log.length} local transactions...`);
-    newState = rollbackLog(newState);
-
-    // Apply
-    if (payload.lsn !== 0) {
-        newState.lsn = payload.lsn;
-        newState.xid = payload.xid;
-        console.log(`Rollback complete, applying server transaction LSN=${payload.lsn} txnId=${payload.id}`);
-        payload.changes.forEach(change => handleChange(newState, change))
-    }
-
-    // Remove duplicate transactions
-    newState.log = newState.log.filter(txn => txn.id !== payload.id);
-    db.removeFromLog(payload.id);
-    console.log(`Filtered log from ${state.log.length} transactions to ${newState.log.length}`);
-
-    // Replay log
-    console.log(`Replaying ${newState.log.length} local transactions`);
-    replayLog(newState);
+    const v1 = JSON.parse(JSON.stringify(state));
+    const v2 = rollbackLog(v1); // Does not mutate
+    const v3 = applyChanges(v2, payload); // Mutates
+    const log = filterTxns(v1.log, payload, db); // Does not mutate (but saves to idb)
+    const v5 = replayLog(v3, log); // Does not mutate
 
     // Save to IndexedDB
-    const txn = diff(state, newState);
+    const txn = diff(v1, v5);
     console.log(`Updating IndexedDb with a diff of ${txn.changes.length} changes`);
-    saveCommit(newState, db, txn);
+    saveCommit(v5, db, txn);
 
-    return newState;
+    return v5;
 };
 
 const diff = (prior, post) => {
@@ -149,12 +147,8 @@ const diff = (prior, post) => {
     return txn;
 };
 
-const replayLog = (state) => {
-    let newState = state;
-    for (let txn of state.log) {
-        newState = handleLocalCommit(newState, txn);
-    }
-    return newState;
+const replayLog = (state, log) => {
+    return log.reduce((acc, cur) => handleLocalCommit(acc, cur), state);
 };
 
 const handleChange = (state, change) => {
@@ -162,10 +156,10 @@ const handleChange = (state, change) => {
     state.tables[change.table] = table;
     switch (change.type) {
         case 'INSERT':
-            insertRow(change.record, table);
+            upsertRow(change.record, table);
             break;
         case 'UPDATE':
-            updateRow(change.record, table);
+            upsertRow(change.record, table);
             break;
         case 'DELETE':
             deleteRow(change.record, table);
