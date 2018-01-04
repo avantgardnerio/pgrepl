@@ -8,6 +8,26 @@ Though this project is not dependent upon React or Redux, adoption will come mos
 
 ![travis](https://travis-ci.org/bgard6977/pgrepl.svg?branch=master)
 
+## Background
+
+This project was inspired by [redux-first-routing](https://medium.freecodecamp.org/an-introduction-to-the-redux-first-routing-model-98926ebf53cb).
+
+Redux is built on [3 fundamental principles](https://github.com/reactjs/redux/blob/master/docs/introduction/ThreePrinciples.md):
+
+1. The store is the single source of truth
+1. State is read-only
+1. Changes are made with pure functions (reducers)
+
+Fortunately, as Michael Sargent points out in his article, we can break the 1st principle as long as we have a provable way to keep other sources in sync:
+
+![redux-flow](./doc/img/redux-first-routing.png)
+
+We can also break the 3rd principle to copy changes to IndexedDB asynchronously, as long as:
+ 
+1. Transactions arrive at IndexedDB in the same order
+1. Transactions are committed to IndexedDB atomically
+1. We reload the entire app if an IndexedDB transaction fails  
+
 ## Setup
 
 1. git clone this repo

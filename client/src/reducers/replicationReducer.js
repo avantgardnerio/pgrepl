@@ -1,5 +1,5 @@
-import {applyCommit, getPk, getRowByPk, deleteRow, rollbackLog, upsertRow} from '../util/db';
-import {equals, unique} from "../util/math";
+import {applyCommit, deleteRow, getPkCols, rollbackLog, upsertRow} from '../util/db';
+import {unique} from "../util/math";
 
 const createReducer = (initialState, db) => {
     console.log(`Creating reducer with initial LSN=${initialState.lsn}`);
@@ -8,7 +8,7 @@ const createReducer = (initialState, db) => {
             case 'COMMIT':
                 return handleLocalCommit(state, action.txn, db);
             case 'SNAPSHOT_RESPONSE':
-                return handleSnapshot(state, action, db);
+                return applyDbSnapshot(state, action, db);
             case 'TXN':
                 return handleServerTxn(state, action, db);
             case 'CLEARED_DB':
@@ -31,31 +31,34 @@ export default createReducer;
 
 const handleLocalCommit = (state, txn, db) => {
     const newState = applyCommit(state, txn);
-    if(db !== undefined) saveCommit(newState, db, txn); // no db when rolling back and replaying
+    if (db !== undefined) saveCommit(newState, db, txn); // no db when rolling back and replaying
     return newState;
 };
 
-const handleSnapshot = (state, action, db) => {
+const applyRowSnapshot = function (row, table, pkCols) {
+    const values = row.data;
+    const record = table.columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
+    const pkVals = pkCols.reduce((acc, cur) => [...acc, record[cur]], []);
+    const pk = pkVals.length === 1 ? pkVals[0].toString() : JSON.stringify(pkVals);
+    table.rows[pk] = record;
+};
+
+const applyTableSnapshot = function (table, state) {
+    const tableName = table.name;
+    const stateTable = state.tables[tableName] || {rows: {}};
+    state.tables[tableName] = stateTable;
+    stateTable.columns = table.columns;
+    const pkCols = getPkCols(table);
+    table.rows.forEach(row => applyRowSnapshot(row, stateTable, pkCols));
+};
+
+const applyDbSnapshot = (state, action, db) => {
     const newState = JSON.parse(JSON.stringify(state));
     if (newState.lsn) throw new Error('Cannot play snapshot onto already initialized database!');
     const snapshot = action.payload;
-    console.log(`Initalizing redux store with snapshot LSN=${snapshot.lsn}`);
+    console.log(`Initializing redux store with snapshot LSN=${snapshot.lsn}`);
     newState.lsn = snapshot.lsn;
-    for (let actionTable of snapshot.tables) {
-        const tableName = actionTable.name;
-        const stateTable = newState.tables[tableName] || {
-            rows: []
-        };
-        newState.tables[tableName] = stateTable;
-        stateTable.columns = actionTable.columns;
-        const rows = actionTable.rows;
-        for (let row of rows) {
-            const values = row.data;
-            const record = stateTable.columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
-            //console.log(record);
-            stateTable.rows.push(record);
-        }
-    }
+    snapshot.tables.forEach(actionTable => applyTableSnapshot(actionTable, newState));
 
     console.log(`Saving snapshot LSN=${snapshot.lsn} to IndexedDb`);
     saveSnapshot(db, snapshot);
@@ -105,46 +108,21 @@ const handleServerTxn = (state, action, db) => {
 
 const diff = (prior, post) => {
     const tableNames = unique([...Object.keys(prior.tables), ...Object.keys(post.tables)]);
-    const txn = {
-        changes: []
-    };
-    tableNames.forEach(tableName => {
+    const changes = tableNames.reduce((acc, tableName) => {
         const priorTable = prior.tables[tableName];
         const postTable = post.tables[tableName];
-        for (let postRow of postTable.rows) {
-            const pk = getPk(postRow, postTable);
-            const priorRow = getRowByPk(pk, priorTable);
-            if (!priorRow) {
-                const change = {
-                    type: 'INSERT',
-                    table: tableName,
-                    record: postRow
-                };
-                txn.changes.push(change);
-            } else if (!equals(priorRow, postRow)) {
-                const change = {
-                    type: 'UPDATE',
-                    table: tableName,
-                    record: postRow,
-                    prior: priorRow
-                };
-                txn.changes.push(change);
-            }
-        }
-        for (let priorRow of priorTable.rows) {
-            const pk = getPk(priorRow, priorTable);
-            const postRow = getRowByPk(pk, postTable);
-            if (!postRow) {
-                const change = {
-                    type: 'DELETE',
-                    table: tableName,
-                    record: priorRow
-                };
-                txn.changes.push(change);
-            }
-        }
-    });
-    return txn;
+        const inserts = Object.keys(postTable.rows)
+            .filter(pk => priorTable.rows[pk] === undefined)
+            .map(pk => ({type: 'INSERT', table: tableName, record: postTable.rows[pk]}));
+        const updates = Object.keys(postTable.rows)
+            .filter(pk => priorTable.rows[pk] !== undefined)
+            .map(pk => ({type: 'UPDATE', table: tableName, record: postTable.rows[pk], prior: priorTable.rows[pk]}));
+        const deletes = Object.keys(priorTable.rows)
+            .filter(pk => postTable.rows[pk] === undefined)
+            .map(pk => ({type: 'DELETE', table: tableName, record: priorTable.rows[pk]}));
+        return [...acc, ...inserts, ...updates, ...deletes];
+    }, []);
+    return {changes};
 };
 
 const replayLog = (state, log) => {

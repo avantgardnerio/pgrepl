@@ -1,26 +1,56 @@
 {
   "tables": {
     "circles": {
-      "rows": []
+      "rows": {},
+      "columns": [
+        {
+          "name": "id",
+          "pkOrdinal": 1
+        }
+      ]
     },
     "metadata": {
-      "rows": [
-        {
+      "rows": {
+        "1": {
           "id": 1,
           "lsn": 0,
           "xid": 0,
           "csn": 0
         }
+      },
+      "columns": [
+        {
+          "name": "id",
+          "pkOrdinal": 1
+        }
       ]
     },
     "person": {
-      "rows": []
+      "rows": {},
+      "columns": [
+        {
+          "name": "id",
+          "pkOrdinal": 1
+        }
+      ]
     },
     "txnIdMap": {
-      "rows": []
+      "rows": {},
+      "columns": [
+        {
+          "name": "xid",
+          "pkOrdinal": 1
+        }
+      ]
     },
     "txnLog": {
-      "rows": []
+      "rows": {},
+      "columns": [
+        {
+          "name": "csn",
+          "pkOrdinal": 1
+        }
+      ]
     }
   },
   "log": [],

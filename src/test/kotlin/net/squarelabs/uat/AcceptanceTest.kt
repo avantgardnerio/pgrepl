@@ -121,6 +121,30 @@ class AcceptanceTest {
         )
     }
 
+    @Test
+    fun `client can draw multiple circles`() {
+        // Setup
+        clearIndexedDb()
+        navigateAndWaitForLoad()
+        val svg = driver.findElement(By.cssSelector("#rightRoot svg"))
+        val numCircles = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        val logLength = driver.findElement(By.cssSelector("#rightRoot .logLength"))
+
+        // Exercise: insert
+        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+
+        Actions(driver).moveToElement(svg, 50, 50).click().build().perform()
+
+        WebDriverWait(driver, 3).until(textToBe(By.cssSelector("#rightRoot .numCircles"), "2"))
+
+        val circles = driver.findElements(By.cssSelector("circle"))
+        Assert.assertEquals("Both circles should be on page", 2, circles.size);
+        Assert.assertEquals("Circle one should be visible", true, circles[0].isDisplayed)
+        Assert.assertEquals("Circle one should be visible", true, circles[1].isDisplayed)
+        Assert.assertEquals("Two circles should be in DB", "2", numCircles.text)
+        Assert.assertEquals("Two transactions should be in the log", "2", logLength.text)
+    }
+
     // Black box test by necessity: can't populate indexeddb from selenium
     @Test
     fun `clients should CRUD while disconnected`() {
@@ -130,8 +154,7 @@ class AcceptanceTest {
         navigateAndWaitForLoad()
 
         // Exercise: insert
-        val svg = driver.findElement(By.cssSelector("#rightRoot svg"))
-        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+        Actions(driver).moveToElement(driver.findElement(By.cssSelector("#rightRoot svg")), 10, 25).click().build().perform()
         WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot circle")))
         val circle = driver.findElement(By.cssSelector("#rightRoot circle"))
         val numCircles = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
@@ -147,7 +170,7 @@ class AcceptanceTest {
         val oldY = circle.getAttribute("cy")
         val mouse = (driver as HasInputDevices).mouse
         mouse.mouseDown((circle as Locatable).coordinates)
-        mouse.mouseUp((svg as Locatable).coordinates)
+        mouse.mouseUp((driver.findElement(By.cssSelector("#rightRoot svg")) as Locatable).coordinates)
         WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "2"))
 
         // Assert: update
@@ -162,7 +185,7 @@ class AcceptanceTest {
         // Exercise: delete
         circle.click()
         WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot .dragItem")))
-        svg.sendKeys("d")
+        driver.findElement(By.cssSelector("#rightRoot svg")).sendKeys("d")
         WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "3"))
         val circles = driver.findElements(By.cssSelector("#rightRoot circle"))
 
@@ -344,6 +367,7 @@ class AcceptanceTest {
     private fun navigateAndWaitForLoad() {
         driver.get("http://127.0.0.1:8080/")
         WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot table")))
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot table")))
     }
 
     private fun clearIndexedDb() {

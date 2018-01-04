@@ -6,39 +6,37 @@ export const getPkCols = (table) => _
     .filter(col => col.pkOrdinal !== undefined)
     .map(col => col.name);
 
-// TODO: super slow, cache
-export const getRowByPk = (pk, table) => table.rows.find(row => arrayEq(pk, getPk(row, table)));
-
-export const getPk = (rec, table) => getPkCols(table).map(key => rec[key]);
-
-export const arrayEq = (a, b) => _.range(Math.max(a.length, b.length))
-    .reduce((acc, cur) => acc && a[cur] === b[cur], true);
+export const getPk = (rec, table) => {
+    const ar = getPkCols(table).map(key => rec[key]);
+    const pk = ar.length === 1 ? ar[0].toString() : JSON.stringify(ar);
+    return pk;
+};
 
 export const deleteRow = (row, table) => {
     const pk = getPk(row, table);
-    table.rows = table.rows.filter(row => !arrayEq(pk, getPk(row, table)));
+    delete table.rows[pk];
 };
 
 export const upsertRow = (row, table) => {
-    deleteRow(row, table);
-    table.rows.push({...row});
+    const pk = getPk(row, table);
+    table.rows[pk] = row;
 };
 
 export const canInsert = (row, table) => {
     const pk = getPk(row, table);
-    const oldRow = getRowByPk(pk, table);
+    const oldRow = table.rows[pk];
     return oldRow === undefined;
 };
 
 export const canDelete = (row, table) => {
     const pk = getPk(row, table);
-    const oldRow = getRowByPk(pk, table);
-    return row.prvTxnId === oldRow.curTxnId;
+    const oldRow = table.rows[pk];
+    return oldRow !== undefined && row.prvTxnId === oldRow.curTxnId;
 };
 
 export const canUpdate = (row, table) => {
     const pk = getPk(row, table);
-    const oldRow = getRowByPk(pk, table);
+    const oldRow = table.rows[pk];
     return oldRow !== undefined && row.prvTxnId === oldRow.curTxnId;
 };
 

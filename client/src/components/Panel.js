@@ -46,7 +46,7 @@ export default class Panel extends Component {
                 </tr>
                 <tr>
                     <td>circle count</td>
-                    <td className="numCircles">{this.props.circles.rows.length}</td>
+                    <td className="numCircles">{Object.keys(this.props.circles.rows).length}</td>
                 </tr>
                 <tr>
                     <td>log length</td>

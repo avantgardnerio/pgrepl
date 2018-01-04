@@ -1,6 +1,8 @@
 import createReducer from './replicationReducer';
 import {
-    createDeleteRowAction, createInsertRowAction, createTxnAction,
+    createDeleteRowAction,
+    createInsertRowAction,
+    createTxnAction,
     createUpdateRowAction
 } from "../actions/database";
 
@@ -8,10 +10,12 @@ const disconnectedNoData = {
     tables: {
         person: {
             columns: [{"name": "id", "type": "character varying", "pkOrdinal": 1}],
-            rows: []
+            rows: {}
         },
         metadata: {
-            rows: [{id: 1, lsn: 0, xid: 0, csn: 0}]
+            rows: {
+                "1": {id: 1, lsn: 0, xid: 0, csn: 0}
+            }
         }
     },
     log: [],
@@ -34,7 +38,7 @@ describe(`the reducer`, () => {
         const change = createInsertRowAction("person", alan);
         const action = createTxnAction([change]);
         const expected = JSON.parse(JSON.stringify(state));
-        expected.tables['person'].rows.push({...alan, curTxnId: action.txn.id});
+        expected.tables['person'].rows[alan.id] = {...alan, curTxnId: action.txn.id};
         expected.log.push(action.txn);
         const initialState = {lsn: 0};
         let md = undefined;
@@ -57,12 +61,69 @@ describe(`the reducer`, () => {
         expect(actual).toEqual(expected);
     });
 
+    it('should allow multiple inserts while offline', () => {
+        const state = JSON.parse(JSON.stringify(disconnectedNoData));
+        state.connected = false;
+        const change = createInsertRowAction("person", alan);
+        const action1 = createTxnAction([change]);
+        const prior = {...alan, curTxnId: action1.txn.id};
+        state.tables['person'].rows[prior.id] = prior;
+        state.log.push(action1.txn);
+
+        const post = {
+            id: "3fdeb1cb-084e-4db3-95da-932ca7045c2f",
+            firstName: "Alan",
+            lastName: "Kay",
+            curTxnId: "518e2c9d-2a32-48e4-bd1b-14c81f6b9b2a",
+        };
+        const action2 = {
+            "type": "COMMIT",
+            "txn": {
+                "id": "518e2c9d-2a32-48e4-bd1b-14c81f6b9b2a",
+                "changes": [{
+                    "type": "INSERT",
+                    "table": "person",
+                    "record": post,
+                }]
+            }
+        };
+        const expected = {
+            "tables": {
+                "person": {
+                    "rows": {
+                        [prior.id]: prior,
+                        [post.id]: post
+                    },
+                    "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
+                },
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}},
+            },
+            "log": [action1.txn, action2.txn],
+            "lsn": 0, "xid": 0, "connected": false, "cleared": false
+        };
+        const initialState = {lsn: 0};
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
+        const actual = reducer(state, action2);
+        expect(actual).toEqual(expected);
+    });
+
     it(`should allow INSERT while online`, () => {
         const person = {...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"};
         const state = JSON.parse(JSON.stringify(disconnectedNoData));
         state.connected = true;
         state.lsn = 1000;
-        state.tables.person.rows.push(person);
+        state.tables['person'].rows[person.id] = person;
         const change = createInsertRowAction("person", alan);
         const txnAction = createTxnAction([change]);
         state.log.push(txnAction.txn);
@@ -70,17 +131,17 @@ describe(`the reducer`, () => {
         const action = {
             "type": "TXN",
             "payload": {
-                "xid": 1234, "id": "90489467-8c5d-47a4-9ebf-ac71b9d4af7d", "lsn": 1001,
+                "xid": 1234, "id": txnAction.txn.id, "lsn": 1001,
                 "changes": [{"type": "INSERT", "table": "person", "record": person}]
             }
         };
         const expected = {
             "tables": {
                 "person": {
-                    "rows": [{...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"}],
+                    "rows": {[alan.id]: {...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"}},
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}}
             },
             "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
@@ -99,7 +160,6 @@ describe(`the reducer`, () => {
         const reducer = createReducer(initialState, db);
         const actual = reducer(state, action);
         expect(actual).toEqual(expected);
-
     });
 
     it(`should allow DELETE while offline`, () => {
@@ -108,7 +168,7 @@ describe(`the reducer`, () => {
         state.xid = 1234;
         state.lsn = 1000;
         const prior = {...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"};
-        state.tables.person.rows.push(prior);
+        state.tables['person'].rows[prior.id] = prior;
 
         const post = {
             ...prior,
@@ -129,8 +189,8 @@ describe(`the reducer`, () => {
         };
         const expected = {
             "tables": {
-                "person": {"rows": [], "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]},
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+                "person": {"rows": {}, "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]},
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}},
             }, "log": [action.txn], "lsn": 1000, "xid": 1234, "connected": false, "cleared": false
         };
         const initialState = {lsn: 0};
@@ -183,10 +243,10 @@ describe(`the reducer`, () => {
         const expected = {
             "tables": {
                 "person": {
-                    "rows": [],
+                    "rows": {},
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}}
             },
             "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
@@ -213,7 +273,7 @@ describe(`the reducer`, () => {
         state.xid = 1234;
         state.lsn = 1000;
         const prior = {...alan, "curTxnId": "79f17574-180d-41e3-9e0f-a394e37e2846"};
-        state.tables.person.rows.push(prior);
+        state.tables['person'].rows[prior.id] = prior;
 
         const post = {
             ...prior,
@@ -236,7 +296,7 @@ describe(`the reducer`, () => {
             }
         };
         const expected = JSON.parse(JSON.stringify(state));
-        expected.tables['person'].rows[0] = post;
+        expected.tables['person'].rows[post.id] = post;
         expected.log.push(action.txn);
 
         const initialState = {lsn: 0};
@@ -270,7 +330,7 @@ describe(`the reducer`, () => {
             curTxnId: "518e2c9d-2a32-48e4-bd1b-14c81f6b9b2a",
             prvTxnId: prior.curTxnId
         };
-        state.tables.person.rows.push(prior);
+        state.tables['person'].rows[prior.id] = prior;
         const change = createUpdateRowAction("person", alan, state);
         const txnAction = createTxnAction([change]);
         state.log.push(txnAction.txn);
@@ -292,10 +352,10 @@ describe(`the reducer`, () => {
         const expected = {
             "tables": {
                 "person": {
-                    "rows": [post],
+                    "rows": {[post.id]: post},
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}}
             },
             "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
@@ -330,7 +390,7 @@ describe(`the reducer`, () => {
             curTxnId: "d875109a-cae4-4b25-b245-ad00e03e77bb",
             prvTxnId: prior.curTxnId
         };
-        state.tables.person.rows.push(post);
+        state.tables['person'].rows[post.id] = post;
         const change = createUpdateRowAction("person", post, state);
         const txnAction = createTxnAction([change]);
         state.log.push(txnAction.txn);
@@ -351,10 +411,10 @@ describe(`the reducer`, () => {
         const expected = {
             "tables": {
                 "person": {
-                    "rows": [],
+                    "rows": {},
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}}
             },
             "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
@@ -389,10 +449,10 @@ describe(`the reducer`, () => {
             curTxnId: "d875109a-cae4-4b25-b245-ad00e03e77bb",
             prvTxnId: prior.curTxnId
         };
-        state.tables.person.rows.push(prior);
+        state.tables['person'].rows[prior.id] = prior;
         const change = createDeleteRowAction("person", prior, state);
         const txnAction = createTxnAction([change]);
-        state.tables.person.rows.pop();
+        delete state.tables['person'].rows[prior.id];
         state.log.push(txnAction.txn);
 
         const action = {
@@ -412,10 +472,10 @@ describe(`the reducer`, () => {
         const expected = {
             "tables": {
                 "person": {
-                    "rows": [post],
+                    "rows": {[post.id]: post},
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}}
             },
             "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
         };
@@ -459,8 +519,8 @@ describe(`the reducer`, () => {
     it('should apply snapshots from server', () => {
         const state = {
             "tables": {
-                "circles": {"rows": []},
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+                "circles": {"rows": {}},
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}},
             }, "log": [], "lsn": 0, "xid": 0, "connected": true, "cleared": false
         };
         const action = {
@@ -479,7 +539,7 @@ describe(`the reducer`, () => {
                         ],
                         "rows": [
                             {
-                                "data": [ // TODO: convert to JSON friendly format on server
+                                "data": [
                                     "d2ea6203-8228-4da4-9cc2-69f66b27704d",
                                     "f8ccc378-cf4f-487a-b6f4-90020430f1b8",
                                     null,
@@ -503,17 +563,17 @@ describe(`the reducer`, () => {
                             {"name": "firstName", "type": "character varying"},
                             {"name": "lastName", "type": "character varying"},
                         ],
-                        "rows": [
-                            {
+                        "rows": {
+                            "d2ea6203-8228-4da4-9cc2-69f66b27704d": {
                                 "id": "d2ea6203-8228-4da4-9cc2-69f66b27704d",
                                 "curTxnId": "f8ccc378-cf4f-487a-b6f4-90020430f1b8",
                                 "prvTxnId": null, // TODO: null -> undefined
                                 "firstName": "Alan",
                                 "lastName": "Turing",
                             }
-                        ]
+                        }
                     },
-                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]},
+                "metadata": {"rows": {"1": {"id": 1, "lsn": 0, "xid": 0, "csn": 0}}},
             }, "log": [], "lsn": 1000, "xid": 0, "connected": true, "cleared": false
         };
         const initialState = {lsn: 0};
