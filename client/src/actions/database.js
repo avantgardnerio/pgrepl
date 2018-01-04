@@ -9,8 +9,8 @@ export const createInsertRowAction = (table, record) => {
     }
 };
 
-export const createUpdateRowAction = (tableName, record, db) => {
-    const table = db.tables[tableName];
+export const createUpdateRowAction = (tableName, record, memDb) => {
+    const table = memDb.tables[tableName];
     const pk = getPk(record, table);
     const prior = getRowByPk(pk, table);
     return {

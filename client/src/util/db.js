@@ -39,7 +39,7 @@ export const canDelete = (row, table) => {
 export const canUpdate = (row, table) => {
     const pk = getPk(row, table);
     const oldRow = getRowByPk(pk, table);
-    return row.prvTxnId === oldRow.curTxnId;
+    return oldRow !== undefined && row.prvTxnId === oldRow.curTxnId;
 };
 
 export const rollbackLog = (state) => {

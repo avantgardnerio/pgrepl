@@ -316,7 +316,66 @@ describe(`the reducer`, () => {
         expect(actual).toEqual(expected);
     });
 
-    it(`should revert commits that conflict with transactions from the server`, () => {
+    it(`should revert conflicting deletes`, () => {
+        const state = JSON.parse(JSON.stringify(disconnectedNoData));
+        state.connected = true;
+        state.lsn = 1000;
+        const prior = {
+            ...alan,
+            curTxnId: "79f17574-180d-41e3-9e0f-a394e37e2846",
+        };
+        const post = {
+            ...prior,
+            lastName: 'Kay',
+            curTxnId: "d875109a-cae4-4b25-b245-ad00e03e77bb",
+            prvTxnId: prior.curTxnId
+        };
+        state.tables.person.rows.push(post);
+        const change = createUpdateRowAction("person", post, state);
+        const txnAction = createTxnAction([change]);
+        state.log.push(txnAction.txn);
+
+        const action = {
+            "type": "TXN",
+            "payload": {
+                "id": "d875109a-cae4-4b25-b245-ad00e03e77bb",
+                "xid": 1234,
+                "lsn": 1001,
+                "changes": [{
+                    "type": "DELETE",
+                    "table": "person",
+                    record: post
+                }]
+            }
+        };
+        const expected = {
+            "tables": {
+                "person": {
+                    "rows": [],
+                    "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
+                },
+                "metadata": {"rows": [{"id": 1, "lsn": 0, "xid": 0, "csn": 0}]}
+            },
+            "log": [], "lsn": 1001, "xid": 1234, "connected": true, "cleared": false
+        };
+        const initialState = {lsn: 0};
+        let md = undefined;
+        let ss = undefined;
+        let txnId = undefined;
+        let t = undefined;
+        const db = {
+            getMetadata: async () => ({"lsn": 0}),
+            setMetadata: async (metadata) => md = metadata,
+            saveSnapshot: async (snapshot) => ss = snapshot,
+            removeFromLog: async (clientTxnId) => txnId = clientTxnId,
+            saveTxn: async (txn, state) => t = txn
+        };
+        const reducer = createReducer(initialState, db);
+        const actual = reducer(state, action);
+        expect(actual).toEqual(expected);
+    });
+
+    it(`should revert conflicting updates`, () => {
         const state = JSON.parse(JSON.stringify(disconnectedNoData));
         state.connected = true;
         state.lsn = 1000;

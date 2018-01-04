@@ -71,7 +71,7 @@ const applyChanges = (state, txn) => { // Mutates
 };
 
 const filterTxns = (log, txn, db) => {
-    const newLog = log.filter(txn => txn.id !== txn.id);
+    const newLog = log.filter(t => t.id !== txn.id);
     db.removeFromLog(txn.id);
     return newLog;
 };
