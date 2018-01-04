@@ -8,7 +8,7 @@ export const getPkCols = (table) => _
 
 export const getPk = (rec, table) => {
     const ar = getPkCols(table).map(key => rec[key]);
-    const pk = ar.length === 1 ? ar[0] : JSON.stringify(ar);
+    const pk = ar.length === 1 ? ar[0].toString() : JSON.stringify(ar);
     return pk;
 };
 

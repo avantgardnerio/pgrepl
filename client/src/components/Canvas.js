@@ -80,7 +80,7 @@ export default class Canvas extends Component {
 
     // ------------------------------------------- properties ---------------------------------------------------------
     get selectedCircle() {
-        return this.props.circles.rows.find(c => c.id === this.state.selectedId);
+        return this.props.circles.rows[this.state.selectedId];
     }
 
     get selectedItemPos() {
@@ -90,7 +90,7 @@ export default class Canvas extends Component {
     }
 
     get selectedItem() {
-        if (!this.state.selectedId) return [];
+        if (!this.selectedCircle) return [];
         const pos = this.selectedItemPos;
         return <circle key="dragItem" className="dragItem" cx={pos[0]} cy={pos[1]}
                        r="40" fill="blue" fillOpacity="0.5"/>
@@ -98,7 +98,7 @@ export default class Canvas extends Component {
 
     get circles() {
         if (!this.props.circles) return [];
-        return this.props.circles.rows
+        return Object.values(this.props.circles.rows)
             .map(c => <circle key={c.id} cx={c.cx} cy={c.cy} r={c.r} stroke={c.stroke} onMouseDown={this.onObjectDown}
                               strokeWidth={c.strokeWidth} fill={c.fill} id={c.id}/>)
     }

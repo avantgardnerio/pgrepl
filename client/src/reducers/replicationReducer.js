@@ -39,7 +39,7 @@ const applyRowSnapshot = function (row, table, pkCols) {
     const values = row.data;
     const record = table.columns.reduce((acc, cur, idx) => ({...acc, [cur.name]: values[idx]}), {});
     const pkVals = pkCols.reduce((acc, cur) => [...acc, record[cur]], []);
-    const pk = pkVals.length === 1 ? pkVals[0] : JSON.stringify(pkVals);
+    const pk = pkVals.length === 1 ? pkVals[0].toString() : JSON.stringify(pkVals);
     table.rows[pk] = record;
 };
 

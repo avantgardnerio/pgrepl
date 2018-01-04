@@ -5,14 +5,14 @@ import {getPk} from "./util/db";
 
 const migrations = [
     (db) => { // v1: system data
-        db.createObjectStore('txnIdMap', {keyPath: 'xid'});
-        db.createObjectStore('metadata', {keyPath: 'id'});
-        const txnLog = db.createObjectStore('txnLog', {keyPath: 'csn'});
-        txnLog.createIndex('txnId', 'id');
+        db.createObjectStore('txnIdMap', {keyPath: ['xid']});
+        db.createObjectStore('metadata', {keyPath: ['id']});
+        const txnLog = db.createObjectStore('txnLog', {keyPath: ['csn']});
+        txnLog.createIndex('txnId', ['id']);
     },
     (db) => { // v2: app data
-        db.createObjectStore('circles', {keyPath: 'id'});
-        db.createObjectStore('person', {keyPath: 'id'});
+        db.createObjectStore('circles', {keyPath: ['id']});
+        db.createObjectStore('person', {keyPath: ['id']});
     }
 ];
 
@@ -60,7 +60,7 @@ export default class Database {
         return new Promise((resolve, reject) => {
             const txn = this.db.transaction(['metadata']);
             const store = txn.objectStore('metadata');
-            const req = store.get(1);
+            const req = store.get([1]);
             req.onerror = (ev) => reject(ev);
             req.onsuccess = (ev) => resolve(req.result);
         });
@@ -137,12 +137,15 @@ export default class Database {
             txn.oncomplete = (ev) => resolve(tables);
             txn.onerror = (ev) => reject(ev);
             tableNames.forEach(tableName => {
-                const table = {rows: []};
                 const store = txn.objectStore(tableName);
+                const columns = store.keyPath.map((colName, idx) => ({name: colName, pkOrdinal: idx + 1}));
+                const table = {rows: {}, columns};
                 store.openCursor().onsuccess = (ev) => {
                     const cursor = ev.target.result;
                     if (cursor) {
-                        table.rows.push(cursor.value);
+                        const row = cursor.value;
+                        const pk = row[store.keyPath];
+                        table.rows[pk] = row;
                         cursor.continue();
                     }
                 };
@@ -186,7 +189,7 @@ export default class Database {
                 console.log('Skipping composite txn...');
                 return; // rollback and replay diff txns don't have an ID and shouldn't be logged
             }
-            const getReq = txn.objectStore('metadata').get(1);
+            const getReq = txn.objectStore('metadata').get([1]);
             getReq.onerror = (ev) => reject(ev);
             getReq.onsuccess = () => {
                 const metadata = getReq.result;
