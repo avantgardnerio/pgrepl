@@ -208,11 +208,11 @@ export default class Database {
             const txn = this.db.transaction('txnLog', 'readwrite');
             const store = txn.objectStore('txnLog');
             const idx = store.index('txnId');
-            const req = idx.get(txnId);
+            const req = idx.get([txnId]);
             req.onsuccess = () => {
                 if (req.result) {
                     console.log(`Removing transaction from IndexedDb log csn=${req.result.csn}, txnId=${txnId}`);
-                    const delReq = store.delete(req.result.csn);
+                    const delReq = store.delete([req.result.csn]);
                     delReq.onsuccess = () => resolve(req.result);
                     delReq.onerror = (ev) => reject(ev);
                 } else {
