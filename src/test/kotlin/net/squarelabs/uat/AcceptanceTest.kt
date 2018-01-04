@@ -23,7 +23,6 @@ import org.openqa.selenium.remote.DesiredCapabilities
 import org.openqa.selenium.support.ui.ExpectedConditions.*
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class AcceptanceTest {
 
@@ -131,12 +130,12 @@ class AcceptanceTest {
         navigateAndWaitForLoad()
 
         // Exercise: insert
-        val svg = driver.findElement(By.cssSelector("#leftRoot svg"))
+        val svg = driver.findElement(By.cssSelector("#rightRoot svg"))
         Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
-        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot circle")))
-        val circle = driver.findElement(By.cssSelector("#leftRoot circle"))
-        val numCircles = driver.findElement(By.cssSelector("#leftRoot .numCircles"))
-        val logLength = driver.findElement(By.cssSelector("#leftRoot .logLength"))
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot circle")))
+        val circle = driver.findElement(By.cssSelector("#rightRoot circle"))
+        val numCircles = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        val logLength = driver.findElement(By.cssSelector("#rightRoot .logLength"))
 
         // Assert
         Assert.assertNotNull("given offline mode, when canvas is clicked, then a circle should be created", circle)
@@ -162,10 +161,10 @@ class AcceptanceTest {
 
         // Exercise: delete
         circle.click()
-        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#leftRoot .dragItem")))
+        WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot .dragItem")))
         svg.sendKeys("d")
         WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "3"))
-        val circles = driver.findElements(By.cssSelector("#leftRoot circle"))
+        val circles = driver.findElements(By.cssSelector("#rightRoot circle"))
 
         // Assert delete
         Assert.assertEquals("when all circles have been deleted, then there should be none on the screen", 0, circles.size)
