@@ -1,5 +1,5 @@
 import uuidv4 from 'uuid/v4';
-import {getPk, getRowByPk} from "../util/db";
+import {getPk} from "../util/db";
 
 export const createInsertRowAction = (table, record) => {
     return {
@@ -12,7 +12,7 @@ export const createInsertRowAction = (table, record) => {
 export const createUpdateRowAction = (tableName, record, memDb) => {
     const table = memDb.tables[tableName];
     const pk = getPk(record, table);
-    const prior = getRowByPk(pk, table);
+    const prior = table.rows[pk];
     return {
         type: "UPDATE",
         table: tableName,

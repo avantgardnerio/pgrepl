@@ -5,7 +5,7 @@ describe('db', () => {
         const state = {
             "tables": {
                 "person": {
-                    "rows": [],
+                    "rows": {},
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 }
             },
@@ -38,15 +38,15 @@ describe('db', () => {
         const expected = {
             "tables": {
                 "person": {
-                    "rows": [
-                        {
+                    "rows": {
+                        "36a4fada-660f-4649-803a-b2fc6fedc292": {
                             "id": "36a4fada-660f-4649-803a-b2fc6fedc292",
                             "firstName": "Alan",
                             "lastName": "Turing",
                             "curTxnId": "4a550c8a-628d-49a4-bf79-3380d35f960d",
                             "prvTxnId": null
                         }
-                    ],
+                    },
                     "columns": [{"name": "id", "type": "character varying", "pkOrdinal": 1}]
                 }
             },
