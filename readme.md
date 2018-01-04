@@ -14,6 +14,10 @@ Though this project is not dependent upon React or Redux, adoption will come mos
 1. ./gradlew build
 1. Observe passing tests
 
+## Flow
+
+![flowchart](./doc/img/pgrepl_flowchart.png)
+
 ## Protocol
 
 Example insert:
