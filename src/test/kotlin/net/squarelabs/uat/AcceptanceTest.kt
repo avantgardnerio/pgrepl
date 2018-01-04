@@ -121,6 +121,30 @@ class AcceptanceTest {
         )
     }
 
+    @Test
+    fun `client can draw multiple circles`() {
+        // Setup
+        clearIndexedDb()
+        navigateAndWaitForLoad()
+        val svg = driver.findElement(By.cssSelector("#rightRoot svg"))
+        val numCircles = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
+        val logLength = driver.findElement(By.cssSelector("#rightRoot .logLength"))
+
+        // Exercise: insert
+        Actions(driver).moveToElement(svg, 10, 25).click().build().perform()
+
+        Actions(driver).moveToElement(svg, 50, 50).click().build().perform()
+
+        WebDriverWait(driver, 3).until(textToBe(By.cssSelector("#rightRoot .numCircles"), "2"))
+
+        val circles = driver.findElements(By.cssSelector("circle"))
+        Assert.assertEquals("Both circles should be on page", 2, circles.size);
+        Assert.assertEquals("Circle one should be visible", true, circles[0].isDisplayed)
+        Assert.assertEquals("Circle one should be visible", true, circles[1].isDisplayed)
+        Assert.assertEquals("Two circles should be in DB", "2", numCircles.text)
+        Assert.assertEquals("Two transactions should be in the log", "2", logLength.text)
+    }
+
     // Black box test by necessity: can't populate indexeddb from selenium
     @Test
     fun `clients should CRUD while disconnected`() {
