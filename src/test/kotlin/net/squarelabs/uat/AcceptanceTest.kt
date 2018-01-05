@@ -156,43 +156,40 @@ class AcceptanceTest {
         // Exercise: insert
         Actions(driver).moveToElement(driver.findElement(By.cssSelector("#rightRoot svg")), 10, 25).click().build().perform()
         WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot circle")))
-        val circle = driver.findElement(By.cssSelector("#rightRoot circle"))
-        val numCircles = driver.findElement(By.cssSelector("#rightRoot .numCircles"))
-        val logLength = driver.findElement(By.cssSelector("#rightRoot .logLength"))
+        navigateAndWaitForLoad()
 
         // Assert
-        Assert.assertNotNull("given offline mode, when canvas is clicked, then a circle should be created", circle)
-        Assert.assertEquals("when a circle is visible, then there should be a record in the database", "1", numCircles.text)
-        Assert.assertEquals("given offline mode, when a circle is created, then there should be a transaction in the log", "1", logLength.text)
+        Assert.assertNotNull("clicking canvas should make a circle", driver.findElement(By.cssSelector("#rightRoot circle")))
+        Assert.assertEquals("1 click should make one circle", "1", driver.findElement(By.cssSelector("#rightRoot .numCircles")).text)
+        Assert.assertEquals("1 click should log one txn", "1", driver.findElement(By.cssSelector("#rightRoot .logLength")).text)
+
 
         // Exercise: update
-        val oldX = circle.getAttribute("cx")
-        val oldY = circle.getAttribute("cy")
+        val oldX = driver.findElement(By.cssSelector("#rightRoot circle")).getAttribute("cx")
+        val oldY = driver.findElement(By.cssSelector("#rightRoot circle")).getAttribute("cy")
         val mouse = (driver as HasInputDevices).mouse
-        mouse.mouseDown((circle as Locatable).coordinates)
+        mouse.mouseDown((driver.findElement(By.cssSelector("#rightRoot circle")) as Locatable).coordinates)
         mouse.mouseUp((driver.findElement(By.cssSelector("#rightRoot svg")) as Locatable).coordinates)
-        WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "2"))
+        WebDriverWait(driver, 3).until(textToBe(By.cssSelector("#rightRoot .logLength"), "2"))
+        navigateAndWaitForLoad()
 
         // Assert: update
-        Assert.assertNotEquals("given an existing circle, when it is dragged, then it moves to the new coordinates",
-                oldX, circle.getAttribute("cx")
-        )
-        Assert.assertNotEquals("given an existing circle, when it is dragged, then it moves to the new coordinates",
-                oldY, circle.getAttribute("cy")
-        )
-        Assert.assertEquals("given offline mode, when a circle is moved, then there should be a transaction in the log", "2", logLength.text)
+        Assert.assertNotEquals("drag should change x", oldX, driver.findElement(By.cssSelector("#rightRoot circle")).getAttribute("cx"))
+        Assert.assertNotEquals("drag should change y", oldY, driver.findElement(By.cssSelector("#rightRoot circle")).getAttribute("cy"))
+        Assert.assertEquals("updates should get logged", "2", driver.findElement(By.cssSelector("#rightRoot .logLength")).text)
 
         // Exercise: delete
-        circle.click()
+        driver.findElement(By.cssSelector("#rightRoot circle")).click()
         WebDriverWait(driver, 3).until(presenceOfElementLocated(By.cssSelector("#rightRoot .dragItem")))
         driver.findElement(By.cssSelector("#rightRoot svg")).sendKeys("d")
-        WebDriverWait(driver, 3).until(textToBePresentInElement(logLength, "3"))
-        val circles = driver.findElements(By.cssSelector("#rightRoot circle"))
+        WebDriverWait(driver, 3).until(textToBe(By.cssSelector("#rightRoot .logLength"), "3"))
+        navigateAndWaitForLoad()
 
         // Assert delete
-        Assert.assertEquals("when all circles have been deleted, then there should be none on the screen", 0, circles.size)
-        Assert.assertEquals("when all circles have been deleted, then there should be none in the DB", "0", numCircles.text)
-        Assert.assertEquals("given offline mode, when a circle is deleted, then there should be a transaction in the log", "3", logLength.text)
+        val circles = driver.findElements(By.cssSelector("#rightRoot circle"))
+        Assert.assertEquals("hitting d key should delete circle from screen", 0, circles.size)
+        Assert.assertEquals("hitting d key should delete from db", "0", driver.findElement(By.cssSelector("#rightRoot .numCircles")).text)
+        Assert.assertEquals("deletes should be logged", "3", driver.findElement(By.cssSelector("#rightRoot .logLength")).text)
     }
 
     // Black box test by necessity: can't populate indexeddb from selenium
