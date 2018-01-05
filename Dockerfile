@@ -26,8 +26,11 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
     echo "host replication postgres ::1/128 md5" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
     service postgresql restart && \
     sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
-RUN git clone https://github.com/bgard6977/pgrepl.git && \
-    cd pgrepl && \
-    ./gradlew fatJar -x test
+# Only for development environments
+#RUN git clone https://github.com/bgard6977/pgrepl.git && \
+#    cd pgrepl && \
+#    ./gradlew fatJar -x test
+RUN mkdir -p /pgrepl/build/libs/
+COPY ./build/libs/pgrepl-all.jar /pgrepl/build/libs/
 EXPOSE 8080
 ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-all.jar

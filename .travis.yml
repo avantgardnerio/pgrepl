@@ -43,7 +43,7 @@ install:
   - sudo mv -f ~/chromedriver /usr/local/share/
   - sudo chmod +x /usr/local/share/chromedriver
   - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
-  - ./gradlew build -x test
+  - ./gradlew fatJar -x test
 before_script:
   - sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
 script:
@@ -52,7 +52,8 @@ script:
 after_success:
   - if [ "$TRAVIS_BRANCH" == "feature/continuous_delivery" ]; then
     docker build -t bgard6977/pgrepl .
-    docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD";
+    docker help login
+    docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker push bgard6977/pgrepl;
     fi
 before_cache:
