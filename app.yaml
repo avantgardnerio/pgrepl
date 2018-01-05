@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
       - name: pgrepl
-        image: bgard6977/pgrepl  # or just image: redis
+        image: bgard6977/pgrepl:latest
         resources:
           requests:
             cpu: 100m

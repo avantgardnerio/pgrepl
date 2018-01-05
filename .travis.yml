@@ -56,7 +56,7 @@ after_success:
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
     gcloud config set project 'pgrepl-191221';
-    gcloud -q preview app deploy app.yaml --promote --image-url=bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER --stop-previous-version --version 0.1.$TRAVIS_BUILD_NUMBER;
+    kubectl apply -f app.yaml;
     fi
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
