@@ -59,6 +59,7 @@ after_success:
     chmod +x ./kubectl;
     sudo mv ./kubectl /usr/local/bin/kubectl;
     gcloud config set project 'pgrepl-191221';
+    kubectl proxy &;
     kubectl apply -f app.yaml;
     fi
 before_cache:
