@@ -4,6 +4,7 @@ import {applyMiddleware, createStore} from 'redux';
 import {Provider} from 'react-redux';
 import thunk from 'redux-thunk';
 
+import registerServiceWorker from './registerServiceWorker';
 import './index.css';
 import App from './containers/App';
 import {createWebSocketSender} from './middleware/webSocketSender';
@@ -60,3 +61,4 @@ elementIds.forEach((elementId) => {
     };
     init();
 });
+registerServiceWorker();
