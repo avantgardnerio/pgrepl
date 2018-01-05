@@ -55,6 +55,9 @@ after_success:
     docker help login;
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
+    curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl;
+    chmod +x ./kubectl;
+    sudo mv ./kubectl /usr/local/bin/kubectl;
     gcloud config set project 'pgrepl-191221';
     kubectl apply -f app.yaml;
     fi
