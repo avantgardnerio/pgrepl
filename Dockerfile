@@ -31,6 +31,6 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
 #    cd pgrepl && \
 #    ./gradlew fatJar -x test
 RUN mkdir -p /pgrepl/build/libs/
-COPY ./build/libs/pgrepl-all.jar /pgrepl/build/libs/
+COPY ./build/libs/pgrepl-*.jar /pgrepl/build/libs/
 EXPOSE 8080
-ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-all.jar
+ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-*.jar
