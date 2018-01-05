@@ -75,8 +75,13 @@ const applyChanges = (state, txn) => { // Mutates
 
 const filterTxns = (log, txn, db) => {
     const newLog = log.filter(t => t.id !== txn.id);
-    db.removeFromLog(txn.id);
+    db.removeFromLog(txn.id).catch(handleDbError);
     return newLog;
+};
+
+const handleDbError = (ex) => {
+    alert(`A terminal error occurred, the page needs to reload: ${ex}`);
+    window.location.reload(true);
 };
 
 const handleServerTxn = (state, action, db) => {
@@ -150,13 +155,13 @@ const handleChange = (state, change) => {
 // ---------------------------------------- IndexedDB -----------------------------------------------------------------
 const saveCommit = async (state, db, txn) => {
     console.log(`Saving txn ${txn.id} to IndexedDB...`);
-    db.saveTxn(txn, state);
+    db.saveTxn(txn, state).catch(handleDbError);
 };
 
 const saveSnapshot = async (db, snapshot) => {
     console.log(`Saving snapshot LSN=${snapshot.lsn} to IndexedDB...`);
     const metadata = await db.getMetadata();
     metadata.lsn = snapshot.lsn;
-    db.setMetadata(metadata);
-    db.saveSnapshot(snapshot);
+    db.setMetadata(metadata).catch(handleDbError);
+    db.saveSnapshot(snapshot).catch(handleDbError);
 };

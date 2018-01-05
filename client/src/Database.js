@@ -177,7 +177,7 @@ export default class Database {
                         break;
                     case 'DELETE':
                         const pk = getPk(change.record, table);
-                        store.delete(pk);
+                        store.delete([pk]);
                         break;
                     default:
                         throw new Error(`Unknown type: ${change.type}`);
