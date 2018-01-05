@@ -8,6 +8,7 @@ jdk:
   - openjdk8
 services:
   - postgresql
+  - docker
 addons:
   chrome: stable
   postgresql: "9.6"
@@ -47,6 +48,12 @@ before_script:
 script:
   - which chromedriver
   - ./gradlew build
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+    docker build -t bgard6977/pgrepl .
+    docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD";
+    docker push bgard6977/pgrepl;
+    fi
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
