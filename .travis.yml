@@ -34,6 +34,11 @@ before_install:
   - echo "host replication postgres ::1/128 md5" | sudo tee -a /etc/postgresql/9.6/main/pg_hba.conf
   - sudo service postgresql restart
   - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
+  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+  - chmod +x ./kubectl
+  - sudo mv ./kubectl /usr/local/bin/kubectl
+  - gcloud config set project 'pgrepl-191221'
+  - kubectl proxy &
 install:
   - pwd
   - ls -la
@@ -55,11 +60,6 @@ after_success:
     docker help login;
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
-    curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl;
-    chmod +x ./kubectl;
-    sudo mv ./kubectl /usr/local/bin/kubectl;
-    gcloud config set project 'pgrepl-191221';
-    kubectl proxy &;
     kubectl apply -f app.yaml;
     fi
 before_cache:
