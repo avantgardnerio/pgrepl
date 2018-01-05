@@ -51,7 +51,7 @@ script:
   - ./gradlew build
 after_success:
   - if [ "$TRAVIS_BRANCH" == "feature/continuous_delivery" ]; then
-    docker build -t bgard6977/pgrepl .;
+    docker build -t bgard6977/pgrepl . 0.1.$TRAVIS_BUILD_NUMBER;
     docker help login;
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
