@@ -54,7 +54,7 @@ after_success:
     docker build -t bgard6977/pgrepl .;
     docker help login;
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
-    docker push bgard6977/pgrepl;
+    docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
     fi
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
