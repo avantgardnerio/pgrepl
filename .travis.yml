@@ -66,6 +66,7 @@ after_success:
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
     docker push bgard6977/pgrepl:latest;
     kubectl apply -f app.yaml;
+    kubectl delete pod --all;
     fi
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
