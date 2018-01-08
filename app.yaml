@@ -7,6 +7,8 @@ metadata:
     tier: frontend
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Local
+  loadBalancerIP: 23.251.150.213
   ports:
   - port: 80
     targetPort: 8080
