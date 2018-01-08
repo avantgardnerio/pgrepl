@@ -53,12 +53,12 @@ install:
   - sudo mv -f ~/chromedriver /usr/local/share/
   - sudo chmod +x /usr/local/share/chromedriver
   - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
-  - ./gradlew fatJar -x test
+  - ./gradlew build -x test
 before_script:
   - sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
 script:
   - which chromedriver
-  - ./gradlew build
+  - ./gradlew build fatJar
 after_success:
   - if [ "$TRAVIS_BRANCH" == "feature/continuous_delivery" ]; then
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";

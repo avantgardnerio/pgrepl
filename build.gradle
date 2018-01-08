@@ -100,7 +100,7 @@ task copyResources(type: Copy) {
 }
 task setVersion(type: Exec) {
     executable "sh"
-    args "-c", "cd client && npm version --allow-same-version $version && cd .."
+    args "-c", "cd client && echo $version && npm version --allow-same-version $version && cd .."
 }
 npm_run_build.dependsOn setVersion
 copyResources.dependsOn npm_run_build
@@ -132,4 +132,3 @@ task fatJar(type: Jar) {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
-
