@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
       - name: pgrepl
-        image: bgard6977/pgrepl
+        image: bgard6977/pgrepl:latest
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 100m
