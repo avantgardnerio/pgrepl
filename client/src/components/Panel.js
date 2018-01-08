@@ -1,5 +1,7 @@
 import React, {Component} from 'react';
 
+import {version} from '../../package.json';
+
 export default class Panel extends Component {
 
     get connectionText() {
@@ -51,6 +53,10 @@ export default class Panel extends Component {
                 <tr>
                     <td>log length</td>
                     <td className="logLength">{this.props.state.log.length}</td>
+                </tr>
+                <tr>
+                    <td>version</td>
+                    <td className="version">{version}</td>
                 </tr>
                 </tbody>
             </table>
