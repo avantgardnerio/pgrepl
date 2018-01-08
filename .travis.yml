@@ -62,7 +62,7 @@ script:
 after_success:
   - if [ "$TRAVIS_BRANCH" == "feature/continuous_delivery" ]; then
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
-    docker build -t latest -t bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER .;
+    docker build -t bgard6977:latest -t bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER .;
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;
     docker push bgard6977/pgrepl:latest;
     kubectl apply -f app.yaml;
