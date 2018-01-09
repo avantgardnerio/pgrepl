@@ -1,4 +1,4 @@
-import {subscribeRequest} from "../actions/websocket";
+import {subscribeRequest} from "../actions/websocketActions";
 
 export const createWebSocketSender = (socket) => {
     const webSocketSender = (store) => {

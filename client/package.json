@@ -11,13 +11,15 @@
     "redux": "^3.7.2",
     "redux-first-routing": "^0.3.0",
     "redux-thunk": "^2.2.0",
+    "universal-websocket-client": "^1.0.1",
     "uuid": "^3.1.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "loadTest": "node --experimental-modules src/loadTest.mjs"
   },
   "proxy": "http://localhost:8080"
 }

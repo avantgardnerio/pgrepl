@@ -1,5 +1,5 @@
 import {connect} from 'react-redux';
-import {connect as connectWs, disconnect} from '../actions/websocket';
+import {connect as connectWs, disconnect} from '../actions/websocketActions';
 
 import Panel from '../components/Panel';
 import {createClearDbAction} from "../actions/database";
