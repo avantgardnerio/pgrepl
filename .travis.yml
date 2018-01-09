@@ -59,7 +59,7 @@ script:
   - which chromedriver
   - ./gradlew build fatJar
 after_success:
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+  - if [ "$TRAVIS_BRANCH" == "feature/44_load_test" ]; then
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker build -t bgard6977/pgrepl:latest -t bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER .;
     docker push bgard6977/pgrepl:0.1.$TRAVIS_BUILD_NUMBER;

@@ -1,7 +1,8 @@
 FROM ubuntu:16.04
 
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
     default-jdk \
     build-essential \
     libssl-dev \
@@ -9,7 +10,10 @@ RUN apt-get install -y \
     postgresql-9.5 \
     postgresql-server-dev-9.5 \
     curl \
-    sudo
+    sudo \
+    nano \
+    grep \
+    net-tools
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
     apt-get install -y nodejs
 RUN git clone https://github.com/eulerto/wal2json.git && \
@@ -32,5 +36,10 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
 #    ./gradlew fatJar -x test
 RUN mkdir -p /pgrepl/build/libs/
 COPY ./build/libs/pgrepl-all-*.jar /pgrepl/build/libs/
-EXPOSE 8080
-ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-all-*.jar
+EXPOSE 8080 9999
+ENTRYPOINT service postgresql start && \
+    java \
+    -Dcom.sun.management.jmxremote.port=9999 \
+    -Dcom.sun.management.jmxremote.authenticate=false \
+    -Dcom.sun.management.jmxremote.ssl=false \
+    -jar ./pgrepl/build/libs/pgrepl-all-*.jar
