@@ -36,7 +36,7 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
 #    ./gradlew fatJar -x test
 RUN mkdir -p /pgrepl/build/libs/
 COPY ./build/libs/pgrepl-all-*.jar /pgrepl/build/libs/
-EXPOSE 8080 9999
+EXPOSE 8080 1099
 ENTRYPOINT service postgresql start && \
     java \
     -Dcom.sun.management.jmxremote \
