@@ -12,7 +12,11 @@ RUN apt-get update && \
     sudo \
     nano \
     grep \
-    net-tools
+    net-tools \
+    iputils-ping \
+    telnet \
+    dnsutils \
+    openssh-server
 RUN git clone https://github.com/eulerto/wal2json.git && \
     cd wal2json && \
     USE_PGXS=1 make && \
@@ -29,11 +33,12 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
     echo "listen_addresses = '*'" | tee -a /etc/postgresql/9.*/main/postgresql.conf
 RUN service postgresql restart && \
     sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
+RUN sed -i.bak "s/PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config && \
+    echo "root:Docker!" | chpasswd
 EXPOSE 5432
-ENTRYPOINT echo "hello world!" && \
-    cat /etc/postgresql/9.*/main/pg_hba.conf && \
-    ifconfig && \
-    cat /etc/postgresql/9.*/main/postgresql.conf | grep listen && \
+ENTRYPOINT echo "hello world 73!" && \
+    cat /etc/ssh/sshd_config && \
+    service ssh restart && \
     service postgresql start && \
     netstat -l && \
     tail -F /var/log/postgresql/postgresql-*-main.log

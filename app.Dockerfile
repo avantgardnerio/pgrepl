@@ -10,11 +10,17 @@ RUN apt-get update && \
     grep \
     net-tools \
     iputils-ping \
-    telnet
+    telnet \
+    dnsutils \
+    openssh-server
 RUN mkdir -p /pgrepl/build/libs/
 COPY ./build/libs/pgrepl-all-*.jar /pgrepl/build/libs/
+RUN sed -i.bak "s/PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config && \
+    echo "root:Docker!" | chpasswd
 EXPOSE 8080 1099
 ENTRYPOINT printenv && \
+    service ssh start && \
+    ping pgrepl-postgres && \
     java \
     -Dcom.sun.management.jmxremote \
     -Dcom.sun.management.jmxremote.authenticate=false \
