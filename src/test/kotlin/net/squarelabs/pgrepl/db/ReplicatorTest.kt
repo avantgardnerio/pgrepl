@@ -24,6 +24,8 @@ class ReplicatorTest {
     private val snapSvc = injector.getInstance(SnapshotService::class.java)!!
     private val dbSvc = injector.getInstance(DbService::class.java)!!
     private val slotSvc = injector.getInstance(SlotService::class.java)!!
+    private val crudSvc = injector.getInstance(CrudService::class.java)!!
+    private val cnvSvc = injector.getInstance(ConverterService::class.java)!!
 
     private val updateQuery = "INSERT INTO person (id, name, \"curTxnId\") VALUES (%d, '%s', '%s');"
 
@@ -60,11 +62,11 @@ class ReplicatorTest {
             snap = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
         }
         val actual = mutableListOf<String>()
-        val spy = { lsn: Long, json: String ->
+        val spy = { json: String ->
             actual.add(json)
             Unit
         }
-        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, slotSvc, conSvc).use {
+        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
             it.addListener(clientId, spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->
@@ -96,7 +98,7 @@ class ReplicatorTest {
 
         // Assert
         val gson = GsonBuilder().setPrettyPrinting().create()
-        val expected = this.javaClass.getResource("/fixtures/txn.json").readText()
+        val expected = this.javaClass.getResource("/fixtures/txn.json").readText() // TODO: kill brittle fixture
         val actualAr = actual.map { gson.fromJson(it, Transaction::class.java) }
         val expectedAr: List<Transaction> = gson.fromJson(expected, Array<Transaction>::class.java)
                 .mapIndexed { idx, txn ->

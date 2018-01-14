@@ -1,5 +1,9 @@
 package net.squarelabs.pgrepl.db
 
+import com.google.gson.Gson
+import net.squarelabs.pgrepl.messages.TxnMsg
+import net.squarelabs.pgrepl.model.Transaction
+import net.squarelabs.pgrepl.services.*
 import net.squarelabs.pgrepl.services.ConfigService
 import net.squarelabs.pgrepl.services.ConnectionService
 import net.squarelabs.pgrepl.services.SlotService
@@ -23,7 +27,9 @@ class Replicator(
         val lsn: Long,
         val cfgSvc: ConfigService,
         val slotSvc: SlotService,
-        val conSvc: ConnectionService
+        val conSvc: ConnectionService,
+        val crudSvc: CrudService,
+        val cnvSvc: ConverterService
 ) : AutoCloseable {
 
     companion object {
@@ -32,7 +38,7 @@ class Replicator(
 
     private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
-    val listeners = HashMap<UUID, (Long, String) -> Unit>()
+    val listeners = HashMap<UUID, (String) -> Unit>()
     val con: BaseConnection
     val stream: PGReplicationStream
     val future: Future<*>
@@ -76,15 +82,21 @@ class Replicator(
         try {
             // LOG.info("------ read {}", clientId)
             var buffer = stream.readPending()
-            while (buffer != null) {
-                val lsn = stream.lastReceiveLSN
-                val str = toString(buffer)
-                synchronized(this, {
-                    listeners.values.forEach({ l -> l(lsn.asLong(), str) })
-                })
-                stream.setAppliedLSN(lsn)
-                //stream.setFlushedLSN(lsn) // TODO: never flush?
-                buffer = stream.readPending()
+            val mapper = Gson()
+            conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
+                while (buffer != null) {
+                    val lsn = stream.lastReceiveLSN
+                    val walJson = toString(buffer)
+                    val walTxn: Transaction = mapper.fromJson(walJson, Transaction::class.java)
+                    if (walTxn.change.size <= 0) return // Not sure why this happens
+                    val txnId = crudSvc.getClientTxnId(walTxn.xid, con)
+                    val msg = TxnMsg(cnvSvc.walTxnToClientTxn(lsn.asLong(), txnId, walTxn))
+                    val clientJson = mapper.toJson(msg)
+                    synchronized(this, { listeners.values.forEach({ l -> l(clientJson) }) })
+                    stream.setAppliedLSN(lsn)
+                    //stream.setFlushedLSN(lsn) // force postgres to hold entire log by not flushing
+                    buffer = stream.readPending()
+                }
             }
         } catch (ex: PSQLException) {
             if ("Database connection failed when reading from copy" != ex.message) {
@@ -98,7 +110,7 @@ class Replicator(
     }
 
     @Synchronized
-    fun addListener(clientId: UUID, listener: (Long, String) -> Unit) {
+    fun addListener(clientId: UUID, listener: (String) -> Unit) {
         listeners.put(clientId, listener)
     }
 

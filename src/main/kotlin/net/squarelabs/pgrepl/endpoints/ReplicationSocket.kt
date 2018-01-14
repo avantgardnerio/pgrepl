@@ -39,47 +39,10 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    fun handlePgTxn(lsn: Long, json: String) {
-        val mapper = Gson()
-        val walTxn: Transaction = mapper.fromJson(json, Transaction::class.java)
-        if (walTxn.change.size <= 0) return // Not sure why this happens
-        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
-            val txnId = crudSvc.getClientTxnId(walTxn.xid, con)
-            val msg = TxnMsg(walTxnToClientTxn(lsn, txnId, walTxn))
-            if (remote != null) remote!!.sendText(mapper.toJson(msg))
-        }
+    fun handlePgTxn(json: String) {
+        if (remote != null) remote!!.sendText(json)
     }
-
-    fun walTxnToClientTxn(lsn: Long, txnId: String, walTxn: Transaction): ClientTxn {
-        val changes = walTxn.change.map { walChangeToClientChange(it) }
-        return ClientTxn(txnId, lsn, changes)
-    }
-
-    fun walChangeToClientChange(change: Change): ClientChange {
-        when (change.kind) {
-            "delete" -> {
-                val size = maxOf(change.oldkeys!!.keynames.size, change.oldkeys.keyvalues.size)
-                val prior: Map<String, Any> = (0 until size)
-                        .associateBy({ change.oldkeys.keynames[it] }, { change.oldkeys.keyvalues[it] })
-                return ClientChange(change.kind.toUpperCase(), change.table, prior, null)
-            }
-            "update" -> {
-                val record: Map<String, Any> = (0 until maxOf(change.columnnames.size, change.columnvalues.size))
-                        .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
-                val size = maxOf(change.oldkeys!!.keynames.size, change.oldkeys.keyvalues.size)
-                val prior: Map<String, Any> = (0 until size)
-                        .associateBy({ change.oldkeys.keynames[it] }, { change.oldkeys.keyvalues[it] })
-                return ClientChange(change.kind.toUpperCase(), change.table, record, prior)
-            }
-            "insert" -> {
-                val record: Map<String, Any> = (0 until maxOf(change.columnnames.size, change.columnvalues.size))
-                        .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
-                return ClientChange(change.kind.toUpperCase(), change.table, record, null)
-            }
-        }
-        throw IllegalArgumentException("Unknown change type: ${change.kind}")
-    }
-
+    
     override fun onMessage(json: String) {
         try {
             val mapper = Gson()
@@ -123,7 +86,7 @@ class ReplicationSocket @Inject constructor(
     private fun handleSubscribe(req: SubscribeRequest, mapper: Gson) {
         clientId = UUID.fromString(req.clientId)
         val dbName = cfgSvc.getAppDbName()
-        replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> handlePgTxn(lsn, json) })
+        replSvc.subscribe(dbName, clientId!!, req.lsn, { json -> handlePgTxn(json) })
         remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
     }
 
