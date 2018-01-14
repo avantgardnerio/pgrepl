@@ -1,29 +1,29 @@
 import uuidv4 from 'uuid/v4';
 
 export default class SocketService {
-    constructor() {
+    constructor(url, WebSocket) {
+        this.url = url;
+        this.WebSocket = WebSocket;
         this.id = uuidv4();
         this.timer = undefined;
+
+        this._onopen = this._onopen.bind(this);
+        this._send = this._send.bind(this);
+        this._onmessage = this._onmessage.bind(this);
+        this._onclose = this._onclose.bind(this);
     }
 
     connect() {
-        const location = document.location.toString()
-                .replace('http://', 'ws://')
-                .replace(":3000", ":8080")
-            + "echo";
-        try {
-            this._ws = new WebSocket(location);
-            this._ws.onopen = this._onopen;
-            this._ws.onmessage = this._onmessage;
-            this._ws.onclose = this._onclose;
-            console.log('Connecting WebSocket', this.id);
-        } catch (exception) {
-            console.error("Connect Error: " + exception);
-        }
+        this._ws = new this.WebSocket(this.url);
+        this._ws.onopen = this._onopen;
+        this._ws.onmessage = this._onmessage;
+        this._ws.onclose = this._onclose;
+        console.log('Connecting WebSocket', this.id);
     }
 
     close() {
         this._ws.close(1000);
+        if (this.timer) clearInterval(this.timer);
         this._ws = undefined;
     }
 
@@ -37,23 +37,23 @@ export default class SocketService {
         return this._ws !== undefined;
     }
 
-    _onopen = () => {
+    _onopen() {
         console.info(`WebSocket ${this.id} Connected`);
         if (this.onConnect) this.onConnect();
         this.timer = setInterval(() => this.write({type: 'PING'}), 30000);
     };
 
-    _send = (message) => {
+    _send(message) {
         this._ws.send(message);
     };
 
-    _onmessage = (ev) => {
+    _onmessage(ev) {
         const msg = JSON.parse(ev.data);
         console.log(`Received ${msg.type} on WebSocket ${this.id}`);
         if (this.onMsg) this.onMsg(msg);
     };
 
-    _onclose = (ev) => {
+    _onclose(ev) {
         if (this.timer) clearInterval(this.timer);
         this.timer = undefined;
         this._ws = undefined;

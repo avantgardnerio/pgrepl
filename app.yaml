@@ -1,26 +1,74 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: pgrepl-service
+  name: pgrepl-postgres
   labels:
     app: pgrepl
-    tier: frontend
 spec:
-  type: LoadBalancer
-  externalTrafficPolicy: Local
-  loadBalancerIP: 23.251.150.213
+  ports:
+    - port: 5432
+  selector:
+    app: pgrepl
+    tier: postgres
+  clusterIP: None
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pgrepl-postgres
+  labels:
+    app: pgrepl
+spec:
+  selector:
+    matchLabels:
+      app: pgrepl
+      tier: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: pgrepl
+        tier: postgres
+    spec:
+      containers:
+      - image: bgard6977/pgrepl-db:latest
+        name: postgres
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5432
+          name: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgrepl
+  labels:
+    app: pgrepl
+spec:
   ports:
   - port: 80
     targetPort: 8080
   selector:
     app: pgrepl
     tier: frontend
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  loadBalancerIP: 23.251.150.213
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: pgrepl-deployment
+  name: pgrepl
+  labels:
+    app: pgrepl
 spec:
+  selector:
+    matchLabels:
+      app: pgrepl
+      tier: frontend
+  strategy:
+    type: Recreate
   replicas: 1
   template:
     metadata:
@@ -30,11 +78,10 @@ spec:
     spec:
       containers:
       - name: pgrepl
-        image: bgard6977/pgrepl:latest
+        image: bgard6977/pgrepl-app:latest
         imagePullPolicy: Always
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
+        env:
+        - name: DB_HOST
+          value: pgrepl-postgres
         ports:
         - containerPort: 8080

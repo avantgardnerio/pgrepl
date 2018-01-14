@@ -1,19 +1,23 @@
 package net.squarelabs.pgrepl.services
 
 class ConfigService {
-    private val jdbcDbUrl: String = "jdbc:postgresql://localhost:5432/postgres?user=postgres&password=postgres"
+    private val dbHost = "localhost"
     private val dbName = "pgrepl_test"
 
-    fun getJdbcDatabaseUrl() : String {
-        return System.getenv("JDBC_DATABASE_URL") ?: jdbcDbUrl
+    fun getDbHost(): String {
+        return System.getenv("DB_HOST") ?: dbHost
     }
 
-    fun getAppDbName() : String {
+    fun getJdbcDatabaseUrl(): String {
+        return "jdbc:postgresql://${getDbHost()}:5432/postgres?user=postgres&password=postgres"
+    }
+
+    fun getAppDbName(): String {
         return dbName
     }
 
-    fun getAppDbUrl() : String {
-        return "jdbc:postgresql://localhost:5432/$dbName?user=postgres&password=postgres"
+    fun getAppDbUrl(): String {
+        return "jdbc:postgresql://${getDbHost()}:5432/$dbName?user=postgres&password=postgres"
     }
 
 }

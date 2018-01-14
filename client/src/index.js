@@ -12,7 +12,7 @@ import createReducer from './reducers/replicationReducer';
 import SocketService from './SocketService';
 import Database from "./Database";
 import {createIndexedDbSyncer} from "./middleware/indexedDbSyncer";
-import {connected, disconnected, snapshotRequest, subscribeRequest} from "./actions/websocket";
+import {connected, disconnected, snapshotRequest, subscribeRequest} from "./actions/websocketActions";
 
 const elementIds = ['leftRoot', 'rightRoot'];
 elementIds.forEach((elementId) => {
@@ -24,7 +24,10 @@ elementIds.forEach((elementId) => {
             const initialState = await db.getInitialState();
             const reducer = createReducer(initialState, db);
 
-            const ws = new SocketService();
+            const url = document.location.toString()
+                .replace('http://', 'ws://')
+                .replace(":3000", ":8080") + "echo";
+            const ws = new SocketService(url, WebSocket);
             const socketSender = createWebSocketSender(ws);
             const dbSyncer = createIndexedDbSyncer(db);
             const store = createStore(reducer, applyMiddleware(socketSender, dbSyncer, thunk));

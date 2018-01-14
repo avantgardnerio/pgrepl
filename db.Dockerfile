@@ -1,17 +1,22 @@
 FROM ubuntu:16.04
 
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
-    default-jdk \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
     build-essential \
     libssl-dev \
     git \
     postgresql-9.5 \
     postgresql-server-dev-9.5 \
     curl \
-    sudo
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
-    apt-get install -y nodejs
+    sudo \
+    nano \
+    grep \
+    net-tools \
+    iputils-ping \
+    telnet \
+    dnsutils \
+    openssh-server
 RUN git clone https://github.com/eulerto/wal2json.git && \
     cd wal2json && \
     USE_PGXS=1 make && \
@@ -24,13 +29,13 @@ RUN echo "max_wal_senders = 20" | tee -a /etc/postgresql/9.*/main/postgresql.con
     echo "local replication postgres peer" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
     echo "host replication postgres 127.0.0.1/32 md5" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
     echo "host replication postgres ::1/128 md5" | tee -a /etc/postgresql/9.*/main/pg_hba.conf && \
-    service postgresql restart && \
+    sed -i.bak "s/127\.0\.0\.1\/32/0.0.0.0\/0/g" /etc/postgresql/9.*/main/pg_hba.conf && \
+    echo "listen_addresses = '*'" | tee -a /etc/postgresql/9.*/main/postgresql.conf
+RUN service postgresql restart && \
     sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
-# Only for development environments
-#RUN git clone https://github.com/bgard6977/pgrepl.git && \
-#    cd pgrepl && \
-#    ./gradlew fatJar -x test
-RUN mkdir -p /pgrepl/build/libs/
-COPY ./build/libs/pgrepl-all-*.jar /pgrepl/build/libs/
-EXPOSE 8080
-ENTRYPOINT service postgresql start && java -jar ./pgrepl/build/libs/pgrepl-all-*.jar
+RUN sed -i.bak "s/PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config && \
+    echo "root:Docker!" | chpasswd
+EXPOSE 5432
+ENTRYPOINT service ssh start && \
+    service postgresql start && \
+    tail -F /var/log/postgresql/postgresql-*-main.log
