@@ -3,12 +3,14 @@ kind: Service
 metadata:
   name: pgrepl-postgres
   labels:
-    run: pgrepl
+    app: pgrepl
 spec:
   ports:
     - port: 5432
   selector:
-    run: pgrepl
+    app: pgrepl
+    tier: postgres
+  clusterIP: None
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment

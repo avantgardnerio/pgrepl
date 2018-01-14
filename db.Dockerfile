@@ -36,9 +36,6 @@ RUN service postgresql restart && \
 RUN sed -i.bak "s/PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config && \
     echo "root:Docker!" | chpasswd
 EXPOSE 5432
-ENTRYPOINT echo "hello world 73!" && \
-    cat /etc/ssh/sshd_config && \
-    service ssh restart && \
+ENTRYPOINT service ssh start && \
     service postgresql start && \
-    netstat -l && \
     tail -F /var/log/postgresql/postgresql-*-main.log
