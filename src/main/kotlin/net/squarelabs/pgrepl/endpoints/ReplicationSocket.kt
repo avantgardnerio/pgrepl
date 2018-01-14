@@ -5,13 +5,9 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import net.squarelabs.pgrepl.messages.*
 import net.squarelabs.pgrepl.model.*
-import net.squarelabs.pgrepl.services.ConfigService
-import net.squarelabs.pgrepl.services.ConnectionService
-import net.squarelabs.pgrepl.services.ReplicationService
-import net.squarelabs.pgrepl.services.SnapshotService
+import net.squarelabs.pgrepl.services.*
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.core.BaseConnection
-import java.sql.Connection
 import java.util.*
 import javax.websocket.*
 
@@ -20,7 +16,8 @@ class ReplicationSocket @Inject constructor(
         val replSvc: ReplicationService,
         val cfgSvc: ConfigService,
         val snapSvc: SnapshotService,
-        val conSvc: ConnectionService
+        val conSvc: ConnectionService,
+        val crudSvc: CrudService
 ) : Endpoint(), MessageHandler.Whole<String> {
 
     companion object {
@@ -82,7 +79,7 @@ class ReplicationSocket @Inject constructor(
             "delete" -> {
                 val size = maxOf(change.oldkeys!!.keynames.size, change.oldkeys.keyvalues.size)
                 val prior: Map<String, Any> = (0 until size)
-                        .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys.keyvalues[it] })
+                        .associateBy({ change.oldkeys.keynames[it] }, { change.oldkeys.keyvalues[it] })
                 return ClientChange(change.kind.toUpperCase(), change.table, prior, null)
             }
             "update" -> {
@@ -90,7 +87,7 @@ class ReplicationSocket @Inject constructor(
                         .associateBy({ change.columnnames[it] }, { change.columnvalues[it] })
                 val size = maxOf(change.oldkeys!!.keynames.size, change.oldkeys.keyvalues.size)
                 val prior: Map<String, Any> = (0 until size)
-                        .associateBy({ change.oldkeys!!.keynames[it] }, { change.oldkeys!!.keyvalues[it] })
+                        .associateBy({ change.oldkeys.keynames[it] }, { change.oldkeys.keyvalues[it] })
                 return ClientChange(change.kind.toUpperCase(), change.table, record, prior)
             }
             "insert" -> {
@@ -144,11 +141,9 @@ class ReplicationSocket @Inject constructor(
 
     private fun handleSubscribe(req: SubscribeRequest, mapper: Gson) {
         clientId = UUID.fromString(req.clientId)
-        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
-            val dbName = cfgSvc.getAppDbName()
-            replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> onTxn(lsn, json) })
-            remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
-        }
+        val dbName = cfgSvc.getAppDbName()
+        replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> onTxn(lsn, json) })
+        remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
     }
 
     fun snapshot(): Snapshot {
@@ -166,9 +161,9 @@ class ReplicationSocket @Inject constructor(
                 try {
                     txn.changes.forEach({ change ->
                         when (change.type) {
-                            "INSERT" -> handleInsert(change, con)
-                            "UPDATE" -> handleUpdate(change, con, snap)
-                            "DELETE" -> handleDelete(change, con, snap)
+                            "INSERT" -> crudSvc.insertRow(change.table, change.record, con)
+                            "UPDATE" -> crudSvc.updateRow(change.table, change.record, con, snap)
+                            "DELETE" -> crudSvc.deleteRow(change.table, change.record, con, snap)
                             else -> throw Exception("Unknown change type: ${change.type}")
                         }
                     })
@@ -183,66 +178,6 @@ class ReplicationSocket @Inject constructor(
                     val t = ClientTxn(txn.id, 0, ArrayList())
                     remote!!.sendText(mapper.toJson(TxnMsg(t)))
                 }
-            }
-        }
-    }
-
-    private fun handleDelete(change: ClientChange, con: BaseConnection, snap: Snapshot) {
-        val table = snap.tables.find { t -> t.name == change.table }!!
-        val pkCols = table.columns
-                .filter { col -> col.pkOrdinal != null }
-                .sortedBy { col -> col.pkOrdinal }
-        val whereClause = pkCols
-                .map { col -> "\"" + col.name + "\"=?" }
-                .joinToString(" and ") + " and \"curTxnId\"=?"
-        val row = change.record
-        val sql = "delete from \"${table.name}\" where $whereClause"
-        con.prepareStatement(sql).use { stmt ->
-            pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + 1, row[col.name]) })
-            stmt.setObject(pkCols.size + 1, row["prvTxnId"])
-            val res = stmt.executeUpdate()
-            if (res != 1) {
-                throw IllegalArgumentException("Optimistic concurrency error deleting record on server!")
-            }
-        }
-    }
-
-    private fun handleUpdate(change: ClientChange, con: BaseConnection, snap: Snapshot) {
-        val table = snap.tables.find { t -> t.name == change.table }!!
-        val pkCols = table.columns
-                .filter { col -> col.pkOrdinal != null }
-                .sortedBy { col -> col.pkOrdinal }
-        val whereClause = pkCols
-                .map { col -> "\"" + col.name + "\"=?" }
-                .joinToString(" and ") + " and \"curTxnId\"=?"
-        val row = change.record
-        val updateClause = row.keys
-                .map { "\"" + it + "\"=?" }
-                .joinToString(",")
-        val sql = "update \"${table.name}\" set $updateClause where $whereClause"
-        con.prepareStatement(sql).use { stmt ->
-            row.values.forEachIndexed({ idx, value -> stmt.setObject(idx + 1, value) })
-            pkCols.forEachIndexed({ idx, col -> stmt.setObject(idx + row.values.size + 1, row[col.name]) })
-            stmt.setObject(row.values.size + pkCols.size + 1, row["prvTxnId"])
-            val res = stmt.executeUpdate()
-            if (res != 1) {
-                throw IllegalArgumentException("Optimistic concurrency error updating record on server!")
-            }
-        }
-    }
-
-    private fun handleInsert(change: ClientChange, con: Connection) {
-        val row = change.record
-        val colNames = row.keys
-                .map { "\"" + it + "\"" }
-                .joinToString(",")
-        val values = row.values.map { "?" }.joinToString(",")
-        val sql = "insert into \"${change.table}\" ($colNames) values ($values)"
-        con.prepareStatement(sql).use { stmt ->
-            row.values.forEachIndexed({ i, v -> stmt.setObject(i + 1, v) })
-            val res = stmt.executeUpdate()
-            if (res != 1) {
-                throw IllegalArgumentException("Optimistic concurrency error inserting record on server!")
             }
         }
     }
