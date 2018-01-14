@@ -5,8 +5,8 @@ import org.postgresql.core.BaseConnection
 import java.sql.Connection
 
 class CrudService {
-    val txnMapSql = "INSERT INTO \"txnIdMap\" (xid, \"clientTxnId\") VALUES (txid_current(),?)"
-    val getTxnSql = "SELECT \"clientTxnId\" FROM \"txnIdMap\" WHERE xid=?"
+    private val txnMapSql = "INSERT INTO \"txnIdMap\" (xid, \"clientTxnId\") VALUES (txid_current(),?)"
+    private val getTxnSql = "SELECT \"clientTxnId\" FROM \"txnIdMap\" WHERE xid=?"
 
     // TODO: Prevent SQL injection (tableName)
     fun insertRow(tableName: String, row: Map<String, Any>, con: Connection) {

@@ -1,10 +1,10 @@
 package net.squarelabs.pgrepl.db
 
-import com.google.gson.GsonBuilder
+import com.google.gson.Gson
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
+import net.squarelabs.pgrepl.messages.TxnMsg
 import net.squarelabs.pgrepl.model.Snapshot
-import net.squarelabs.pgrepl.model.Transaction
 import net.squarelabs.pgrepl.services.*
 import org.flywaydb.core.Flyway
 import org.junit.After
@@ -12,7 +12,6 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.postgresql.core.BaseConnection
-import java.sql.Connection
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -27,13 +26,10 @@ class ReplicatorTest {
     private val crudSvc = injector.getInstance(CrudService::class.java)!!
     private val cnvSvc = injector.getInstance(ConverterService::class.java)!!
 
-    private val updateQuery = "INSERT INTO person (id, name, \"curTxnId\") VALUES (%d, '%s', '%s');"
-
     @Before
     @Throws(Exception::class)
     fun setup() {
         val dbName = cfgSvc.getAppDbName()
-        val url = cfgSvc.getJdbcDatabaseUrl()
         if (dbSvc.list().contains(dbName)) dbSvc.drop(dbName)
         dbSvc.create(dbName)
         val flyway = Flyway()
@@ -46,17 +42,18 @@ class ReplicatorTest {
         conSvc.reset()
     }
 
-    fun insertPerson(id: Int, name: String, txnId: String, con: Connection) {
-        con.prepareStatement(String.format(updateQuery, id, name, txnId)).use {
-            it.executeUpdate()
-        }
-    }
-
     @Test
-    fun `should receive notifications for interleaved transactions`() {
+    fun `should receive atomic notifications for interleaved transactions`() {
+        val mapper = Gson()
         val dbName = cfgSvc.getAppDbName()
         val clientId = UUID.randomUUID()
+        val txnAId = UUID.randomUUID().toString()
+        val txnBId = UUID.randomUUID().toString()
         val conString = cfgSvc.getAppDbUrl()
+        val brent = hashMapOf("id" to 1, "name" to "Brent", "curTxnId" to txnAId)
+        val rachel = hashMapOf("id" to 2, "name" to "Brent", "curTxnId" to txnBId)
+        val emma = hashMapOf("id" to 3, "name" to "Emma", "curTxnId" to txnAId)
+        val annie = hashMapOf("id" to 4, "name" to "Annie", "curTxnId" to txnBId)
         var snap: Snapshot? = null
         conSvc.getConnection(conString).use {
             snap = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
@@ -73,46 +70,25 @@ class ReplicatorTest {
                     // test interleave
                     conA.autoCommit = false
                     conB.autoCommit = false
-                    insertPerson(1, "Brent", "d55cad5c-03da-405f-af3a-13788092b33c", conA)
-                    insertPerson(2, "Rachel", "794d1570-ce12-4371-9304-0d50cce518ca", conB)
-                    insertPerson(3, "Emma", "ee52c2be-8690-4bbb-9cac-a4aa5e7ca81e", conA)
-                    insertPerson(4, "Annie", "36bc5f56-2c7d-4147-af72-f03bd1443e9e", conB)
+                    crudSvc.insertRow("person", brent, conA)
+                    crudSvc.insertRow("person", rachel, conB)
+                    crudSvc.insertRow("person", emma, conA)
+                    crudSvc.insertRow("person", annie, conB)
+                    crudSvc.updateTxnMap(txnAId, conA)
+                    crudSvc.updateTxnMap(txnBId, conB)
                     conA.commit()
                     conB.commit()
-
-                    // test update
-                    conA.prepareStatement("UPDATE person SET name='Justin' WHERE name='Brent';").use {
-                        it.executeUpdate()
-                    }
-                    conA.commit()
-
-                    // test delete
-                    conA.prepareStatement("DELETE FROM person WHERE name='Justin';").use {
-                        it.executeUpdate()
-                    }
-                    conA.commit()
                 }
             }
-            while (actual.size < 4) TimeUnit.MILLISECONDS.sleep(10)
+            while (actual.size < 2) TimeUnit.MILLISECONDS.sleep(10)
         }
 
         // Assert
-        val gson = GsonBuilder().setPrettyPrinting().create()
-        val expected = this.javaClass.getResource("/fixtures/txn.json").readText() // TODO: kill brittle fixture
-        val actualAr = actual.map { gson.fromJson(it, Transaction::class.java) }
-        val expectedAr: List<Transaction> = gson.fromJson(expected, Array<Transaction>::class.java)
-                .mapIndexed { idx, txn ->
-                    txn.copy(
-                            xid = actualAr[idx].xid,
-                            nextlsn = actualAr[idx].nextlsn,
-                            timestamp = actualAr[idx].timestamp
-                    )
-                }
-        val actualJson = gson.toJson(
-                actualAr.mapIndexed { idx, txn -> txn.copy(clientTxnId = expectedAr[idx].clientTxnId) }
-        )
-        val expectedJson = gson.toJson(expectedAr)
-        Assert.assertEquals("Replicator should send notifications", expectedJson, actualJson)
+        Assert.assertEquals("Two transactions should have been committed", 2, actual.size)
+        val txnA = mapper.fromJson(actual[0], TxnMsg::class.java)
+        val txnB = mapper.fromJson(actual[1], TxnMsg::class.java)
+        Assert.assertEquals(txnA.payload.changes.size, 3)
+        Assert.assertEquals(txnB.payload.changes.size, 3)
     }
 
 }
