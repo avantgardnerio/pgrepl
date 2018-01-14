@@ -4,7 +4,8 @@ import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import net.squarelabs.pgrepl.messages.*
-import net.squarelabs.pgrepl.model.*
+import net.squarelabs.pgrepl.model.ClientTxn
+import net.squarelabs.pgrepl.model.Snapshot
 import net.squarelabs.pgrepl.services.*
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.core.BaseConnection
@@ -24,10 +25,19 @@ class ReplicationSocket @Inject constructor(
         private val LOG = Log.getLogger(ReplicationSocket::class.java)
     }
 
+    private val msgTypes = hashMapOf(
+            "SUBSCRIBE_REQUEST" to SubscribeRequest::class.java,
+            "COMMIT" to CommitMsg::class.java,
+            "MULTI_COMMIT" to MultiCommit::class.java,
+            "PING" to PingRequest::class.java,
+            "SNAPSHOT_REQUEST" to SnapshotRequest::class.java
+    )
+
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
-    var clientId: UUID? = null
+    private var clientId: UUID? = null
 
+    // ---------------------------------------- websocket events ------------------------------------------------------
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
             this.session = session
@@ -39,22 +49,11 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    fun handlePgTxn(json: String) {
-        if (remote != null) remote!!.sendText(json)
-    }
-    
     override fun onMessage(json: String) {
         try {
             val mapper = Gson()
             val baseMsg = mapper.fromJson(json, Message::class.java)
-            val clazz = when (baseMsg.type) {
-                "SUBSCRIBE_REQUEST" -> SubscribeRequest::class.java
-                "COMMIT" -> CommitMsg::class.java
-                "MULTI_COMMIT" -> MultiCommit::class.java
-                "PING" -> PingRequest::class.java
-                "SNAPSHOT_REQUEST" -> SnapshotRequest::class.java
-                else -> throw Exception("Unknown message: ${baseMsg.type}")
-            }
+            val clazz = msgTypes[baseMsg.type] ?: throw Exception("Unknown message: ${baseMsg.type}")
             val msg = mapper.fromJson(json, clazz)
             when (msg) {
                 is SubscribeRequest -> handleSubscribe(msg, mapper)
@@ -71,6 +70,21 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
+    override fun onError(session: Session?, cause: Throwable?) {
+        super.onError(session, cause)
+        LOG.warn("WebSocket Error", cause) // TODO: Error handling
+        // TODO: Unsubscribe from replSvc
+    }
+
+    override fun onClose(session: Session?, close: CloseReason?) {
+        super.onClose(session, close)
+        this.session = null
+        this.remote = null
+        LOG.info("WebSocket Close: {} - {}", close!!.closeCode, close.reasonPhrase)
+        replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
+    }
+
+    // --------------------------------------- message handlers -------------------------------------------------------
     private fun handlePing(mapper: Gson) {
         remote!!.sendText(mapper.toJson(PongResponse()))
     }
@@ -90,27 +104,22 @@ class ReplicationSocket @Inject constructor(
         remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
     }
 
-    fun snapshot(): Snapshot {
+    private fun handleTxns(txns: List<ClientTxn>, mapper: Gson) {
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
             val snap = snapSvc.takeSnapshot(con, false)
-            return snap
+            con.autoCommit = false
+            txns.forEach { tryHandleTxn(it, con, snap, mapper) }
         }
     }
 
-    private fun handleTxns(txns: List<ClientTxn>, mapper: Gson) {
-        val snap = snapshot()
-        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
-            con.autoCommit = false
-            for (txn in txns) {
-                try {
-                    handleTxn(txn, con, snap)
-                    con.commit()
-                } catch (ex: Exception) {
-                    con.rollback()
-                    val failMsg = ClientTxn(txn.id, 0, ArrayList())
-                    remote!!.sendText(mapper.toJson(TxnMsg(failMsg)))
-                }
-            }
+    private fun tryHandleTxn(txn: ClientTxn, con: BaseConnection, snap: Snapshot, mapper: Gson) {
+        try {
+            handleTxn(txn, con, snap)
+            con.commit()
+        } catch (ex: Exception) {
+            con.rollback()
+            val failMsg = ClientTxn(txn.id, 0, ArrayList())
+            remote!!.sendText(mapper.toJson(TxnMsg(failMsg)))
         }
     }
 
@@ -126,18 +135,9 @@ class ReplicationSocket @Inject constructor(
         crudSvc.updateTxnMap(txn.id, con)
     }
 
-    override fun onError(session: Session?, cause: Throwable?) {
-        super.onError(session, cause)
-        LOG.warn("WebSocket Error", cause) // TODO: Error handling
-        // TODO: Unsubscribe from replSvc
-    }
-
-    override fun onClose(session: Session?, close: CloseReason?) {
-        super.onClose(session, close)
-        this.session = null
-        this.remote = null
-        LOG.info("WebSocket Close: {} - {}", close!!.closeCode, close.reasonPhrase)
-        replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
+    // ------------------------------------- events from postgres -----------------------------------------------------
+    fun handlePgTxn(json: String) {
+        if (remote != null) remote!!.sendText(json)
     }
 
 }

@@ -2,12 +2,12 @@ package net.squarelabs.pgrepl.services
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import net.squarelabs.pgrepl.endpoints.ReplicationSocket
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.core.BaseConnection
 import java.sql.DriverManager
 
-@Singleton class ConnectionService @Inject constructor() {
+@Singleton
+class ConnectionService @Inject constructor() {
 
     companion object {
         private val LOG = Log.getLogger(ConnectionService::class.java)

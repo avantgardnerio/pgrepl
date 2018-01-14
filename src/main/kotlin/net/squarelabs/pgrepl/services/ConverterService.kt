@@ -8,7 +8,7 @@ class ConverterService {
         return ClientTxn(txnId, lsn, changes)
     }
 
-    fun walChangeToClientChange(change: Change): ClientChange {
+    private fun walChangeToClientChange(change: Change): ClientChange {
         when (change.kind) {
             "delete" -> return convertDelete(change, change.oldkeys!!)
             "update" -> return convertUpdate(change, change.oldkeys!!)

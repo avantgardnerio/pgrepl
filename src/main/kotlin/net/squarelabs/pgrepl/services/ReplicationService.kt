@@ -15,6 +15,10 @@ class ReplicationService @Inject constructor(
         val cnvSvc: ConverterService
 ) : AutoCloseable {
 
+    companion object {
+        private val LOG = Log.getLogger(ReplicationService::class.java)
+    }
+
     val listeners = HashMap<String, Replicator>()
     var closed = false
 
@@ -41,10 +45,6 @@ class ReplicationService @Inject constructor(
             val l = listeners[k]
             l!!.close()
         })
-    }
-
-    companion object {
-        private val LOG = Log.getLogger(ReplicationService::class.java)
     }
 
 }
