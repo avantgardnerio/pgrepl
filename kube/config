@@ -1,19 +1,19 @@
 apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority-data:
-    server: https://35.192.126.84
-  name: gke_pgrepl-191221_us-central1-a_cluster-1
+    certificate-authority-data: 
+    server: https://35.226.53.19
+  name: gke_pgrepl-191221_us-central1-a_pgrepl-cluster
 contexts:
 - context:
-    cluster: gke_pgrepl-191221_us-central1-a_cluster-1
-    user: gke_pgrepl-191221_us-central1-a_cluster-1
-  name: gke_pgrepl-191221_us-central1-a_cluster-1
-current-context: gke_pgrepl-191221_us-central1-a_cluster-1
+    cluster: gke_pgrepl-191221_us-central1-a_pgrepl-cluster
+    user: gke_pgrepl-191221_us-central1-a_pgrepl-cluster
+  name: gke_pgrepl-191221_us-central1-a_pgrepl-cluster
+current-context: gke_pgrepl-191221_us-central1-a_pgrepl-cluster
 kind: Config
 preferences: {}
 users:
-- name: gke_pgrepl-191221_us-central1-a_cluster-1
+- name: gke_pgrepl-191221_us-central1-a_pgrepl-cluster
   user:
-    client-certificate-data:
+    client-certificate-data: 
     client-key-data:
