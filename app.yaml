@@ -34,7 +34,7 @@ spec:
       containers:
       - image: bgard6977/pgrepl-db:latest
         name: postgres
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - containerPort: 5432
           name: postgres
@@ -79,7 +79,7 @@ spec:
       containers:
       - name: pgrepl
         image: bgard6977/pgrepl-app:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         env:
         - name: DB_HOST
           value: pgrepl-postgres
