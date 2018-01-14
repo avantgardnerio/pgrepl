@@ -22,7 +22,6 @@ class KafkaTest {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
 
         KafkaProducer<String, String>(props).use { producer ->
-            val callback = TestCallback()
             val res = (0..5).map { producer.send(ProducerRecord("test", "key-$it", "message-$it")) }
             while(!res.fold(true, {acc, cur -> acc && cur.isDone})) {
                 TimeUnit.SECONDS.sleep(1)
@@ -53,20 +52,6 @@ class KafkaTest {
             }
 
             consumer.commitSync()
-        }
-    }
-
-    private class TestCallback : Callback {
-        override fun onCompletion(recordMetadata: RecordMetadata?, e: Exception?) {
-            if (e != null) {
-                println("Error while producing message to topic :" + recordMetadata)
-                e.printStackTrace()
-            } else {
-                val message = String.format("sent message to topic:%s partition:%s  offset:%s",
-                        recordMetadata!!.topic(), recordMetadata!!.partition(), recordMetadata!!.offset()
-                )
-                println(message)
-            }
         }
     }
 

@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl.db
 
+import com.google.common.util.concurrent.Futures
 import com.google.gson.Gson
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
@@ -13,6 +14,8 @@ import org.junit.Before
 import org.junit.Test
 import org.postgresql.core.BaseConnection
 import java.util.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 class ReplicatorTest {
@@ -46,7 +49,6 @@ class ReplicatorTest {
     fun `should receive atomic notifications for interleaved transactions`() {
         val mapper = Gson()
         val dbName = cfgSvc.getAppDbName()
-        val clientId = UUID.randomUUID()
         val txnAId = UUID.randomUUID().toString()
         val txnBId = UUID.randomUUID().toString()
         val conString = cfgSvc.getAppDbUrl()
@@ -61,10 +63,12 @@ class ReplicatorTest {
         val actual = mutableListOf<String>()
         val spy = { json: String ->
             actual.add(json)
-            Unit
+            val future = CompletableFuture<Void>()
+            future.complete(null)
+            future
         }
-        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
-            it.addListener(clientId, spy)
+        Replicator(dbName, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
+            it.addListener(snap!!.lsn, spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->
                     // test interleave
