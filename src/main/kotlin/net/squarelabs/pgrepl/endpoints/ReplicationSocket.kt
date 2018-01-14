@@ -28,9 +28,6 @@ class ReplicationSocket @Inject constructor(
     private var remote: RemoteEndpoint.Async? = null
     var clientId: UUID? = null
 
-    val txnMapSql = "INSERT INTO \"txnIdMap\" (xid, \"clientTxnId\") VALUES (txid_current(),?)"
-    val getTxnSql = "SELECT \"clientTxnId\" FROM \"txnIdMap\" WHERE xid=?"
-
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
             this.session = session
@@ -42,30 +39,14 @@ class ReplicationSocket @Inject constructor(
         }
     }
 
-    fun onTxn(lsn: Long, json: String) {
+    fun handlePgTxn(lsn: Long, json: String) {
         val mapper = Gson()
         val walTxn: Transaction = mapper.fromJson(json, Transaction::class.java)
-        if (walTxn.change.size <= 0) {
-            return // Not sure why this happens
-        }
-
-        // TODO: cache!
-        val url = cfgSvc.getAppDbUrl()
-        conSvc.getConnection(url).use { con ->
-            con.prepareStatement(getTxnSql).use { stmt ->
-                stmt.setLong(1, walTxn.xid)
-                stmt.executeQuery().use { rs ->
-                    if (!rs.next()) {
-                        // TODO: Does this still happen, now that we excluded zero size changes above?
-                        throw Exception("Error reading clientTxnId: ${walTxn.xid}!")
-                    }
-                    val txnId = rs.getString(1)
-                    val msg = TxnMsg(walTxnToClientTxn(lsn, txnId, walTxn))
-
-                    // TODO: ReplicationSockets with null remotes
-                    if (remote != null) remote!!.sendText(mapper.toJson(msg))
-                }
-            }
+        if (walTxn.change.size <= 0) return // Not sure why this happens
+        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
+            val txnId = crudSvc.getClientTxnId(walTxn.xid, con)
+            val msg = TxnMsg(walTxnToClientTxn(lsn, txnId, walTxn))
+            if (remote != null) remote!!.sendText(mapper.toJson(msg))
         }
     }
 
@@ -142,7 +123,7 @@ class ReplicationSocket @Inject constructor(
     private fun handleSubscribe(req: SubscribeRequest, mapper: Gson) {
         clientId = UUID.fromString(req.clientId)
         val dbName = cfgSvc.getAppDbName()
-        replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> onTxn(lsn, json) })
+        replSvc.subscribe(dbName, clientId!!, req.lsn, { lsn, json -> handlePgTxn(lsn, json) })
         remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
     }
 
@@ -159,27 +140,27 @@ class ReplicationSocket @Inject constructor(
             con.autoCommit = false
             for (txn in txns) {
                 try {
-                    txn.changes.forEach({ change ->
-                        when (change.type) {
-                            "INSERT" -> crudSvc.insertRow(change.table, change.record, con)
-                            "UPDATE" -> crudSvc.updateRow(change.table, change.record, con, snap)
-                            "DELETE" -> crudSvc.deleteRow(change.table, change.record, con, snap)
-                            else -> throw Exception("Unknown change type: ${change.type}")
-                        }
-                    })
-                    con.prepareStatement(txnMapSql).use { stmt ->
-                        stmt.setString(1, txn.id)
-                        val res = stmt.executeUpdate()
-                        if (res != 1) throw Exception("Unable update txn map!")
-                    }
+                    handleTxn(txn, con, snap)
                     con.commit()
                 } catch (ex: Exception) {
                     con.rollback()
-                    val t = ClientTxn(txn.id, 0, ArrayList())
-                    remote!!.sendText(mapper.toJson(TxnMsg(t)))
+                    val failMsg = ClientTxn(txn.id, 0, ArrayList())
+                    remote!!.sendText(mapper.toJson(TxnMsg(failMsg)))
                 }
             }
         }
+    }
+
+    private fun handleTxn(txn: ClientTxn, con: BaseConnection, snap: Snapshot) {
+        txn.changes.forEach({ change ->
+            when (change.type) {
+                "INSERT" -> crudSvc.insertRow(change.table, change.record, con)
+                "UPDATE" -> crudSvc.updateRow(change.table, change.record, con, snap)
+                "DELETE" -> crudSvc.deleteRow(change.table, change.record, con, snap)
+                else -> throw Exception("Unknown change type: ${change.type}")
+            }
+        })
+        crudSvc.updateTxnMap(txn.id, con)
     }
 
     override fun onError(session: Session?, cause: Throwable?) {

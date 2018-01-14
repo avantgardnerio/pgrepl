@@ -5,6 +5,9 @@ import org.postgresql.core.BaseConnection
 import java.sql.Connection
 
 class CrudService {
+    val txnMapSql = "INSERT INTO \"txnIdMap\" (xid, \"clientTxnId\") VALUES (txid_current(),?)"
+    val getTxnSql = "SELECT \"clientTxnId\" FROM \"txnIdMap\" WHERE xid=?"
+
     // TODO: Prevent SQL injection (tableName)
     fun insertRow(tableName: String, row: Map<String, Any>, con: Connection) {
         val colNames = row.keys.map { colName -> "\"$colName\"" }.joinToString(",")
@@ -44,6 +47,25 @@ class CrudService {
             stmt.setObject(pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
             if (res != 1) throw IllegalArgumentException("Optimistic concurrency error deleting record!")
+        }
+    }
+
+    fun updateTxnMap(txnId: String, con: BaseConnection) {
+        con.prepareStatement(txnMapSql).use { stmt ->
+            stmt.setString(1, txnId)
+            val res = stmt.executeUpdate()
+            if (res != 1) throw Exception("Unable update txn map!")
+        }
+    }
+
+    fun getClientTxnId(xid: Long, con: BaseConnection): String {
+        con.prepareStatement(getTxnSql).use { stmt ->
+            stmt.setLong(1, xid)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) throw Exception("Error reading clientTxnId: $xid!")
+                val txnId = rs.getString(1)
+                return txnId
+            }
         }
     }
 
