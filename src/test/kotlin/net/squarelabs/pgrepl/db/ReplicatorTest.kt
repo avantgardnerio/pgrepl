@@ -1,6 +1,5 @@
 package net.squarelabs.pgrepl.db
 
-import com.google.common.util.concurrent.Futures
 import com.google.gson.Gson
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.DefaultInjector
@@ -15,7 +14,6 @@ import org.junit.Test
 import org.postgresql.core.BaseConnection
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 class ReplicatorTest {
@@ -57,8 +55,9 @@ class ReplicatorTest {
         val emma = hashMapOf("id" to 3, "name" to "Emma", "curTxnId" to txnAId)
         val annie = hashMapOf("id" to 4, "name" to "Annie", "curTxnId" to txnBId)
         var snap: Snapshot? = null
-        conSvc.getConnection(conString).use {
-            snap = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
+        var lsn: Long? = null
+        conSvc.getConnection(conString).use { con ->
+            snap = snapSvc.takeSnapshot(con.unwrap(BaseConnection::class.java))
         }
         val actual = mutableListOf<String>()
         val spy = { json: String ->
@@ -74,6 +73,9 @@ class ReplicatorTest {
                     // test interleave
                     conA.autoCommit = false
                     conB.autoCommit = false
+                    lsn = crudSvc.getCurrentLsn(conA)
+                    crudSvc.updateTxnMap(UUID.randomUUID().toString(), conA)
+                    conA.commit()
                     crudSvc.insertRow("person", brent, conA)
                     crudSvc.insertRow("person", rachel, conB)
                     crudSvc.insertRow("person", emma, conA)
@@ -84,15 +86,17 @@ class ReplicatorTest {
                     conB.commit()
                 }
             }
-            while (actual.size < 2) TimeUnit.MILLISECONDS.sleep(10)
+            while (actual.size < 3) TimeUnit.MILLISECONDS.sleep(10)
         }
 
         // Assert
-        Assert.assertEquals("Two transactions should have been committed", 2, actual.size)
+        Assert.assertEquals("Updates should be received for all transactions", 3, actual.size)
         val txnA = mapper.fromJson(actual[0], TxnMsg::class.java)
         val txnB = mapper.fromJson(actual[1], TxnMsg::class.java)
-        Assert.assertEquals(txnA.payload.changes.size, 3)
+        val txnC = mapper.fromJson(actual[2], TxnMsg::class.java)
+        Assert.assertEquals("LSNs are predictable", lsn, txnA.payload.lsn)
         Assert.assertEquals(txnB.payload.changes.size, 3)
+        Assert.assertEquals(txnC.payload.changes.size, 3)
     }
 
 }

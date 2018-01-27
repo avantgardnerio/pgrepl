@@ -2,6 +2,7 @@ package net.squarelabs.pgrepl.services
 
 import net.squarelabs.pgrepl.model.Snapshot
 import org.postgresql.core.BaseConnection
+import org.postgresql.replication.LogSequenceNumber
 import java.sql.Connection
 
 class CrudService {
@@ -47,6 +48,16 @@ class CrudService {
             stmt.setObject(pkCols.size + 1, row["prvTxnId"])
             val res = stmt.executeUpdate()
             if (res != 1) throw IllegalArgumentException("Optimistic concurrency error deleting record!")
+        }
+    }
+
+    fun getCurrentLsn(con: BaseConnection): Long {
+        con.prepareStatement("SELECT pg_current_xlog_insert_location()").use { stmt ->
+            stmt.executeQuery().use { rs ->
+                rs.next()
+                val lsn = LogSequenceNumber.valueOf(rs.getString(1)).asLong()
+                return lsn
+            }
         }
     }
 
