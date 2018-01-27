@@ -63,10 +63,13 @@ after_success:
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
     docker build -t bgard6977/pgrepl-db:latest -t bgard6977/pgrepl-db:0.1.$TRAVIS_BUILD_NUMBER -f db.Dockerfile .;
     docker build -t bgard6977/pgrepl-app:latest -t bgard6977/pgrepl-app:0.1.$TRAVIS_BUILD_NUMBER -f app.Dockerfile .;
+    docker build -t bgard6977/pgrepl-kafka:latest -t bgard6977/pgrepl-kafka:0.1.$TRAVIS_BUILD_NUMBER -f kafka.Dockerfile .;
     docker push bgard6977/pgrepl-db:0.1.$TRAVIS_BUILD_NUMBER;
     docker push bgard6977/pgrepl-app:0.1.$TRAVIS_BUILD_NUMBER;
+    docker push bgard6977/pgrepl-kafka:0.1.$TRAVIS_BUILD_NUMBER;
     docker push bgard6977/pgrepl-db:latest;
     docker push bgard6977/pgrepl-app:latest;
+    docker push bgard6977/pgrepl-kafka:latest;
     kubectl apply -f app.yaml;
     kubectl delete pod --all;
     fi
