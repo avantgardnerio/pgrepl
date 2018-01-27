@@ -26,6 +26,10 @@ class Replicator(
         val conSvc: ConnectionService
 ) : AutoCloseable {
 
+    companion object {
+        private val LOG = Log.getLogger(Replicator::class.java)
+    }
+
     private val executor = Executors.newScheduledThreadPool(1)
     val plugin = "wal2json"
     val listeners = HashMap<UUID, (Long, String) -> Unit>()
@@ -44,7 +48,7 @@ class Replicator(
 
         // Create a slot
         val slotName = "slot_${clientId.toString().replace("-", "_")}"
-        if(!slotSvc.list().contains(slotName)) {
+        if (!slotSvc.list().contains(slotName)) {
             slotSvc.create(url, slotName, plugin)
             LOG.info("Created slot $slotName")
         } else {
@@ -83,7 +87,7 @@ class Replicator(
                 buffer = stream.readPending()
             }
         } catch (ex: PSQLException) {
-            if("Database connection failed when reading from copy" != ex.message) {
+            if ("Database connection failed when reading from copy" != ex.message) {
                 LOG.warn("Error reading from database for client $clientId", ex)
                 close()
             }
@@ -112,30 +116,25 @@ class Replicator(
             if (!stream.isClosed) stream.close()
         } catch (ex: PSQLException) {
             // Postgres always seems to throw this error
-            if("Database connection failed when ending copy" != ex.message) {
+            if ("Database connection failed when ending copy" != ex.message) {
                 LOG.warn("Error closing stream!", ex)
             }
         } catch (ex: Exception) {
             LOG.warn("Error closing stream!", ex)
         }
         try {
-            if(!con.isClosed) con.close()
+            if (!con.isClosed) con.close()
         } catch (ex: Exception) {
             LOG.warn("Error closing connection!", ex)
         }
     }
 
-    companion object {
-        private val LOG = Log.getLogger(Replicator::class.java)
+    private fun toString(buffer: ByteBuffer): String {
+        val offset = buffer.arrayOffset()
+        val source = buffer.array()
+        val length = source.size - offset
 
-        // TODO: Helper method
-        private fun toString(buffer: ByteBuffer): String {
-            val offset = buffer.arrayOffset()
-            val source = buffer.array()
-            val length = source.size - offset
-
-            return String(source, offset, length)
-        }
+        return String(source, offset, length)
     }
 
 }

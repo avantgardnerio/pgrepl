@@ -12,6 +12,7 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.postgresql.core.BaseConnection
+import java.sql.Connection
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -23,6 +24,8 @@ class ReplicatorTest {
     private val snapSvc = injector.getInstance(SnapshotService::class.java)!!
     private val dbSvc = injector.getInstance(DbService::class.java)!!
     private val slotSvc = injector.getInstance(SlotService::class.java)!!
+
+    private val updateQuery = "INSERT INTO person (id, name, \"curTxnId\") VALUES (%d, '%s', '%s');"
 
     @Before
     @Throws(Exception::class)
@@ -39,6 +42,12 @@ class ReplicatorTest {
     @After
     fun tearDown() {
         conSvc.reset()
+    }
+
+    fun insertPerson(id: Int, name: String, txnId: String, con: Connection) {
+        con.prepareStatement(String.format(updateQuery, id, name, txnId)).use {
+            it.executeUpdate()
+        }
     }
 
     @Test
@@ -62,18 +71,10 @@ class ReplicatorTest {
                     // test interleave
                     conA.autoCommit = false
                     conB.autoCommit = false
-                    conA.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (1, 'Brent', 'd55cad5c-03da-405f-af3a-13788092b33c');").use {
-                        it.executeUpdate()
-                    }
-                    conB.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (2, 'Rachel', '794d1570-ce12-4371-9304-0d50cce518ca');").use {
-                        it.executeUpdate()
-                    }
-                    conA.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (3, 'Emma', 'ee52c2be-8690-4bbb-9cac-a4aa5e7ca81e');").use {
-                        it.executeUpdate()
-                    }
-                    conB.prepareStatement("INSERT INTO person (id, name, \"curTxnId\") VALUES (4, 'Annie', '36bc5f56-2c7d-4147-af72-f03bd1443e9e');").use {
-                        it.executeUpdate()
-                    }
+                    insertPerson(1, "Brent", "d55cad5c-03da-405f-af3a-13788092b33c", conA)
+                    insertPerson(2, "Rachel", "794d1570-ce12-4371-9304-0d50cce518ca", conB)
+                    insertPerson(3, "Emma", "ee52c2be-8690-4bbb-9cac-a4aa5e7ca81e", conA)
+                    insertPerson(4, "Annie", "36bc5f56-2c7d-4147-af72-f03bd1443e9e", conB)
                     conA.commit()
                     conB.commit()
 
