@@ -76,7 +76,7 @@ class Replicator(
         }
 
         // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
-        stream = createReplicationStream(slotName, lsn - 1)
+        stream = createReplicationStream(slotName, lsn)
         slotFuture = slotExecutor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
     }
 
