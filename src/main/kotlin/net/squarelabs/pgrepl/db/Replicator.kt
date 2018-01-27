@@ -55,7 +55,7 @@ class Replicator(
     }
 
     private fun resubscribe(lsn: Long) {
-        slotFuture?.cancel(true)
+        slotFuture?.cancel(false)
         con?.close()
         stream?.close()
 
@@ -70,13 +70,13 @@ class Replicator(
         val slotName = "slot_${id.toString().replace("-", "_")}"
         if (!slotSvc.list().contains(slotName)) {
             slotSvc.create(url, slotName, plugin)
-            LOG.info("Created slot $slotName")
+            LOG.info("Created slot $slotName @ LSN=$lsn")
         } else {
             LOG.info("Reconnected slot $slotName @ LSN=$lsn")
         }
 
         // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
-        stream = createReplicationStream(slotName, lsn)
+        stream = createReplicationStream(slotName, lsn - 1)
         slotFuture = slotExecutor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
     }
 
@@ -116,6 +116,7 @@ class Replicator(
 
     @Synchronized
     private fun dispatch() {
+        if (wal.size == 0) return
         val currentLsn = wal.lastKey()
         listeners.filter { it.lastResponse == null || it.lastResponse!!.isDone }
                 .filter { it.lsn < currentLsn }
@@ -128,7 +129,8 @@ class Replicator(
 
     @Synchronized
     fun addListener(lsn: Long, listener: (String) -> Future<Void>) {
-        if (lsn < wal.firstKey()) resubscribe(lsn)
+        if (wal.size > 0 && lsn < wal.firstKey()) resubscribe(lsn)
+        if (wal.size == 0 || lsn < wal.firstKey()) wal.put(lsn, "") // Postgres won't notify about first LSN :(
         listeners.add(Listener(listener, null, lsn))
     }
 
