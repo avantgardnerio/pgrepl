@@ -40,7 +40,7 @@ class SnapshotService {
             st.executeQuery(sql).use { rs ->
                 return if (rs.next()) {
                     val lsn = rs.getString(1)
-                    LogSequenceNumber.valueOf(lsn).asLong() - 1
+                    LogSequenceNumber.valueOf(lsn).asLong()
                 } else {
                     LogSequenceNumber.INVALID_LSN.asLong()
                 }

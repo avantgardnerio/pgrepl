@@ -324,7 +324,7 @@ class AcceptanceTest {
         val rghtLsnField = driver.findElement(By.cssSelector("#rightRoot .lsn"))
         val originalLsnText = leftLsnField.text
 
-        // Setup: create circle
+        // Setup: create circle on left and wait for it to propagate
         val leftSvg = driver.findElement(By.cssSelector("#leftRoot svg"))
         val rghtSvg = driver.findElement(By.cssSelector("#rightRoot svg"))
         Actions(driver).moveToElement(leftSvg, 10, 25).click().build().perform()
@@ -332,7 +332,7 @@ class AcceptanceTest {
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(rghtLsnField, originalLsnText)))
         val circleCreatedLsn = leftLsnField.text
 
-        // Exercise: go offline and make change
+        // Exercise: left goes offline and both sides make a change
         driver.findElement(By.cssSelector("#leftRoot .btnConnect")).click()
         val mouse = (driver as HasInputDevices).mouse
         val leftCircle = driver.findElement(By.cssSelector("#leftRoot circle"))

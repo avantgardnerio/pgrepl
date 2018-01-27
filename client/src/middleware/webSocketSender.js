@@ -14,7 +14,7 @@ export const createWebSocketSender = (socket) => {
                             break;
                         case 'SNAPSHOT_RESPONSE':
                             console.log('Got snapshot, subscribing for changes');
-                            if (socket.connected) socket.write(subscribeRequest(socket.id, store.getState().lsn));
+                            if (socket.connected) socket.write(subscribeRequest(socket.id, action.payload.lsn));
                             return next(action);
                         case 'SUBSCRIBE_RESPONSE':
                             console.log('Subscribed for change notifications from server!');

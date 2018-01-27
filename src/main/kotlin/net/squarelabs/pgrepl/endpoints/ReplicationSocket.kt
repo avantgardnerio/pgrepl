@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl.endpoints
 
+import com.google.common.util.concurrent.Futures
 import com.google.gson.Gson
 import com.google.inject.Inject
 import com.google.inject.Singleton
@@ -10,6 +11,7 @@ import net.squarelabs.pgrepl.services.*
 import org.eclipse.jetty.util.log.Log
 import org.postgresql.core.BaseConnection
 import java.util.*
+import java.util.concurrent.Future
 import javax.websocket.*
 
 @Singleton
@@ -36,6 +38,7 @@ class ReplicationSocket @Inject constructor(
     private var session: Session? = null
     private var remote: RemoteEndpoint.Async? = null
     private var clientId: UUID? = null
+    private val subscriptions = HashSet<(String) -> Future<Void>>()
 
     // ---------------------------------------- websocket events ------------------------------------------------------
     override fun onOpen(session: Session, config: EndpointConfig) {
@@ -65,7 +68,7 @@ class ReplicationSocket @Inject constructor(
             }
         } catch (ex: Exception) {
             LOG.warn("Error handling message!", ex)
-            replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
+            subscriptions.forEach({replSvc.unsubscribe(cfgSvc.getAppDbName(), it)})
             session!!.close()
         }
     }
@@ -81,7 +84,7 @@ class ReplicationSocket @Inject constructor(
         this.session = null
         this.remote = null
         LOG.info("WebSocket Close: {} - {}", close!!.closeCode, close.reasonPhrase)
-        replSvc.unsubscribe(cfgSvc.getAppDbName(), clientId!!)
+        subscriptions.forEach({replSvc.unsubscribe(cfgSvc.getAppDbName(), it)})
     }
 
     // --------------------------------------- message handlers -------------------------------------------------------
@@ -91,16 +94,25 @@ class ReplicationSocket @Inject constructor(
 
     private fun handleSnapshotReq(mapper: Gson) {
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
+            // HACK: the Replicator needs to have the current txnId in the log, but postgres only gives us future ones
             val snap = snapSvc.takeSnapshot(con.unwrap(BaseConnection::class.java))
-            val response = SnapshotResponse(snap)
+            replSvc.listen(cfgSvc.getAppDbName(), snap.lsn)
+            con.autoCommit = false
+            val lsn = crudSvc.getCurrentLsn(con)
+            crudSvc.updateTxnMap(UUID.randomUUID().toString(), con)
+            con.commit()
+            con.autoCommit = true
+
+            val response = SnapshotResponse(snap.copy(lsn = lsn)) // HACK: expensive copy
             remote!!.sendText(mapper.toJson(response))
         }
     }
 
     private fun handleSubscribe(req: SubscribeRequest, mapper: Gson) {
         clientId = UUID.fromString(req.clientId)
-        val dbName = cfgSvc.getAppDbName()
-        replSvc.subscribe(dbName, clientId!!, req.lsn, { json -> handlePgTxn(json) })
+        val dbName = cfgSvc.getAppDbName() // TODO: Get database name from message
+        val handler: (String) -> Future<Void> = { json -> handlePgTxn(json) }
+        replSvc.subscribe(dbName, req.lsn, handler)
         remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
     }
 
@@ -136,8 +148,9 @@ class ReplicationSocket @Inject constructor(
     }
 
     // ------------------------------------- events from postgres -----------------------------------------------------
-    fun handlePgTxn(json: String) {
-        if (remote != null) remote!!.sendText(json)
+    fun handlePgTxn(json: String): Future<Void> {
+        if (remote != null) return remote!!.sendText(json)
+        return Futures.immediateCancelledFuture()
     }
 
 }

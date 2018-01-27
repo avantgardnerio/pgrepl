@@ -38,7 +38,7 @@ elementIds.forEach((elementId) => {
                 if (lsn > 0) {
                     console.log(`Found initial state in IndexedDb`);
                     console.log(`Subscribing to all changes from server where LSN > ${lsn}`);
-                    const msg = subscribeRequest(ws.id, lsn + 1);
+                    const msg = subscribeRequest(ws.id, lsn);
                     ws.write(msg);
                 } else {
                     console.log(`IndexedDb is empty, requesting snapshot from server`);

@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import net.squarelabs.pgrepl.db.Replicator
 import org.eclipse.jetty.util.log.Log
 import java.util.*
+import java.util.concurrent.Future
 
 @Singleton
 class ReplicationService @Inject constructor(
@@ -19,30 +20,38 @@ class ReplicationService @Inject constructor(
         private val LOG = Log.getLogger(ReplicationService::class.java)
     }
 
-    val listeners = HashMap<String, Replicator>()
+    val replicators = HashMap<String, Replicator>()
     var closed = false
 
     @Synchronized
-    fun subscribe(dbName: String, clientId: UUID, lsn: Long, handler: (String) -> Unit) {
-        // TODO: global audit for subscribe after close
+    fun listen(dbName: String, lsn: Long) {
         if (closed) throw Exception("Can't subscribe while closing!")
-        val repl = listeners.getOrPut(clientId.toString(), { Replicator(dbName, clientId, lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc) })
-        repl.addListener(clientId, handler)
+        replicators.getOrPut(dbName, {
+            Replicator(dbName, lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc)
+        })
     }
 
     @Synchronized
-    fun unsubscribe(dbName: String, clientId: UUID) {
-        listeners.get(clientId.toString())!!.close()
-        listeners.remove(clientId.toString())
+    fun subscribe(dbName: String, lsn: Long, handler: (String) -> Future<Void>) {
+        if (closed) throw Exception("Can't subscribe while closing!")
+        val repl = replicators.getOrPut(dbName, {
+            Replicator(dbName, lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc)
+        })
+        repl.addListener(lsn, handler)
+    }
+
+    @Synchronized
+    fun unsubscribe(dbName: String, handler: (String) -> Future<Void>) {
+        replicators[dbName]!!.removeListener(handler)
     }
 
     @Synchronized
     override fun close() {
-        LOG.info("Shutting down ReplicationService, and ${listeners.size} listeners...")
+        LOG.info("Shutting down ReplicationService, and ${replicators.size} listeners...")
         closed = true
-        listeners.keys.forEach({ k ->
-            LOG.info("Shutting down listener $k")
-            val l = listeners[k]
+        replicators.keys.forEach({ k ->
+            LOG.info("Shutting down replicator $k")
+            val l = replicators[k]
             l!!.close()
         })
     }

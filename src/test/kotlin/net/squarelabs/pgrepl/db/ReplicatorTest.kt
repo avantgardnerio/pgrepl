@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.postgresql.core.BaseConnection
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 class ReplicatorTest {
@@ -46,7 +47,6 @@ class ReplicatorTest {
     fun `should receive atomic notifications for interleaved transactions`() {
         val mapper = Gson()
         val dbName = cfgSvc.getAppDbName()
-        val clientId = UUID.randomUUID()
         val txnAId = UUID.randomUUID().toString()
         val txnBId = UUID.randomUUID().toString()
         val conString = cfgSvc.getAppDbUrl()
@@ -55,16 +55,26 @@ class ReplicatorTest {
         val emma = hashMapOf("id" to 3, "name" to "Emma", "curTxnId" to txnAId)
         val annie = hashMapOf("id" to 4, "name" to "Annie", "curTxnId" to txnBId)
         var snap: Snapshot? = null
-        conSvc.getConnection(conString).use {
-            snap = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
+        var lsn: Long? = null
+        conSvc.getConnection(conString).use { con ->
+            snap = snapSvc.takeSnapshot(con.unwrap(BaseConnection::class.java))
         }
         val actual = mutableListOf<String>()
         val spy = { json: String ->
             actual.add(json)
-            Unit
+            val future = CompletableFuture<Void>()
+            future.complete(null)
+            future
         }
-        Replicator(dbName, clientId, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
-            it.addListener(clientId, spy)
+        Replicator(dbName, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
+            // HACK: need to start Replicator with commit in log
+            conSvc.getConnection(conString).use { con ->
+                con.autoCommit = false
+                lsn = crudSvc.getCurrentLsn(con)
+                crudSvc.updateTxnMap(UUID.randomUUID().toString(), con)
+                con.commit()
+            }
+            it.addListener(lsn!!, spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->
                     // test interleave
@@ -84,7 +94,7 @@ class ReplicatorTest {
         }
 
         // Assert
-        Assert.assertEquals("Two transactions should have been committed", 2, actual.size)
+        Assert.assertEquals("Updates should be received for all transactions", 2, actual.size)
         val txnA = mapper.fromJson(actual[0], TxnMsg::class.java)
         val txnB = mapper.fromJson(actual[1], TxnMsg::class.java)
         Assert.assertEquals(txnA.payload.changes.size, 3)

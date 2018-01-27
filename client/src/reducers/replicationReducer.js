@@ -66,7 +66,7 @@ const applyDbSnapshot = (state, action, db) => {
 };
 
 const applyChanges = (state, txn) => { // Mutates
-    if (txn.lsn === 0) return; // Conflict on server, do not apply
+    if (txn.lsn === 0) return state; // Conflict on server, do not apply
     state.lsn = txn.lsn;
     state.xid = txn.xid;
     txn.changes.forEach(change => handleChange(state, change));
