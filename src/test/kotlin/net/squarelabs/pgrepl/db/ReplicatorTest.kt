@@ -51,7 +51,7 @@ class ReplicatorTest {
     }
 
     @Test
-    fun shouldReceiveNotifications() {
+    fun `should receive notifications for interleaved transactions`() {
         val dbName = cfgSvc.getAppDbName()
         val clientId = UUID.randomUUID()
         val conString = cfgSvc.getAppDbUrl()
@@ -95,7 +95,6 @@ class ReplicatorTest {
         }
 
         // Assert
-        //Assert.assertEquals("Two transactions should have been committed", 2, actual.size)
         val gson = GsonBuilder().setPrettyPrinting().create()
         val expected = this.javaClass.getResource("/fixtures/txn.json").readText()
         val actualAr = actual.map { gson.fromJson(it, Transaction::class.java) }
