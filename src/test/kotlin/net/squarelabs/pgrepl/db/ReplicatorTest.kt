@@ -67,15 +67,19 @@ class ReplicatorTest {
             future
         }
         Replicator(dbName, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
-            it.addListener(snap!!.lsn, spy)
+            // HACK: need to start Replicator with commit in log
+            conSvc.getConnection(conString).use { con ->
+                con.autoCommit = false
+                lsn = crudSvc.getCurrentLsn(con)
+                crudSvc.updateTxnMap(UUID.randomUUID().toString(), con)
+                con.commit()
+            }
+            it.addListener(lsn!!, spy)
             conSvc.getConnection(conString).use { conA ->
                 conSvc.getConnection(conString).use { conB ->
                     // test interleave
                     conA.autoCommit = false
                     conB.autoCommit = false
-                    lsn = crudSvc.getCurrentLsn(conA)
-                    crudSvc.updateTxnMap(UUID.randomUUID().toString(), conA)
-                    conA.commit()
                     crudSvc.insertRow("person", brent, conA)
                     crudSvc.insertRow("person", rachel, conB)
                     crudSvc.insertRow("person", emma, conA)
@@ -86,17 +90,15 @@ class ReplicatorTest {
                     conB.commit()
                 }
             }
-            while (actual.size < 3) TimeUnit.MILLISECONDS.sleep(10)
+            while (actual.size < 2) TimeUnit.MILLISECONDS.sleep(10)
         }
 
         // Assert
-        Assert.assertEquals("Updates should be received for all transactions", 3, actual.size)
+        Assert.assertEquals("Updates should be received for all transactions", 2, actual.size)
         val txnA = mapper.fromJson(actual[0], TxnMsg::class.java)
         val txnB = mapper.fromJson(actual[1], TxnMsg::class.java)
-        val txnC = mapper.fromJson(actual[2], TxnMsg::class.java)
-        Assert.assertEquals("LSNs are predictable", lsn, txnA.payload.lsn)
+        Assert.assertEquals(txnA.payload.changes.size, 3)
         Assert.assertEquals(txnB.payload.changes.size, 3)
-        Assert.assertEquals(txnC.payload.changes.size, 3)
     }
 
 }

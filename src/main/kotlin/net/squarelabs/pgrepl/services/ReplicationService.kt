@@ -24,6 +24,14 @@ class ReplicationService @Inject constructor(
     var closed = false
 
     @Synchronized
+    fun listen(dbName: String, lsn: Long) {
+        if (closed) throw Exception("Can't subscribe while closing!")
+        replicators.getOrPut(dbName, {
+            Replicator(dbName, lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc)
+        })
+    }
+
+    @Synchronized
     fun subscribe(dbName: String, lsn: Long, handler: (String) -> Future<Void>) {
         if (closed) throw Exception("Can't subscribe while closing!")
         val repl = replicators.getOrPut(dbName, {

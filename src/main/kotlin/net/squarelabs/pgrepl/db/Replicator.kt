@@ -112,6 +112,7 @@ class Replicator(
         stream!!.setAppliedLSN(lsn)
         //stream.setFlushedLSN(lsn) // force postgres to hold entire log by not flushing
         // TODO: flush bottom of memory wal if all listeners are caught up
+        LOG.info("${wal.size} transactions in cache")
     }
 
     @Synchronized
@@ -130,7 +131,6 @@ class Replicator(
     @Synchronized
     fun addListener(lsn: Long, listener: (String) -> Future<Void>) {
         if (wal.size > 0 && lsn < wal.firstKey()) resubscribe(lsn)
-        if (wal.size == 0 || lsn < wal.firstKey()) wal.put(lsn, "") // Postgres won't notify about first LSN :(
         listeners.add(Listener(listener, null, lsn))
     }
 
