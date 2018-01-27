@@ -42,6 +42,47 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: pgrepl-kafka
+  labels:
+    app: pgrepl
+spec:
+  ports:
+    - port: 9092
+  selector:
+    app: pgrepl
+    tier: kafka
+  clusterIP: None
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pgrepl-kafka
+  labels:
+    app: pgrepl
+spec:
+  selector:
+    matchLabels:
+      app: pgrepl
+      tier: kafka
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: pgrepl
+        tier: kafka
+    spec:
+      containers:
+      - image: bgard6977/pgrepl-kafka:latest
+        name: kafka
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 9092
+          name: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: pgrepl
   labels:
     app: pgrepl
