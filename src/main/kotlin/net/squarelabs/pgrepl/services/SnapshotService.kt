@@ -6,8 +6,10 @@ import org.postgresql.core.ServerVersion
 import org.postgresql.replication.LogSequenceNumber
 import java.sql.Connection
 import java.sql.SQLException
+import javax.inject.Singleton
 import kotlin.reflect.KClass
 
+@Singleton
 class SnapshotService {
 
     fun takeSnapshot(con: BaseConnection, includeRows: Boolean = true): Snapshot {

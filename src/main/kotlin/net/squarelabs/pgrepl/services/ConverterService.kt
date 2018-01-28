@@ -1,7 +1,9 @@
 package net.squarelabs.pgrepl.services
 
 import net.squarelabs.pgrepl.model.*
+import javax.inject.Singleton
 
+@Singleton
 class ConverterService {
     fun walTxnToClientTxn(lsn: Long, txnId: String, walTxn: Transaction): ClientTxn {
         val changes = walTxn.change.map { walChangeToClientChange(it) }

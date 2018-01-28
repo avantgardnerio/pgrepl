@@ -326,7 +326,6 @@ class AcceptanceTest {
 
         // Setup: create circle on left and wait for it to propagate
         val leftSvg = driver.findElement(By.cssSelector("#leftRoot svg"))
-        val rghtSvg = driver.findElement(By.cssSelector("#rightRoot svg"))
         Actions(driver).moveToElement(leftSvg, 10, 25).click().build().perform()
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(leftLsnField, originalLsnText)))
         WebDriverWait(driver, 3).until(not(textToBePresentInElement(rghtLsnField, originalLsnText)))
