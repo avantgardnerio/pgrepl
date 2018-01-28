@@ -127,6 +127,7 @@ class ReplicationSocket @Inject constructor(
         val dbName = cfgSvc.getAppDbName() // TODO: Get database name from message
         val handler: (String) -> Future<Void> = { json -> handlePgTxn(json) }
         replSvc.subscribe(dbName, req.lsn, handler)
+        subscriptions.add(handler)
         remote!!.sendText(mapper.toJson(SubscribeResponse(null)))
     }
 
