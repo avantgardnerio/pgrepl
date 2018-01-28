@@ -1,5 +1,7 @@
 package net.squarelabs.pgrepl.db
 
+import com.codahale.metrics.Counter
+import com.codahale.metrics.MetricRegistry.name
 import com.google.gson.Gson
 import net.squarelabs.pgrepl.messages.TxnMsg
 import net.squarelabs.pgrepl.model.Transaction
@@ -19,17 +21,20 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.HashSet
 
 class Replicator(
-        val dbName: String,
-        val lsn: Long,
-        val cfgSvc: ConfigService,
-        val slotSvc: SlotService,
-        val conSvc: ConnectionService,
-        val crudSvc: CrudService,
-        val cnvSvc: ConverterService
+        private val dbName: String,
+        private val lsn: Long,
+        private val cfgSvc: ConfigService,
+        private val slotSvc: SlotService,
+        private val conSvc: ConnectionService,
+        private val crudSvc: CrudService,
+        private val cnvSvc: ConverterService,
+        val metricSvc: MetricsService
 ) : AutoCloseable {
 
     companion object {
         private val LOG = Log.getLogger(Replicator::class.java)
+        private var listenerCounter: Counter? = null
+        private var walCounter: Counter? = null
     }
 
     private val id = UUID.randomUUID()
@@ -52,6 +57,15 @@ class Replicator(
     init {
         resubscribe(lsn)
         listenerFuture = slotExecutor.scheduleAtFixedRate({ dispatch() }, 0, 10, TimeUnit.MILLISECONDS)
+
+        synchronized(LOG) {
+            if (listenerCounter == null) {
+                listenerCounter = metricSvc.getMetrics().counter(name(this.javaClass, "listeners", "size"))
+            }
+            if (walCounter == null) {
+                walCounter = metricSvc.getMetrics().counter(name(this.javaClass, "wal", "size"))
+            }
+        }
     }
 
     private fun resubscribe(lsn: Long) {
@@ -77,7 +91,7 @@ class Replicator(
 
         // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
         stream = createReplicationStream(slotName, lsn)
-        slotFuture = slotExecutor.scheduleAtFixedRate({ checkMessages() }, 0, 10, TimeUnit.MILLISECONDS)
+        slotFuture = slotExecutor.scheduleAtFixedRate({ checkMessages() }, 0, 50, TimeUnit.MILLISECONDS)
     }
 
     private fun checkMessages() {
@@ -108,7 +122,7 @@ class Replicator(
         val txnId = crudSvc.getClientTxnId(walTxn.xid, con)
         val msg = TxnMsg(cnvSvc.walTxnToClientTxn(lsn.asLong(), txnId, walTxn))
         val clientJson = mapper.toJson(msg)
-        wal.put(lsn.asLong(), clientJson)
+        if(wal.put(lsn.asLong(), clientJson) == null) walCounter!!.inc()
         stream!!.setAppliedLSN(lsn)
         //stream.setFlushedLSN(lsn) // force postgres to hold entire log by not flushing
         // TODO: flush bottom of memory wal if all listeners are caught up
@@ -119,24 +133,30 @@ class Replicator(
     private fun dispatch() {
         if (wal.size == 0) return
         val currentLsn = wal.lastKey()
-        listeners.filter { it.lastResponse == null || it.lastResponse!!.isDone }
-                .filter { it.lsn < currentLsn }
-                .filter { wal.containsKey(it.lsn) } // Don't skip entries if we are loading them from DB
-                .forEach({
-                    it.lsn = wal.higherKey(it.lsn)
-                    it.lastResponse = it.callback(wal[it.lsn]!!)
-                })
+        var count = 1
+        while (count > 0) {
+            count = listeners
+                    .filter { it.lastResponse == null || it.lastResponse!!.isDone }
+                    .filter { it.lsn < currentLsn }
+                    .filter { wal.containsKey(it.lsn) } // Don't skip entries if we are loading them from DB
+                    .map({
+                        it.lsn = wal.higherKey(it.lsn)
+                        it.lastResponse = it.callback(wal[it.lsn]!!)
+                        it
+                    }).count()
+        }
     }
 
     @Synchronized
     fun addListener(lsn: Long, listener: (String) -> Future<Void>) {
         if (wal.size > 0 && lsn < wal.firstKey()) resubscribe(lsn)
         listeners.add(Listener(listener, null, lsn))
+        listenerCounter!!.inc()
     }
 
     @Synchronized
     fun removeListener(listener: (String) -> Future<Void>) {
-        listeners.removeIf({ it.callback == listener })
+        if (listeners.removeIf({ it.callback == listener })) listenerCounter!!.dec()
     }
 
     override fun close() {

@@ -21,7 +21,6 @@ class DbServiceTest {
     @Test
     fun shouldCrud() {
         val name = cfgSvc.getAppDbName()
-        val conString = cfgSvc.getJdbcDatabaseUrl()
         if (dbSvc.list().contains(name)) dbSvc.drop(name)
         assertEquals("should not have test db after drop", false, dbSvc.list().contains(name))
         dbSvc.create(name)

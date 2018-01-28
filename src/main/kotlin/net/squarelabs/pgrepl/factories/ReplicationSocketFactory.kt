@@ -12,11 +12,12 @@ class ReplicationSocketFactory @Inject constructor(
         val cfgService: ConfigService,
         val snapSvc: SnapshotService,
         val conSvc: ConnectionService,
-        val crudSvc: CrudService
+        val crudSvc: CrudService,
+        val metricsSvc: MetricsService
 ) : ServerEndpointConfig.Configurator() {
 
     @Throws(InstantiationException::class)
     override fun <T> getEndpointInstance(clazz: Class<T>): T {
-        return ReplicationSocket(replService, cfgService, snapSvc, conSvc, crudSvc) as T
+        return ReplicationSocket(replService, cfgService, snapSvc, conSvc, crudSvc, metricsSvc) as T
     }
 }

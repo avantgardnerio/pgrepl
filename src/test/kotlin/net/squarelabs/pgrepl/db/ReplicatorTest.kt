@@ -26,6 +26,7 @@ class ReplicatorTest {
     private val slotSvc = injector.getInstance(SlotService::class.java)!!
     private val crudSvc = injector.getInstance(CrudService::class.java)!!
     private val cnvSvc = injector.getInstance(ConverterService::class.java)!!
+    private val metricSvc = injector.getInstance(MetricsService::class.java)!!
 
     @Before
     @Throws(Exception::class)
@@ -66,7 +67,7 @@ class ReplicatorTest {
             future.complete(null)
             future
         }
-        Replicator(dbName, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc).use {
+        Replicator(dbName, snap!!.lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc, metricSvc).use {
             // HACK: need to start Replicator with commit in log
             conSvc.getConnection(conString).use { con ->
                 con.autoCommit = false

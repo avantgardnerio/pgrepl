@@ -35,7 +35,6 @@ class AppTest {
         val conString = cfgSvc.getJdbcDatabaseUrl()
         conSvc.getConnection(conString).use {
             val dbName = cfgSvc.getAppDbName()
-            val url = cfgSvc.getJdbcDatabaseUrl()
             if (dbSvc.list().contains(dbName)) dbSvc.drop(dbName)
             dbSvc.create(dbName)
             val flyway = Flyway()

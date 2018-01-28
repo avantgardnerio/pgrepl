@@ -1,5 +1,7 @@
 package net.squarelabs.pgrepl.endpoints
 
+import com.codahale.metrics.Counter
+import com.codahale.metrics.MetricRegistry.name
 import com.google.common.util.concurrent.Futures
 import com.google.gson.Gson
 import com.google.inject.Inject
@@ -16,15 +18,17 @@ import javax.websocket.*
 
 @Singleton
 class ReplicationSocket @Inject constructor(
-        val replSvc: ReplicationService,
-        val cfgSvc: ConfigService,
-        val snapSvc: SnapshotService,
-        val conSvc: ConnectionService,
-        val crudSvc: CrudService
+        private val replSvc: ReplicationService,
+        private val cfgSvc: ConfigService,
+        private val snapSvc: SnapshotService,
+        private val conSvc: ConnectionService,
+        private val crudSvc: CrudService,
+        private val metricSvc: MetricsService
 ) : Endpoint(), MessageHandler.Whole<String> {
 
     companion object {
         private val LOG = Log.getLogger(ReplicationSocket::class.java)
+        private var socketCounter: Counter? = null
     }
 
     private val msgTypes = hashMapOf(
@@ -40,6 +44,14 @@ class ReplicationSocket @Inject constructor(
     private var clientId: UUID? = null
     private val subscriptions = HashSet<(String) -> Future<Void>>()
 
+    init {
+        synchronized(LOG) {
+            if (socketCounter == null) {
+                socketCounter = metricSvc.getMetrics().counter(name(this.javaClass, "sockets", "size"))
+            }
+        }
+    }
+
     // ---------------------------------------- websocket events ------------------------------------------------------
     override fun onOpen(session: Session, config: EndpointConfig) {
         try {
@@ -47,6 +59,7 @@ class ReplicationSocket @Inject constructor(
             this.remote = session.asyncRemote
             session.addMessageHandler(this)
             LOG.info("WebSocket Connect: {}", session.id)
+            socketCounter!!.inc()
         } catch (ex: Exception) {
             LOG.warn("Error opening websocket!", ex) // TODO: Error handling
         }
@@ -68,7 +81,7 @@ class ReplicationSocket @Inject constructor(
             }
         } catch (ex: Exception) {
             LOG.warn("Error handling message!", ex)
-            subscriptions.forEach({replSvc.unsubscribe(cfgSvc.getAppDbName(), it)})
+            subscriptions.forEach({ replSvc.unsubscribe(cfgSvc.getAppDbName(), it) })
             session!!.close()
         }
     }
@@ -84,7 +97,8 @@ class ReplicationSocket @Inject constructor(
         this.session = null
         this.remote = null
         LOG.info("WebSocket Close: {} - {}", close!!.closeCode, close.reasonPhrase)
-        subscriptions.forEach({replSvc.unsubscribe(cfgSvc.getAppDbName(), it)})
+        socketCounter!!.dec()
+        subscriptions.forEach({ replSvc.unsubscribe(cfgSvc.getAppDbName(), it) })
     }
 
     // --------------------------------------- message handlers -------------------------------------------------------

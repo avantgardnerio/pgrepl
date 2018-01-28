@@ -4,7 +4,9 @@ import net.squarelabs.pgrepl.model.Snapshot
 import org.postgresql.core.BaseConnection
 import org.postgresql.replication.LogSequenceNumber
 import java.sql.Connection
+import javax.inject.Singleton
 
+@Singleton
 class CrudService {
     private val txnMapSql = "INSERT INTO \"txnIdMap\" (xid, \"clientTxnId\") VALUES (txid_current(),?)"
     private val getTxnSql = "SELECT \"clientTxnId\" FROM \"txnIdMap\" WHERE xid=?"

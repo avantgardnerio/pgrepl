@@ -1,5 +1,8 @@
 package net.squarelabs.pgrepl.services
 
+import javax.inject.Singleton
+
+@Singleton
 class ConfigService {
     private val dbHost = "localhost"
     private val dbName = "pgrepl_test"
