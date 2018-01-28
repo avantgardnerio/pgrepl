@@ -129,7 +129,7 @@ class Replicator(
         val txnId = crudSvc.getClientTxnId(walTxn.xid, con)
         val msg = TxnMsg(cnvSvc.walTxnToClientTxn(lsn.asLong(), txnId, walTxn))
         val clientJson = mapper.toJson(msg)
-        if(wal.put(lsn.asLong(), clientJson) == null) walCounter!!.inc()
+        if (wal.put(lsn.asLong(), clientJson) == null) walCounter!!.inc()
         stream!!.setAppliedLSN(lsn)
         //stream.setFlushedLSN(lsn) // force postgres to hold entire log by not flushing
         // TODO: flush bottom of memory wal if all listeners are caught up
@@ -152,6 +152,10 @@ class Replicator(
                         it
                     }).count()
         }
+        val min = listeners.fold(wal.lastKey(), { acc, cur -> Math.min(acc, cur.lsn) })
+        val keys = wal.keys.filter { it < min }
+        keys.forEach { wal.remove(it) }
+        walCounter!!.dec(keys.size.toLong())
     }
 
     @Synchronized
