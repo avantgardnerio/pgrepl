@@ -71,7 +71,14 @@ class Replicator(
     private fun resubscribe(lsn: Long) {
         slotFuture?.cancel(false)
         con?.close()
-        stream?.close()
+        try {
+            if (stream != null && !stream!!.isClosed) stream!!.close()
+        } catch (ex: PSQLException) {
+            // Postgres always seems to throw this error
+            if ("Database connection failed when ending copy" != ex.message) {
+                LOG.warn("Error closing stream!", ex)
+            }
+        }
 
         val properties = Properties()
         PGProperty.ASSUME_MIN_SERVER_VERSION.set(properties, "9.4")
