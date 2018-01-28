@@ -47,6 +47,7 @@ class Replicator(
     private var con: BaseConnection? = null
     private var stream: PGReplicationStream? = null
     private var slotFuture: Future<*>? = null
+    @Volatile private var flush = false
 
     data class Listener constructor(
             val callback: (String) -> Future<Void>,
@@ -55,9 +56,6 @@ class Replicator(
     )
 
     init {
-        resubscribe(lsn)
-        listenerFuture = slotExecutor.scheduleAtFixedRate({ dispatch() }, 0, 10, TimeUnit.MILLISECONDS)
-
         synchronized(LOG) {
             if (listenerCounter == null) {
                 listenerCounter = metricSvc.getMetrics().counter(name(this.javaClass, "listeners", "size"))
@@ -66,9 +64,16 @@ class Replicator(
                 walCounter = metricSvc.getMetrics().counter(name(this.javaClass, "wal", "size"))
             }
         }
+        resubscribe(lsn)
+        listenerFuture = slotExecutor.scheduleAtFixedRate({ dispatch() }, 0, 10, TimeUnit.MILLISECONDS)
     }
 
-    private fun resubscribe(lsn: Long) {
+    fun headLsn(): Long {
+        return wal.firstKey()
+    }
+
+    @Synchronized
+    private fun resubscribe(lsn: Long): Long {
         slotFuture?.cancel(false)
         con?.close()
         try {
@@ -99,6 +104,22 @@ class Replicator(
         // Start listening (https://github.com/eulerto/wal2json/blob/master/wal2json.c)
         stream = createReplicationStream(slotName, lsn)
         slotFuture = slotExecutor.scheduleAtFixedRate({ checkMessages() }, 0, 50, TimeUnit.MILLISECONDS)
+
+        // HACK: Force an update to verify we are connected
+        if(wal.size > 0) return wal.lastKey()
+        conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
+            con.autoCommit = false
+            val nextLsn = crudSvc.getNextLsn(con)
+            flush = false
+            crudSvc.updateTxnMap(UUID.randomUUID().toString(), con)
+            con.commit()
+            while(!wal.containsKey(nextLsn)) {
+                println("Sleeping...")
+                TimeUnit.MILLISECONDS.sleep(500)
+            }
+            flush = true
+            return nextLsn
+        }
     }
 
     private fun checkMessages() {
@@ -132,7 +153,6 @@ class Replicator(
         if (wal.put(lsn.asLong(), clientJson) == null) walCounter!!.inc()
         stream!!.setAppliedLSN(lsn)
         //stream.setFlushedLSN(lsn) // force postgres to hold entire log by not flushing
-        // TODO: flush bottom of memory wal if all listeners are caught up
         LOG.info("${wal.size} transactions in cache")
     }
 
@@ -152,6 +172,7 @@ class Replicator(
                         it
                     }).count()
         }
+        if(!flush) return
         val min = listeners.fold(wal.lastKey(), { acc, cur -> Math.min(acc, cur.lsn) })
         val keys = wal.keys.filter { it < min }
         keys.forEach { wal.remove(it) }

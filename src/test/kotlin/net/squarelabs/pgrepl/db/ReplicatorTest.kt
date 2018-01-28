@@ -71,7 +71,7 @@ class ReplicatorTest {
             // HACK: need to start Replicator with commit in log
             conSvc.getConnection(conString).use { con ->
                 con.autoCommit = false
-                lsn = crudSvc.getCurrentLsn(con)
+                lsn = crudSvc.getNextLsn(con)
                 crudSvc.updateTxnMap(UUID.randomUUID().toString(), con)
                 con.commit()
             }

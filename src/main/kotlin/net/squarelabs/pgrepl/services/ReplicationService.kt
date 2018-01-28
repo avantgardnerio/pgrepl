@@ -32,11 +32,12 @@ class ReplicationService @Inject constructor(
     }
 
     @Synchronized
-    fun listen(dbName: String, lsn: Long) {
+    fun listen(dbName: String, lsn: Long): Long {
         if (closed) throw Exception("Can't subscribe while closing!")
-        replicators.getOrPut(dbName, {
+        val repl = replicators.getOrPut(dbName, {
             Replicator(dbName, lsn, cfgSvc, slotSvc, conSvc, crudSvc, cnvSvc, metricSvc)
         })
+        return repl.headLsn()
     }
 
     @Synchronized

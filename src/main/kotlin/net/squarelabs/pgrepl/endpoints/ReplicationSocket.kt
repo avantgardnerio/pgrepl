@@ -108,14 +108,9 @@ class ReplicationSocket @Inject constructor(
 
     private fun handleSnapshotReq(mapper: Gson) {
         conSvc.getConnection(cfgSvc.getAppDbUrl()).use { con ->
-            // HACK: the Replicator needs to have the current txnId in the log, but postgres only gives us future ones
+            val lastLsn = snapSvc.getCurrentLSN(con)
+            val lsn = replSvc.listen(cfgSvc.getAppDbName(), lastLsn)
             val snap = snapSvc.takeSnapshot(con.unwrap(BaseConnection::class.java))
-            replSvc.listen(cfgSvc.getAppDbName(), snap.lsn)
-            con.autoCommit = false
-            val lsn = crudSvc.getCurrentLsn(con)
-            crudSvc.updateTxnMap(UUID.randomUUID().toString(), con)
-            con.commit()
-            con.autoCommit = true
 
             val response = SnapshotResponse(snap.copy(lsn = lsn)) // HACK: expensive copy
             remote!!.sendText(mapper.toJson(response))

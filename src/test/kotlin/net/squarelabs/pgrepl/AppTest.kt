@@ -1,5 +1,6 @@
 package net.squarelabs.pgrepl
 
+import com.google.gson.Gson
 import com.google.inject.Guice
 import net.squarelabs.pgrepl.client.ReplicationClient
 import net.squarelabs.pgrepl.model.Snapshot
@@ -60,7 +61,11 @@ class AppTest {
                 }
             }
             while (actual == null) TimeUnit.MILLISECONDS.sleep(10)
+            conSvc.getConnection(cfgSvc.getAppDbUrl()).use {
+                expected = snapSvc.takeSnapshot(it.unwrap(BaseConnection::class.java))
+            }
             expected = expected!!.copy(lsn = actual!!.lsn)
+            expected = Gson().fromJson(Gson().toJson(expected), Snapshot::class.java)
 
             // assert
             Assert.assertEquals("WebSocket should receive notifications", expected, actual)

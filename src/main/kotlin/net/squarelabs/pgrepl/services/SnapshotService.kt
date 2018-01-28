@@ -34,7 +34,7 @@ class SnapshotService {
 
     // TODO: dedupe
     @Throws(SQLException::class)
-    private fun getCurrentLSN(con: BaseConnection): Long {
+    fun getCurrentLSN(con: BaseConnection): Long {
         val tenPlus = con.haveMinimumServerVersion(ServerVersion.v10)
         val func = if (tenPlus) "pg_current_wal_lsn()" else "pg_current_xlog_location()"
         val sql = "SELECT ${func}"

@@ -53,7 +53,7 @@ class CrudService {
         }
     }
 
-    fun getCurrentLsn(con: BaseConnection): Long {
+    fun getNextLsn(con: BaseConnection): Long {
         con.prepareStatement("SELECT pg_current_xlog_insert_location()").use { stmt ->
             stmt.executeQuery().use { rs ->
                 rs.next()

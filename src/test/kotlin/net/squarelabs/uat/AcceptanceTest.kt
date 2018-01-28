@@ -356,7 +356,6 @@ class AcceptanceTest {
         Assert.assertEquals("given a conflicting change has been made, when a client goes back online, then the change is rolled back",
                 "0", leftLogLength.text
         )
-        // TODO: test is passing erroneously: assertion is missing for right circle final location
     }
 
     // ------------------------------------------- helpers ------------------------------------------------------------
