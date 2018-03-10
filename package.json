@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./bin/www",
+    "start": "nodemon app.js",
     "test": "node --experimental-modules test/server_test.mjs"
   },
   "dependencies": {
