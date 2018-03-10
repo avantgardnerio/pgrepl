@@ -108,6 +108,10 @@ task setVersion(type: Exec) {
 npm_run_build.dependsOn setVersion
 copyResources.dependsOn npm_run_build
 
+npm_install {
+    args = ['--quiet']
+}
+
 processResources.dependsOn copyResources
 
 test.outputs.upToDateWhen { false }
