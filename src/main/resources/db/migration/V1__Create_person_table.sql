@@ -1,8 +1,0 @@
-CREATE TABLE PERSON (
-  "id"       INT               NOT NULL PRIMARY KEY,
-  "name"     VARCHAR           NOT NULL,
-  "curTxnId" CHARACTER VARYING NOT NULL,
-  "prvTxnId" CHARACTER VARYING
-);
-ALTER TABLE person
-  REPLICA IDENTITY FULL;
