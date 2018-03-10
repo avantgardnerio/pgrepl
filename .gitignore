@@ -18,3 +18,12 @@ bin/
 # node
 src/main/resources/static/
 node_modules/
+
+# yarn
+yarn-error.log
+
+# cypress
+cypress/screenshots/
+cypress/plugins/
+cypress/support/
+cypress/fixtures/
