@@ -6,6 +6,9 @@ dataSources/
 *.iml
 *.iws
 
+# vscode
+.vscode/
+
 # Gradle
 build/
 .gradle/
