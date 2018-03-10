@@ -33,4 +33,8 @@ suite.addTest(new Mocha.Test("Driver can create session", async () => {
     console.log(obj);
 }));
 
+suite.addTest(new Mocha.Test("Driver can browse", async () => {
+  await driver.visit('http://localhost:3000/index.html');
+}));
+
 runner.run();

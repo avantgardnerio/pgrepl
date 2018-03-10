@@ -39,6 +39,10 @@ export default class WebDriver {
         });
     }
 
+    async visit(url) {
+        await this.session.go(url);
+    }
+
     close() {
         const promise = new Promise((resolve) => this.proc.on(`close`, (code) => resolve(code)));
         this.proc.kill('SIGHUP');
