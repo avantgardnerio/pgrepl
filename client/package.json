@@ -1,7 +1,7 @@
 {
-  "name": "client",
+  "name": "pgrepl-client",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "dependencies": {
     "argparse": "^1.0.9",
     "lodash": "^4.17.4",
