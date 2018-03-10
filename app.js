@@ -20,6 +20,8 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+express.static.mime.define({'application/javascript': ['mjs', 'js']});
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
