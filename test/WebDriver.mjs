@@ -4,7 +4,6 @@ import webdriver from 'w3c-webdriver';
 
 // (async () => {
 //     try {
-
 //         await session.go('http://localhost:8080');
 //         const input = await session.findElement('css selector', '[name="first-name"]');
 //         await a.sendKeys('Hello World');
