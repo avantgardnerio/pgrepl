@@ -56,7 +56,7 @@ install:
 before_script:
   - sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
 script:
-  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
+  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://127.0.0.1 &
   - which chromedriver
   - yarn test
 after_success:
@@ -75,9 +75,7 @@ after_success:
     kubectl delete pod --all;
     fi
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+  - echo "before cache"
 cache:
   directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
+    - $HOME/.cache/yarn/v1
