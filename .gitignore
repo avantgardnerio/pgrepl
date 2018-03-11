@@ -21,6 +21,7 @@ bin/
 # node
 src/main/resources/static/
 node_modules/
+.env
 
 # yarn
 yarn-error.log

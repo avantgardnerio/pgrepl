@@ -6,11 +6,13 @@ import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
 import debug from 'debug';
 import http from 'http';
+import dotenv from 'dotenv';
 
 import index from './routes/index';
 import users from './routes/users';
 
 debug('express:server');
+dotenv.config();
 
 const app = express();
 
