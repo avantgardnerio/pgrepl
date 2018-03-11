@@ -2,7 +2,7 @@ import Mocha from 'mocha';
 import request from 'supertest';
 
 import WebDriver from './WebDriver.mjs';
-import app from '../src/app.mjs';
+import app, { server } from '../src/app.mjs';
 
 const suite = new Mocha.Suite("Programatic Suite");
 const runner = new Mocha.Runner(suite);
@@ -21,7 +21,8 @@ suite.beforeAll('before', async () => {
 suite.afterAll('after', async () => {
   try {
     await driver.close();
-  } catch(er) {
+    server.close();
+  } catch (er) {
     console.error(er);
   }
   console.log('done!');

@@ -52,7 +52,7 @@ app.use((err, req, res, next) => {
 const port = parseInt(process.env.PORT, 10) || '3000';
 app.set('port', port);
 
-const server = http.createServer(app);
+export const server = http.createServer(app);
 
 server.listen(port);
 server.on('error', (er) => { console.error(er); process.exit(1) });
