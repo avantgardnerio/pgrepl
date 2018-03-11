@@ -45,7 +45,7 @@ export default class WebDriver {
     }
 
     async find(qs) {
-        return await this.session.findElement('css selector', qs);
+        return await this.session.findElements('css selector', qs);
     }
 
     async close() {

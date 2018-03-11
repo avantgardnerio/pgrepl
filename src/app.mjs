@@ -27,6 +27,7 @@ app.use(cookieParser());
 
 express.static.mime.define({ 'application/javascript': ['mjs', 'js'] });
 app.use(express.static(path.join(path.resolve('./src'), '../public')));
+app.use(express.static(path.join(path.resolve('./src'), '../node_modules')));
 
 app.use('/', index);
 app.use('/users', users);

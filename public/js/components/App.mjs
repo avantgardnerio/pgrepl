@@ -1,11 +1,14 @@
+import reducer from '../reducers/reducer.mjs';
+import PeopleList from './PeopleList.mjs';
+
 export default class App {
-    constructor() {
-        const html = `
-            <div class="app">
-                Hello world!
-            </div>
-        `;
+    constructor(id) {
+        this.store = Redux.createStore(reducer);
+        const html = `<div id=${id}></div>`;
         this.el = new DOMParser().parseFromString(html, `text/html`).body.firstChild;
+
+        this.peopleList = new PeopleList(this.store);
+        this.el.appendChild(this.peopleList.el);
     }
 
     get element() {

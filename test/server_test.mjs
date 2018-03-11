@@ -27,9 +27,10 @@ suite.addTest(new Mocha.Test("GET /users", (done) => {
 
 suite.addTest(new Mocha.Test("Driver can browse", async () => {
   await driver.visit('http://localhost:3000/index.html');
-  const el = await driver.find('div')
-  const text = await el.getText();
-  chai.expect(text).to.equal('Hello world!');
+  const el = await driver.find('#left li')
+  chai.expect(el.length).to.equal(2);
+  chai.expect(await el[0].getText()).to.equal('Alan Turing');
+  chai.expect(await el[1].getText()).to.equal('Grace Hopper');
 }));
 
 runner.run();
