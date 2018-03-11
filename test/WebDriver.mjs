@@ -21,7 +21,11 @@ export default class WebDriver {
     constructor() {
         console.log('Starting webdriver...')
         this.proc = proc.spawn('chromedriver', ['--port=4444', "--headless", "window-size=1024,768", "--no-sandbox"]);
-        this.proc.stdout.on('data', async (data) => console.log(data.toString()));
+        this.proc.stdout.on('data', async (data) => {
+            const str = data.toString();
+            if(str.includes(`on port 4444`)) this.started = true;
+            console.log(str);
+        });
         this.proc.stderr.on('data', (data) => console.error(data.toString()));
         console.log('Started webdriver.')
     }
@@ -32,7 +36,16 @@ export default class WebDriver {
         return obj;
     }
 
+    waitStart() {
+        return new Promise((resolve, reject) => {
+            setInterval(() => {
+                if(this.started) resolve(true);
+            }, 100)
+        })
+    }
+
     async createSession() {
+        await this.waitStart; 
         this.session = await webdriver.newSession('http://127.0.0.1:4444', {
             desiredCapabilities: {
                 browserName: 'Chrome'
