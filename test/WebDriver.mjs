@@ -19,10 +19,13 @@ const BASE_URL = `http://127.0.0.1:4444`;
 
 export default class WebDriver {
     constructor() {
+        console.log('Starting webdriver...')
         this.proc = proc.spawn('chromedriver', ['--port=4444']);
         this.proc.stdout.on('data', async (data) => console.log(data.toString()));
         this.proc.stderr.on('data', (data) => console.error(data.toString()));
-        this.proc.on(`close`, (code) => this.exitCode = code);
+        //this.proc.on(`close`, (code) => this.exitCode = code);
+        this.code = null;
+        console.log('Started webdriver...')
     }
 
     async getStatus() {
@@ -43,9 +46,18 @@ export default class WebDriver {
         await this.session.go(url);
     }
 
-    close() {
-        const promise = new Promise((resolve) => this.proc.on(`close`, (code) => resolve(code)));
-        this.proc.kill('SIGHUP');
-        return promise;
+    async close() {
+        console.log('Terminating webdriver...')
+        await this.session.delete();
+        // const promise = new Promise((resolve) => {
+        //     setInterval(() => { 
+        //         console.log(this.code);
+        //         if (this.code !== null) resolve(this.code);
+        //      }, 100);
+        // });
+        this.proc.stdin.pause();
+        this.proc.kill('SIGKILL');
+        console.log('sent signal')
+        // return promise;
     }
 }
