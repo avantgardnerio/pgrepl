@@ -3,7 +3,7 @@ import WebDriver from './WebDriver.mjs';
 import Mocha from 'mocha';
 import request from 'supertest';
 
-import app from '../app';
+import app from '../src/app.mjs';
 
 const suite = new Mocha.Suite("Programatic Suite");
 const runner = new Mocha.Runner(suite);
