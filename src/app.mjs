@@ -7,6 +7,7 @@ import bodyParser from 'body-parser';
 import debug from 'debug';
 import http from 'http';
 import dotenv from 'dotenv';
+import expressWs from 'express-ws';
 
 import index from './routes/index';
 import users from './routes/users';
@@ -15,6 +16,15 @@ debug('express:server');
 dotenv.config();
 
 const app = express();
+expressWs(app);//, server);
+
+app.ws('/echo', (ws, req) => {
+  console.log('echo-------------');
+  ws.on('message', (msg) => {
+    console.log('-------------', msg);
+    ws.send(msg);
+  });
+});
 
 // view engine setup
 app.set('views', path.join(path.resolve('./src'), 'views'));
@@ -52,13 +62,13 @@ app.use((err, req, res, next) => {
   res.render('error');
 });
 
-const port = parseInt(process.env.PORT, 10) || '3000';
+const port = parseInt(process.env.PORT, 10) || 3000;
 app.set('port', port);
 
-export const server = http.createServer(app);
+// export const server = http.createServer(app);
 
-server.listen(port);
-server.on('error', (er) => { console.error(er); process.exit(1) });
-server.on('listening', () => console.log(`listening on ${server.address().port}`));
+export const server = app.listen(port);
+app.on('error', (er) => { console.error(er); process.exit(1) });
+app.on('listening', () => console.log(`listening on ${server.address().port}`));
 
 export default app;
