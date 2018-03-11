@@ -33,10 +33,24 @@ export default (parent, driver, db) => {
         const btnSave = (await driver.find(`#left button`))[0];
         tbName.sendKeys(`inserted doc`);
         btnSave.click();
-        await driver.waitForElements(`.documentNew`);
-        const item = (await driver.find(`li`))[0];
+        await driver.waitForElements(`#left .documentNew`);
+        const item = (await driver.find(`#left li`))[0];
         const text = await item.getText();
         chai.expect(text).to.equal(`inserted doc`);
+    }));
+
+    suite.addTest(new Mocha.Test(`should edit documents`, async () => {
+        await db.none(`delete from chapter`);
+        await db.none(`delete from document`);
+        await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
+            [uuid(), `test doc`, uuid()]
+        )
+
+        await driver.visit(`http://localhost:3000/`);
+        const li = (await driver.waitForElements(`#left li`))[0];
+        li.click();
+        const buttons = (await driver.find(`#left .chapterNew`));
+        chai.expect(buttons.length).to.equal(1);
     }));
 
     parent.addSuite(suite);

@@ -20,10 +20,19 @@ export default class DocumentList {
         this.store.dispatch(push(`/documents/new`));
     }
 
+    docSelected(doc) {
+        this.store.dispatch(push(`/documents/${doc.id}`));
+    }
+
     onChange() {
         const state = this.store.getState();
-        const html = state.main.documents.reduce((acc, p) => `${acc}<li>${p.name}</li>`, ``);
-        this.ul.innerHTML = html;
+        this.ul.innerHTML = ``;
+        state.main.documents.forEach((doc) => {
+            const li = document.createElement(`li`);
+            li.onclick = () => this.docSelected(doc);
+            li.innerText = doc.name;
+            this.ul.appendChild(li);
+        });
     }
 
     get element() {

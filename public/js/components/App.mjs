@@ -2,6 +2,7 @@ import { getDocuments } from '../actions/actions.mjs';
 import reducer from '../reducers/reducer.mjs';
 import DocumentList from './DocumentList.mjs';
 import DocumentNew from './DocumentNew.mjs';
+import DocumentEdit from './DocumentEdit.mjs';
 
 const { combineReducers, applyMiddleware, createStore } = Redux;
 const { createBrowserHistory, routerReducer, routerMiddleware, startListener } = ReduxFirstRouting;
@@ -26,6 +27,7 @@ export default class App {
 
         this.documentList = new DocumentList(this.store);
         this.documentNew = new DocumentNew(this.store);
+        this.documentEdit = new DocumentEdit(this.store);
         this.el.appendChild(this.documentList.el);
         this.load();
 
@@ -34,8 +36,10 @@ export default class App {
 
     render() {
         const state = this.store.getState();
+        const url = state.router.pathname;
         this.el.innerHTML = ``;
-        if(`/documents/new` === state.router.pathname) this.el.appendChild(this.documentNew.el);
+        if(`/documents/new` === url) this.el.appendChild(this.documentNew.el);
+        else if(/\/documents\/(0-9a-zA-z\-)*/.test(url)) this.el.appendChild(this.documentEdit.el);
         else this.el.appendChild(this.documentList.el);
     }
 
