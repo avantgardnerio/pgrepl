@@ -16,6 +16,7 @@
     "morgan": "~1.9.0",
     "nodemon": "^1.17.1",
     "redux": "^3.7.2",
+    "redux-thunk": "^2.2.0",
     "serve-favicon": "~2.4.5",
     "w3c-webdriver": "^0.14.0"
   },

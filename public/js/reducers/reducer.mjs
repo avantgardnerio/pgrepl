@@ -1,12 +1,16 @@
 const initial = {
-    people: [
-        {id: 1, givenName: 'Alan', familyName: 'Turing'},
-        {id: 1, givenName: 'Grace', familyName: 'Hopper'},
-    ]
+    people: []
 }
 
 const reducer = (state = initial, action) => {
-    return state;
+    switch(action.type) {
+        case 'GOT_USERS': return gotPeople(state, action);
+        default: return state;
+    }
+}
+
+const gotPeople = (state, action) => {
+    return {...state, people: action.users};
 }
 
 export default reducer;

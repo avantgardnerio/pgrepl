@@ -1,7 +1,7 @@
 export default class PeopleList {
     constructor(store) {
         this.store = store;
-        this.store.subscribe(() => this.onChange);
+        this.store.subscribe(() => this.onChange());
         const html = `
             <ul>
                 <li>test</li>
