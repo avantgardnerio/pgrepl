@@ -1,11 +1,9 @@
 dist: trusty
 group: deprecated-2017Q4
-language: java
+language: node_js
 sudo: true
 env:
   - headless=true
-jdk:
-  - openjdk8
 services:
   - postgresql
   - docker
@@ -16,7 +14,6 @@ addons:
     packages:
       - postgresql-server-dev-9.6
 before_install:
-  - gradle wrapper
   - echo "hello world"
   - echo "$TRAVIS_BRANCH"
   - printenv
@@ -52,12 +49,14 @@ install:
   - sudo mv -f ~/chromedriver /usr/local/share/
   - sudo chmod +x /usr/local/share/chromedriver
   - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
+  - npm install -g yarn
+  - yarn install
 before_script:
   - sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
 script:
   - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
   - which chromedriver
-  - ./gradlew build fatJar
+  - yarn test
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD";
