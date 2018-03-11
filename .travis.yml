@@ -55,7 +55,7 @@ before_script:
   - sudo -u postgres psql -U postgres -d postgres -c "alter user postgres with password 'postgres';"
 script:
   - google-chrome-stable --version
-  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://127.0.0.1 &
+  - xvfb-run --server-args="-screen 0 1920x1080x24" google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://127.0.0.1 &
   - which chromedriver
   - yarn test
 after_success:
