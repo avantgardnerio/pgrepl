@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon --experimental-modules src/app.mjs",
-    "test": "node --experimental-modules test/suite.mjs"
+    "test": "DB_NAME=pgrepl_test node --experimental-modules test/suite.mjs"
   },
   "dependencies": {
     "body-parser": "~1.18.2",

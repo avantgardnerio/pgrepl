@@ -4,9 +4,7 @@ import request from 'supertest';
 
 import app from '../../src/app.mjs';
 
-import dbSvc, { db, pg } from '../../src/services/DbService.mjs';
-
-export default (parent, driver) => {
+export default (parent, driver, db) => {
     const suite = new Mocha.Suite("document API");
 
     suite.addTest(new Mocha.Test("GET /users", (done) => {

@@ -48,10 +48,10 @@ suite.afterAll('after', async () => {
 });
 
 // -------------------------------- UAT ---------------------------------
-documentPage(suite, driver);
+documentPage(suite, driver, db);
 
 // -------------------------------- API ---------------------------------
-documentApi(suite, driver);
+documentApi(suite, driver, db);
 
 // suite.addTest(new Mocha.Test("query", async () => {
 //   try {
