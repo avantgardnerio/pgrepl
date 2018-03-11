@@ -15,7 +15,7 @@ suite.beforeAll('before', async () => {
     driver = new WebDriver();
     await driver.createSession();
   } catch (er) {
-    console.error(er);
+    console.error(`Error creating session`, er);
   }
 });
 
@@ -24,7 +24,7 @@ suite.afterAll('after', async () => {
     await driver.close();
     server.close();
   } catch (er) {
-    console.error(er);
+    console.error(`Error closing session`, er);
   }
 });
 
@@ -41,7 +41,7 @@ suite.addTest(new Mocha.Test("Driver can browse", async () => {
     chai.expect(await el[0].getText()).to.equal('Alan Turing');
     chai.expect(await el[1].getText()).to.equal('Grace Hopper');
   } catch (er) {
-    console.error(er);
+    console.error(`Error navigating`, er);
   }
 }));
 

@@ -23,7 +23,7 @@ export default class WebDriver {
         this.proc = proc.spawn('chromedriver', ['--port=4444', "--headless", "window-size=1024,768", "--no-sandbox"]);
         this.proc.stdout.on('data', async (data) => console.log(data.toString()));
         this.proc.stderr.on('data', (data) => console.error(data.toString()));
-        console.log('Started webdriver...')
+        console.log('Started webdriver.')
     }
 
     async getStatus() {
