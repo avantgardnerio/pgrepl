@@ -38,9 +38,10 @@ export default class WebDriver {
 
     waitStart() {
         return new Promise((resolve, reject) => {
-            setInterval(() => {
+            const id = setInterval(() => {
                 if(this.started) {
                     console.log(`chromedriver listening!`)
+                    clearInterval(id);
                     resolve(true);
                 }
             }, 100)
