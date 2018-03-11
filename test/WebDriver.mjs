@@ -39,13 +39,16 @@ export default class WebDriver {
     waitStart() {
         return new Promise((resolve, reject) => {
             setInterval(() => {
-                if(this.started) resolve(true);
+                if(this.started) {
+                    console.log(`chromedriver listening!`)
+                    resolve(true);
+                }
             }, 100)
         })
     }
 
     async createSession() {
-        await this.waitStart; 
+        await this.waitStart(); 
         this.session = await webdriver.newSession('http://127.0.0.1:4444', {
             desiredCapabilities: {
                 browserName: 'Chrome'
