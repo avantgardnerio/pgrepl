@@ -8,15 +8,27 @@ import debug from 'debug';
 import http from 'http';
 import dotenv from 'dotenv';
 import expressWs from 'express-ws';
+import migrations from 'sql-migrations';
 
 import index from './routes/index';
-import users from './routes/users';
+import documents from './routes/documents';
+import cfgSvc from '../src/services/ConfigService.mjs';
 
 debug('express:server');
 dotenv.config();
 
+const configuration = {
+  migrationsDir: './migrations',
+  host: 'localhost',
+  port: 5432, 
+  db: cfgSvc.dbName, 
+  user: 'postgres', 
+  password: 'postgres'
+};
+migrations.migrate(configuration);
+
 const app = express();
-expressWs(app);//, server);
+expressWs(app);
 
 app.ws('/echo', (ws, req) => {
   console.log('echo-------------');
@@ -42,7 +54,7 @@ app.use(express.static(path.join(path.resolve('./src'), '../public')));
 app.use(express.static(path.join(path.resolve('./src'), '../node_modules')));
 
 app.use('/', index);
-app.use('/users', users);
+app.use('/documents', documents);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -67,8 +79,9 @@ app.set('port', port);
 
 // export const server = http.createServer(app);
 
-export const server = app.listen(port);
 app.on('error', (er) => { console.error(er); process.exit(1) });
 app.on('listening', () => console.log(`listening on ${server.address().port}`));
+
+export const server = app.listen(port);
 
 export default app;

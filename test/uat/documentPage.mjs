@@ -19,9 +19,8 @@ export default (parent, driver, db) => {
     suite.addTest(new Mocha.Test(`should list documents`, async () => {
         await driver.visit(`http://localhost:3000/`);
         const el = await driver.find(`#left li`)
-        chai.expect(el.length).to.equal(2);
-        chai.expect(await el[0].getText()).to.equal(`Alan Turing`);
-        chai.expect(await el[1].getText()).to.equal(`Grace Hopper`);
+        chai.expect(el.length).to.equal(1);
+        chai.expect(await el[0].getText()).to.equal(`test doc`);
     }));
 
     parent.addSuite(suite);

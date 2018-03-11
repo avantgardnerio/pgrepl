@@ -10,8 +10,6 @@ import app, { server } from '../src/app.mjs';
 import documentPage from './uat/documentPage.mjs';
 import documentApi from './api/documentApi.mjs';
 
-process.env.DB_NAME = `pgrepl_test`;
-
 const configuration = {
   migrationsDir: './migrations',
   host: 'localhost',
@@ -52,16 +50,5 @@ documentPage(suite, driver, db);
 
 // -------------------------------- API ---------------------------------
 documentApi(suite, driver, db);
-
-// suite.addTest(new Mocha.Test("query", async () => {
-//   try {
-//     const users = await db.any('SELECT * FROM contract limit 1');
-//     console.log(users);
-//   }
-//   catch (er) {
-//     console.error(er);
-//     throw er;
-//   }
-// }));
 
 runner.run();

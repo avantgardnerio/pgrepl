@@ -1,6 +1,6 @@
-import { getUsers } from '../actions/actions.mjs';
+import { getDocuments } from '../actions/actions.mjs';
 import reducer from '../reducers/reducer.mjs';
-import PeopleList from './PeopleList.mjs';
+import DocumentList from './DocumentList.mjs';
 
 export default class App {
     constructor(id) {
@@ -9,13 +9,13 @@ export default class App {
         const html = `<div id=${id}></div>`;
         this.el = new DOMParser().parseFromString(html, `text/html`).body.firstChild;
 
-        this.peopleList = new PeopleList(this.store);
-        this.el.appendChild(this.peopleList.el);
+        this.documentList = new DocumentList(this.store);
+        this.el.appendChild(this.documentList.el);
         this.load();
     }
 
     async load() {
-        this.store.dispatch(getUsers());
+        this.store.dispatch(getDocuments());
     }
 
     get element() {
