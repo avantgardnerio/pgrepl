@@ -21,6 +21,7 @@
     "pg-logical-replication": "^1.0.3",
     "pg-promise": "^8.2.1",
     "redux": "^3.7.2",
+    "redux-first-routing": "^0.3.0",
     "redux-thunk": "^2.2.0",
     "serve-favicon": "~2.4.5",
     "sql-migrations": "^1.0.4",

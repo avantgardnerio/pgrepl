@@ -10,7 +10,6 @@ import dotenv from 'dotenv';
 import expressWs from 'express-ws';
 import migrations from 'sql-migrations';
 
-import index from './routes/index';
 import documents from './routes/documents';
 import cfgSvc from '../src/services/ConfigService.mjs';
 
@@ -21,9 +20,8 @@ const app = express();
 expressWs(app);
 
 app.ws('/echo', (ws, req) => {
-  console.log('echo-------------');
   ws.on('message', (msg) => {
-    console.log('-------------', msg);
+    console.log('websocket msg=', msg);
     ws.send(msg);
   });
 });
@@ -43,14 +41,16 @@ express.static.mime.define({ 'application/javascript': ['mjs', 'js'] });
 app.use(express.static(path.join(path.resolve('./src'), '../public')));
 app.use(express.static(path.join(path.resolve('./src'), '../node_modules')));
 
-app.use('/', index);
-app.use('/documents', documents);
+app.use('/api', documents);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+  if(req.url.startsWith(`/api`)) {
+    var err = new Error('Not Found');
+    err.status = 404;
+    next(err);
+  }
+  res.sendFile(path.join(path.resolve('./src'), '../public/index.html'));
 });
 
 // error handler

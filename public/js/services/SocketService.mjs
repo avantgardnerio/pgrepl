@@ -22,7 +22,7 @@ export default class SocketService {
     }
 
     close() {
-        console.log('-------------closing')
+        console.log('Closing websocket...')
         this._ws.close(1000);
         if (this.timer) clearInterval(this.timer);
         this._ws = undefined;

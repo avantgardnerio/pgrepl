@@ -9,6 +9,7 @@ import WebDriver from './WebDriver.mjs';
 import app, { started } from '../src/app.mjs';
 import documentPage from './uat/documentPage.mjs';
 import documentApi from './api/documentApi.mjs';
+import documentUnit from './unit/client/components/DocumentList.test.mjs';
 
 const suite = new Mocha.Suite("Programatic Suite");
 const runner = new Mocha.Runner(suite);
@@ -40,5 +41,8 @@ documentPage(suite, driver, db);
 
 // -------------------------------- API ---------------------------------
 documentApi(suite, driver, db);
+
+// -------------------------------- Unit --------------------------------
+documentUnit(suite);
 
 started.then(() => runner.run());

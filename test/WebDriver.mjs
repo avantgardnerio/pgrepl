@@ -47,6 +47,24 @@ export default class WebDriver {
         })
     }
 
+    waitForElements(qs, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            const start = new Date().getTime();
+            const id = setInterval(() => {
+                if (new Date().getTime() - start >= 5000) {
+                    clearInterval(id);
+                    reject(new Error(`Timeout waiting for elements: ${qs}`));
+                }
+                this.find(qs).then((elements) => {
+                    if(elements.length > 0) {
+                        clearInterval(id);
+                        resolve(elements);
+                    }
+                });
+            }, 100);
+        })
+    }
+
     async createSession() {
         await this.waitStart();
         this.session = await webdriver.newSession('http://127.0.0.1:4444', {
@@ -69,7 +87,7 @@ export default class WebDriver {
 
     async close() {
         console.log('Terminating webdriver...')
-        if(this.session) await this.session.delete();
+        if (this.session) await this.session.delete();
         this.proc.stdin.pause();
         this.proc.kill('SIGKILL');
     }

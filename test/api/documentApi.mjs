@@ -19,7 +19,7 @@ export default (parent, driver, db) => {
     });
 
     suite.addTest(new Mocha.Test(`should return a list of documents`, (done) => {
-        request(app).get(`/documents`)
+        request(app).get(`/api/documents`)
             .end((err, res) => {
                 chai.expect(err).to.equal(null);
                 chai.expect(res.body).to.deep.equal([{
