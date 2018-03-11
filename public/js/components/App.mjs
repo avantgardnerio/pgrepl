@@ -1,7 +1,7 @@
 export default class App {
     constructor() {
         const html = `
-            <div>
+            <div class="app">
                 Hello world!
             </div>
         `;

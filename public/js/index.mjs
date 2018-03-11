@@ -1,6 +1,8 @@
 import App from './components/App.mjs';
 
 onload = async () => {
-    const app = new App();
-    document.body.appendChild(app.el);
+    const left = new App();
+    const rght = new App();
+    document.body.appendChild(left.el);
+    document.body.appendChild(rght.el);
 }

@@ -1,0 +1,18 @@
+body {
+  padding: 0px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  display: flex;
+  justify-content: space-evenly;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.app {
+  border-color: black;
+  border-style: solid;
+  border-width: 1px;
+  flex-grow: 1;
+  margin: 5px;
+}
