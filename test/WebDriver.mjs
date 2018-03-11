@@ -33,7 +33,7 @@ export default class WebDriver {
     }
 
     async createSession() {
-        this.session = await webdriver.newSession('http://localhost:4444', {
+        this.session = await webdriver.newSession('http://127.0.0.1:4444', {
             desiredCapabilities: {
                 browserName: 'Chrome'
             }
