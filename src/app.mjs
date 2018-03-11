@@ -17,16 +17,6 @@ import cfgSvc from '../src/services/ConfigService.mjs';
 debug('express:server');
 dotenv.config();
 
-const configuration = {
-  migrationsDir: './migrations',
-  host: 'localhost',
-  port: 5432, 
-  db: cfgSvc.dbName, 
-  user: 'postgres', 
-  password: 'postgres'
-};
-migrations.migrate(configuration);
-
 const app = express();
 expressWs(app);
 
@@ -82,6 +72,19 @@ app.set('port', port);
 app.on('error', (er) => { console.error(er); process.exit(1) });
 app.on('listening', () => console.log(`listening on ${server.address().port}`));
 
-export const server = app.listen(port);
+const configuration = {
+  migrationsDir: './migrations',
+  host: 'localhost',
+  port: 5432, 
+  db: cfgSvc.dbName, 
+  user: 'postgres', 
+  password: 'postgres'
+};
+const migrate = async() => {
+  await migrations.migrate(configuration);
+  app.server = app.listen(port);
+}
+
+export const started = migrate();
 
 export default app;

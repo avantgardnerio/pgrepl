@@ -69,7 +69,7 @@ export default class WebDriver {
 
     async close() {
         console.log('Terminating webdriver...')
-        await this.session.delete();
+        if(this.session) await this.session.delete();
         this.proc.stdin.pause();
         this.proc.kill('SIGKILL');
     }
