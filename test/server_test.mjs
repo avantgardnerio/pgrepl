@@ -11,13 +11,21 @@ const reporter = new Mocha.reporters.Spec(runner);
 
 let driver;
 suite.beforeAll('before', async () => {
-  driver = new WebDriver();
-  await driver.createSession();
+  try {
+    driver = new WebDriver();
+    await driver.createSession();
+  } catch (er) {
+    console.error(er);
+  }
 });
 
 suite.afterAll('after', async () => {
-  await driver.close();
-  server.close();
+  try {
+    await driver.close();
+    server.close();
+  } catch (er) {
+    console.error(er);
+  }
 });
 
 suite.addTest(new Mocha.Test("GET /users", (done) => {
@@ -26,11 +34,15 @@ suite.addTest(new Mocha.Test("GET /users", (done) => {
 }));
 
 suite.addTest(new Mocha.Test("Driver can browse", async () => {
-  await driver.visit('http://localhost:3000/index.html');
-  const el = await driver.find('#left li')
-  chai.expect(el.length).to.equal(2);
-  chai.expect(await el[0].getText()).to.equal('Alan Turing');
-  chai.expect(await el[1].getText()).to.equal('Grace Hopper');
+  try {
+    await driver.visit('http://localhost:3000/index.html');
+    const el = await driver.find('#left li')
+    chai.expect(el.length).to.equal(2);
+    chai.expect(await el[0].getText()).to.equal('Alan Turing');
+    chai.expect(await el[1].getText()).to.equal('Grace Hopper');
+  } catch (er) {
+    console.error(er);
+  }
 }));
 
 runner.run();
