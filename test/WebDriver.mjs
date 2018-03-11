@@ -20,7 +20,7 @@ const BASE_URL = `http://127.0.0.1:4444`;
 export default class WebDriver {
     constructor() {
         console.log('Starting webdriver...')
-        this.proc = proc.spawn('chromedriver', ['--port=4444']);
+        this.proc = proc.spawn('chromedriver', ['--port=4444', "--headless", "window-size=1024,768", "--no-sandbox"]);
         this.proc.stdout.on('data', async (data) => console.log(data.toString()));
         this.proc.stderr.on('data', (data) => console.error(data.toString()));
         console.log('Started webdriver...')
