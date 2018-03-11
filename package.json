@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon --experimental-modules src/app.mjs",
-    "test": "node --experimental-modules test/server_test.mjs"
+    "test": "node --experimental-modules test/suite.mjs"
   },
   "dependencies": {
     "body-parser": "~1.18.2",
