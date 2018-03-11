@@ -19,10 +19,10 @@ const BASE_URL = `http://127.0.0.1:4444`;
 export default class WebDriver {
     constructor() {
         console.log('Starting webdriver...')
-        this.proc = proc.spawn('chromedriver', ['--port=4444', "--headless", "window-size=1024,768", "--no-sandbox"]);
+        this.proc = proc.spawn('chromedriver', ['--port=4444']);
         this.proc.stdout.on('data', async (data) => {
             const str = data.toString();
-            if(str.includes(`on port 4444`)) this.started = true;
+            if (str.includes(`on port 4444`)) this.started = true;
             console.log(str);
         });
         this.proc.stderr.on('data', (data) => console.error(data.toString()));
@@ -38,7 +38,7 @@ export default class WebDriver {
     waitStart() {
         return new Promise((resolve, reject) => {
             const id = setInterval(() => {
-                if(this.started) {
+                if (this.started) {
                     console.log(`chromedriver listening!`)
                     clearInterval(id);
                     resolve(true);
@@ -48,10 +48,13 @@ export default class WebDriver {
     }
 
     async createSession() {
-        await this.waitStart(); 
+        await this.waitStart();
         this.session = await webdriver.newSession('http://127.0.0.1:4444', {
-            desiredCapabilities: {
-                browserName: 'Chrome'
+            "desiredCapabilities": {
+                "browserName": "chrome",
+                "chromeOptions": {
+                    "args": ["--headless", "--disable-gpu", "--no-sandbox"]
+                }
             }
         });
     }
