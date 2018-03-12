@@ -5,22 +5,34 @@ import { db } from './DbService.mjs';
 const GET_SCHEMA = fs.readFileSync(`./queries/getSchema.sql`, `utf8`);
 
 class SnapshotService {
-    takeSnapshot() {
-        const schema = db.any(GET_SCHEMA);
+    async takeSnapshot(includeRows) {
+        const schema = await db.any(GET_SCHEMA);
         const tableNames = [...new Set(schema.map(t => t.tableName))];
         const tables = tableNames.map(tableName => {
-            const columns = schema.filter(it => it.tableName == tableName);
+            const columns = schema.filter(it => it.tableName === tableName);
             columns.sort((a, b) => a.ordinalPosition < b.ordinalPosition);
-            const colNames = columns.map(it => it.name);
-            const rows = includeRows ? this.selectAll(tableName, colNames, con) : [];
-            return { tableName, columns, rows };
+            const rows = [];
+            return { name: tableName, columns, rows };
         });
-        const lsn = this.getCurrentLSN();
+        if (includeRows) {
+            for (const table of tables) {
+                const colNames = table.columns.map(it => it.columnName);
+                table.rows = await this.selectAll(table.name, colNames);
+            }
+        }
+        const lsn = await this.getCurrentLSN();
         return { lsn, tables };
     }
 
+    async selectAll(tableName, columns) {
+        const colNames = columns.map(name => `"${name}"`).join(`,`);
+        const sql = `select ${colNames} from "${tableName}"`;
+        const rows = await db.any(sql);
+        return rows
+    }
+
     async getVersion() {
-        if(this.version) return this.version;
+        if (this.version) return this.version;
         const text = (await db.one(`SELECT version();`)).version;
         const group = /PostgreSQL\s([0-9]*)/g.exec(text)[1];
         this.version = parseInt(group, 10);
