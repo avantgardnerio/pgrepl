@@ -11,7 +11,7 @@ export default (parent, driver, db) => {
     const suite = new Mocha.Suite(`Document API`);
 
     suite.beforeAll(`before`, async () => {
-        await db.none(`delete from chapter`);
+        await db.none(`delete from line`);
         await db.none(`delete from document`);
         await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
             [documentId, `test doc`, curTxnId]

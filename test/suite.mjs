@@ -10,6 +10,7 @@ import app, { started } from '../src/app.mjs';
 import documentPage from './uat/documentPage.mjs';
 import documentApi from './api/documentApi.mjs';
 import documentUnit from './unit/client/components/DocumentList.test.mjs';
+import ssUnit from './unit/server/services/SnapshotService.test.mjs';
 
 const suite = new Mocha.Suite("Programatic Suite");
 const runner = new Mocha.Runner(suite);
@@ -44,5 +45,6 @@ documentApi(suite, driver, db);
 
 // -------------------------------- Unit --------------------------------
 documentUnit(suite);
+ssUnit(suite);
 
 started.then(() => runner.run());

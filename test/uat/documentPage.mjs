@@ -12,7 +12,7 @@ export default (parent, driver, db) => {
     });
 
     suite.addTest(new Mocha.Test(`should list documents`, async () => {
-        await db.none(`delete from chapter`);
+        await db.none(`delete from line`);
         await db.none(`delete from document`);
         await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
             [uuid(), `test doc`, uuid()]
@@ -25,7 +25,7 @@ export default (parent, driver, db) => {
     }));
 
     suite.addTest(new Mocha.Test(`should create documents`, async () => {
-        await db.none(`delete from chapter`);
+        await db.none(`delete from line`);
         await db.none(`delete from document`);
 
         await driver.visit(`http://localhost:3000/documents/new`);
@@ -40,7 +40,7 @@ export default (parent, driver, db) => {
     }));
 
     suite.addTest(new Mocha.Test(`should edit documents`, async () => {
-        await db.none(`delete from chapter`);
+        await db.none(`delete from line`);
         await db.none(`delete from document`);
         await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
             [uuid(), `test doc`, uuid()]
@@ -49,8 +49,8 @@ export default (parent, driver, db) => {
         await driver.visit(`http://localhost:3000/`);
         const li = (await driver.waitForElements(`#left li`))[0];
         li.click();
-        const buttons = (await driver.find(`#left .chapterNew`));
-        chai.expect(buttons.length).to.equal(1);
+        const svg = (await driver.find(`#left svg`));
+        chai.expect(svg.length).to.equal(1);
     }));
 
     parent.addSuite(suite);
