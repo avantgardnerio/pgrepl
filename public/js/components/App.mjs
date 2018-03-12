@@ -9,6 +9,9 @@ const { createBrowserHistory, routerReducer, routerMiddleware, startListener } =
 
 export default class App {
     constructor(id) {
+        window.apps = window.apps || [];
+        window.apps.push(this);
+        
         const history = createBrowserHistory();
 
         const rootReducer = combineReducers({
