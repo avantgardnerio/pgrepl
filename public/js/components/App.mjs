@@ -1,29 +1,16 @@
 import { getDocuments } from '../actions/actions.mjs';
-import reducer from '../reducers/reducer.mjs';
 import DocumentList from './DocumentList.mjs';
 import DocumentNew from './DocumentNew.mjs';
 import DocumentEdit from './DocumentEdit.mjs';
-
-const { combineReducers, applyMiddleware, createStore } = Redux;
-const { createBrowserHistory, routerReducer, routerMiddleware, startListener } = ReduxFirstRouting;
+import ReplClient from '../services/ReplClient.mjs';
 
 export default class App {
     constructor(id) {
         window.apps = window.apps || [];
         window.apps.push(this);
-        
-        const history = createBrowserHistory();
 
-        const rootReducer = combineReducers({
-            main: reducer,
-            router: routerReducer
-        });
-        const middleware = applyMiddleware(
-            ReduxThunk.default, 
-            routerMiddleware(history)
-        );
-        this.store = createStore(rootReducer, middleware);
-        startListener(history, this.store);
+        this.client = new ReplClient();
+        this.store = this.client.store;
 
         const html = `<div id=${id}></div>`;
         this.el = new DOMParser().parseFromString(html, `text/html`).body.firstChild;

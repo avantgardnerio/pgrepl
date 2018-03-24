@@ -40,11 +40,15 @@ app.use(cookieParser());
 express.static.mime.define({ 'application/javascript': ['mjs', 'js'] });
 app.use(express.static(path.join(path.resolve('./src'), '../public')));
 app.use(express.static(path.join(path.resolve('./src'), '../node_modules')));
+app.use('/node_modules', (req, res) => {
+    res.setHeader('content-type', 'text/javascript');
+    res.end(`export default false; // Fool chrome into working with node`);
+});
 
 app.use('/api', documents);
 
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
   if(req.url.startsWith(`/api`)) {
     const err = new Error('Not Found');
     err.status = 404;

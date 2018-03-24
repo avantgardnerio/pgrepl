@@ -1,11 +1,28 @@
-import Redux from 'redux';
-import ReduxFirstRouting from 'redux-first-routing';
+import Redux from '../../../node_modules/redux/lib/index.js';
+import ReduxFirstRouting from '../../../node_modules/redux-first-routing/lib/index.js';
 
-const { combineReducers, applyMiddleware, createStore } = Redux;
-const { createBrowserHistory, routerReducer, routerMiddleware, startListener } = ReduxFirstRouting;
+import reducer from '../reducers/reducer.mjs';
+
+const { combineReducers, applyMiddleware, createStore } = Redux || window.Redux;
+const { createBrowserHistory, routerReducer, routerMiddleware, startListener } = ReduxFirstRouting || window.ReduxFirstRouting;
 
 export default class ReplClient {
     constructor() {
-        console.log(`-------------`, createStore)
+        const history = createBrowserHistory();
+
+        const rootReducer = combineReducers({
+            main: reducer,
+            router: routerReducer
+        });
+        const middleware = applyMiddleware(
+            ReduxThunk.default,
+            routerMiddleware(history)
+        );
+        this._store = createStore(rootReducer, middleware);
+        startListener(history, this.store);
+    }
+
+    get store() {
+        return this._store;
     }
 }
