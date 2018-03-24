@@ -8,7 +8,7 @@ export default (parent, driver, db) => {
 
     suite.addTest(new Mocha.Test(`should get version`, async () => {
         const version = await SnapshotService.getVersion();
-        chai.expect(version).to.equal(10);
+        chai.expect(version >= 9).to.equal(true);
     }));
 
     suite.addTest(new Mocha.Test(`should get LSN`, async () => {

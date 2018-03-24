@@ -46,7 +46,7 @@ app.use('/api', documents);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   if(req.url.startsWith(`/api`)) {
-    var err = new Error('Not Found');
+    const err = new Error('Not Found');
     err.status = 404;
     next(err);
   }
@@ -83,7 +83,7 @@ const configuration = {
 const migrate = async() => {
   await migrations.migrate(configuration);
   app.server = app.listen(port);
-}
+};
 
 export const started = migrate();
 
