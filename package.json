@@ -15,6 +15,7 @@
     "express": "~4.15.5",
     "express-ws": "^3.0.0",
     "isomorphic-fetch": "^2.2.1",
+    "isomorphic-ws": "^4.0.0",
     "morgan": "~1.9.0",
     "nodemon": "^1.17.1",
     "pg": "^7.4.1",
@@ -25,7 +26,8 @@
     "redux-thunk": "^2.2.0",
     "serve-favicon": "~2.4.5",
     "sql-migrations": "^1.0.4",
-    "uuid": "^3.2.1"
+    "uuid": "^3.2.1",
+    "ws": "^5.1.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
