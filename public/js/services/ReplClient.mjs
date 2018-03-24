@@ -1,25 +1,22 @@
 import Redux from '../../../node_modules/redux/lib/index.js';
-import ReduxFirstRouting from '../../../node_modules/redux-first-routing/lib/index.js';
+import ReduxThunk from '../../../node_modules/redux-thunk/lib/index.js'
 
 import reducer from '../reducers/reducer.mjs';
 
-const { combineReducers, applyMiddleware, createStore } = Redux || window.Redux;
-const { createBrowserHistory, routerReducer, routerMiddleware, startListener } = ReduxFirstRouting || window.ReduxFirstRouting;
+const {combineReducers, applyMiddleware, createStore} = Redux || window.Redux;
+const thunk = (ReduxThunk || window.ReduxThunk).default;
 
 export default class ReplClient {
-    constructor() {
-        const history = createBrowserHistory();
-
+    constructor(customReducers = {}, customMiddleware = []) {
         const rootReducer = combineReducers({
             main: reducer,
-            router: routerReducer
+            ...customReducers
         });
-        const middleware = applyMiddleware(
-            ReduxThunk.default,
-            routerMiddleware(history)
-        );
+        const middleware = applyMiddleware(...[
+            thunk,
+            ...customMiddleware
+        ]);
         this._store = createStore(rootReducer, middleware);
-        startListener(history, this.store);
     }
 
     get store() {

@@ -1,16 +1,23 @@
-import { getDocuments } from '../actions/actions.mjs';
+import {getDocuments} from '../actions/actions.mjs';
 import DocumentList from './DocumentList.mjs';
 import DocumentNew from './DocumentNew.mjs';
 import DocumentEdit from './DocumentEdit.mjs';
 import ReplClient from '../services/ReplClient.mjs';
+
+const {createBrowserHistory, routerReducer, routerMiddleware, startListener} = ReduxFirstRouting || window.ReduxFirstRouting;
 
 export default class App {
     constructor(id) {
         window.apps = window.apps || [];
         window.apps.push(this);
 
-        this.client = new ReplClient();
+        const history = createBrowserHistory();
+        this.client = new ReplClient(
+            {router: routerReducer},
+            [routerMiddleware(history)]
+        );
         this.store = this.client.store;
+        startListener(history, this.store);
 
         const html = `<div id=${id}></div>`;
         this.el = new DOMParser().parseFromString(html, `text/html`).body.firstChild;
@@ -28,8 +35,8 @@ export default class App {
         const state = this.store.getState();
         const url = state.router.pathname;
         this.el.innerHTML = ``;
-        if(`/documents/new` === url) this.el.appendChild(this.documentNew.el);
-        else if(/\/documents\/(0-9a-zA-z\-)*/.test(url)) this.el.appendChild(this.documentEdit.el);
+        if (`/documents/new` === url) this.el.appendChild(this.documentNew.el);
+        else if (/\/documents\/(0-9a-zA-z\-)*/.test(url)) this.el.appendChild(this.documentEdit.el);
         else this.el.appendChild(this.documentList.el);
     }
 
