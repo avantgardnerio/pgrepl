@@ -1,3 +1,5 @@
+import {createInsertRowAction, createTxnAction} from '../actions/database.mjs';
+
 export default class DocumentEdit {
     constructor(store) {
         this.store = store;
@@ -22,10 +24,6 @@ export default class DocumentEdit {
         this.onChange();
     }
 
-    newDocument() {
-        console.log('click');
-    }
-
     onMouseDown(e) {
         this.src = [e.offsetX / this.el.clientWidth, e.offsetY / this.el.clientHeight];
         this.dst = [e.offsetX / this.el.clientWidth, e.offsetY / this.el.clientHeight];
@@ -41,7 +39,7 @@ export default class DocumentEdit {
     }
 
     onMouseMove(e) {
-        if(!this.currentEl) return;
+        if (!this.currentEl) return;
         this.dst = [e.offsetX / this.el.clientWidth, e.offsetY / this.el.clientHeight];
         this.currentEl.setAttribute(`x2`, this.dst[0]);
         this.currentEl.setAttribute(`y2`, this.dst[1]);
@@ -49,6 +47,19 @@ export default class DocumentEdit {
 
     onMouseUp(e) {
         this.currentEl = undefined;
+        const line = {
+            id: uuid(),
+            documentId: uuid(), // TODO: correct id
+            x1: this.src[0],
+            y1: this.src[1],
+            x2: this.dst[0],
+            y2: this.dst[1],
+            'stroke-width': 2,
+            'vector-effect': "non-scaling-stroke"
+        };
+        const insertLine = createInsertRowAction('line', line);
+        const txn = createTxnAction([insertLine]);
+        this.store.dispatch(txn);
         this.currentEl.removeChild(this.currentEl);
     }
 
