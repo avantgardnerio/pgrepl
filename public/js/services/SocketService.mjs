@@ -1,10 +1,10 @@
-//import uuidv4 from 'uuid/v4';
+import uuidv4 from '../util/uuid.mjs';
 
 export default class SocketService {
     constructor(url, WebSocket) {
         this.url = url;
         this.WebSocket = WebSocket;
-        this.id = '1234';//uuidv4();
+        this.id = uuidv4();
         this.timer = undefined;
 
         this._onopen = this._onopen.bind(this);

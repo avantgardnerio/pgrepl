@@ -7,14 +7,14 @@ export const getDocuments = () => {
         const action = gotDocuments(documents);
         dispatch(action);
     }
-}
+};
 
 export const gotDocuments = (documents) => {
     return {
         type: 'GOT_DOCUMENTS',
         documents
     }
-}
+};
 
 export const saveDocument = (doc) => {
     return async (dispatch) => {
@@ -29,4 +29,4 @@ export const saveDocument = (doc) => {
         dispatch(getDocuments());
         dispatch(push(`/`));
     }
-}
+};

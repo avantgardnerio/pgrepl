@@ -22,7 +22,7 @@ expressWs(app);
 app.ws('/echo', (ws, req) => {
   ws.on('message', (msg) => {
     console.log('websocket msg=', msg);
-    ws.send(msg);
+    //ws.send(msg);
   });
 });
 

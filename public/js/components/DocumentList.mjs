@@ -1,3 +1,5 @@
+import {openDoc} from "../actions/databaseActions.mjs";
+
 const { push } = ReduxFirstRouting;
 
 export default class DocumentList {
@@ -21,6 +23,7 @@ export default class DocumentList {
     }
 
     docSelected(doc) {
+        this.store.dispatch(openDoc(doc.id));
         this.store.dispatch(push(`/documents/${doc.id}`));
     }
 

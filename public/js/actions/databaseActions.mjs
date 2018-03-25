@@ -1,6 +1,13 @@
 import uuidv4 from '../util/uuid.mjs';
 // import {getPk} from "../util/db";
 
+export const openDoc = (docId) => {
+    return {
+        type: 'OPEN_DOC',
+        docId
+    }
+};
+
 export const createInsertRowAction = (tableName, record) => {
     return {
         type: "INSERT",

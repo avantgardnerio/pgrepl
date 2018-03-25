@@ -1,5 +1,5 @@
 import uuidv4 from '../util/uuid.mjs';
-import {createInsertRowAction, createTxnAction} from '../actions/database.mjs';
+import {createInsertRowAction, createTxnAction} from '../actions/databaseActions.mjs';
 
 export default class DocumentEdit {
     constructor(store) {
@@ -23,7 +23,7 @@ export default class DocumentEdit {
     }
 
     screenToView(pos) {
-        if(this.el.clientHeight > this.el.clientWidth) {
+        if (this.el.clientHeight > this.el.clientWidth) {
             const offset = (this.el.clientHeight - this.el.clientWidth) / 2;
             const x = pos[0] / this.el.clientWidth;
             const y = (pos[1] - offset) / this.el.clientWidth;
@@ -37,7 +37,7 @@ export default class DocumentEdit {
     }
 
     onClick(e) {
-        if(!this.currentEl) {
+        if (!this.currentEl) {
             const pos = [e.offsetX, e.offsetY];
             this.src = this.screenToView(pos);
             this.dst = this.screenToView(pos);
@@ -75,6 +75,14 @@ export default class DocumentEdit {
         this.dst = this.screenToView(pos);
         this.currentEl.setAttribute(`x2`, this.dst[0]);
         this.currentEl.setAttribute(`y2`, this.dst[1]);
+    }
+
+    get docId() {
+        const url = this.store.getState().router.pathname;
+        const matches = url.match(/\/documents\/([0-9a-zA-Z-]*)/);
+        if (!matches || !matches.length || matches.length < 2) return undefined;
+        const docId = matches[1];
+        return docId;
     }
 
     onChange() {

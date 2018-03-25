@@ -1,4 +1,4 @@
-import { saveDocument } from '../actions/actions.mjs';
+import { saveDocument } from '../actions/appActions.mjs';
 import uuid from '../util/uuid.mjs';
 
 export default class DocumentNew {
