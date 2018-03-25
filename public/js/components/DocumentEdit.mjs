@@ -1,3 +1,4 @@
+import uuidv4 from '../util/uuid.mjs';
 import {createInsertRowAction, createTxnAction} from '../actions/database.mjs';
 
 export default class DocumentEdit {
@@ -50,10 +51,9 @@ export default class DocumentEdit {
             this.currentEl.setAttribute("stroke-width", "2");
             this.el.appendChild(this.currentEl);
         } else {
-            this.currentEl = undefined;
             const line = {
-                id: uuid(),
-                documentId: uuid(), // TODO: correct id
+                id: uuidv4(),
+                documentId: uuidv4(), // TODO: correct id
                 x1: this.src[0],
                 y1: this.src[1],
                 x2: this.dst[0],
@@ -64,7 +64,8 @@ export default class DocumentEdit {
             const insertLine = createInsertRowAction('line', line);
             const txn = createTxnAction([insertLine]);
             this.store.dispatch(txn);
-            this.currentEl.removeChild(this.currentEl);
+            this.el.removeChild(this.currentEl);
+            this.currentEl = undefined;
         }
     }
 

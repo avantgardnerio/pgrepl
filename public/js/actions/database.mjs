@@ -1,4 +1,4 @@
-// import uuidv4 from 'uuid/v4';
+import uuidv4 from '../util/uuid.mjs';
 // import {getPk} from "../util/db";
 
 export const createInsertRowAction = (tableName, record) => {
