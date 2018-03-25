@@ -15,9 +15,8 @@ export default class DocumentEdit {
         </svg>`;
         this.el = new DOMParser().parseFromString(html, `text/html`).body.firstChild;
 
-        this.el.onmousedown = (e) => this.onMouseDown(e);
+        this.el.onclick = (e) => this.onClick(e);
         this.el.onmousemove = (e) => this.onMouseMove(e);
-        this.el.onmouseup = (e) => this.onMouseUp(e);
 
         this.onChange();
     }
@@ -36,19 +35,37 @@ export default class DocumentEdit {
         }
     }
 
-    onMouseDown(e) {
-        const pos = [e.offsetX, e.offsetY];
-        this.src = this.screenToView(pos);
-        this.dst = this.screenToView(pos);
-        this.currentEl = document.createElementNS("http://www.w3.org/2000/svg", 'line');
-        this.currentEl.setAttribute("x1", this.src[0]);
-        this.currentEl.setAttribute("y1", this.src[1]);
-        this.currentEl.setAttribute("x2", this.dst[0]);
-        this.currentEl.setAttribute("y2", this.dst[1]);
-        this.currentEl.setAttribute("vector-effect", "non-scaling-stroke");
-        this.currentEl.setAttribute("stroke", "black");
-        this.currentEl.setAttribute("stroke-width", "2");
-        this.el.appendChild(this.currentEl);
+    onClick(e) {
+        if(!this.currentEl) {
+            const pos = [e.offsetX, e.offsetY];
+            this.src = this.screenToView(pos);
+            this.dst = this.screenToView(pos);
+            this.currentEl = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+            this.currentEl.setAttribute("x1", this.src[0]);
+            this.currentEl.setAttribute("y1", this.src[1]);
+            this.currentEl.setAttribute("x2", this.dst[0]);
+            this.currentEl.setAttribute("y2", this.dst[1]);
+            this.currentEl.setAttribute("vector-effect", "non-scaling-stroke");
+            this.currentEl.setAttribute("stroke", "black");
+            this.currentEl.setAttribute("stroke-width", "2");
+            this.el.appendChild(this.currentEl);
+        } else {
+            this.currentEl = undefined;
+            const line = {
+                id: uuid(),
+                documentId: uuid(), // TODO: correct id
+                x1: this.src[0],
+                y1: this.src[1],
+                x2: this.dst[0],
+                y2: this.dst[1],
+                'stroke-width': 2,
+                'vector-effect': "non-scaling-stroke"
+            };
+            const insertLine = createInsertRowAction('line', line);
+            const txn = createTxnAction([insertLine]);
+            this.store.dispatch(txn);
+            this.currentEl.removeChild(this.currentEl);
+        }
     }
 
     onMouseMove(e) {
@@ -57,24 +74,6 @@ export default class DocumentEdit {
         this.dst = this.screenToView(pos);
         this.currentEl.setAttribute(`x2`, this.dst[0]);
         this.currentEl.setAttribute(`y2`, this.dst[1]);
-    }
-
-    onMouseUp(e) {
-        this.currentEl = undefined;
-        const line = {
-            id: uuid(),
-            documentId: uuid(), // TODO: correct id
-            x1: this.src[0],
-            y1: this.src[1],
-            x2: this.dst[0],
-            y2: this.dst[1],
-            'stroke-width': 2,
-            'vector-effect': "non-scaling-stroke"
-        };
-        const insertLine = createInsertRowAction('line', line);
-        const txn = createTxnAction([insertLine]);
-        this.store.dispatch(txn);
-        this.currentEl.removeChild(this.currentEl);
     }
 
     onChange() {

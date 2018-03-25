@@ -3,7 +3,7 @@ import Mocha from 'mocha';
 import {db, pg} from '../src/services/DbService.mjs';
 import WebDriver from './WebDriver.mjs';
 import app, {started} from '../src/app.mjs';
-import documentPage from './uat/documentPage.mjs';
+import documentPage from './uat/documentPage.test.mjs';
 import documentApi from './api/documentApi.mjs';
 import documentUnit from './unit/client/components/DocumentList.test.mjs';
 import ssUnit from './unit/server/services/SnapshotService.test.mjs';

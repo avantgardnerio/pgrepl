@@ -16,7 +16,7 @@ export default (parent, driver, db) => {
         await db.none(`delete from document`);
         await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
             [uuid(), `test doc`, uuid()]
-        )
+        );
 
         await driver.visit(`http://localhost:3000/`);
         const el = await driver.find(`#left li`);
@@ -44,13 +44,51 @@ export default (parent, driver, db) => {
         await db.none(`delete from document`);
         await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
             [uuid(), `test doc`, uuid()]
-        )
+        );
 
         await driver.visit(`http://localhost:3000/`);
         const li = (await driver.waitForElements(`#left li`))[0];
         li.click();
         const svg = (await driver.find(`#left svg`));
         chai.expect(svg.length).to.equal(1);
+    }));
+
+    suite.addTest(new Mocha.Test(`should draw`, async () => {
+        const docId = uuid();
+        await db.none(`delete from line`);
+        await db.none(`delete from document`);
+        await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
+            [docId, `test doc`, uuid()]
+        );
+
+        await driver.visit(`http://localhost:3000/documents/${docId}`);
+        const svg = (await driver.find(`#left svg`));
+
+        const e1 = {
+            offsetX: 10,
+            offsetY: 10
+        };
+        const e2 = {
+            offsetX: 100,
+            offsetY: 100
+        };
+        const e3 = {
+            offsetX: 100,
+            offsetY: 100
+        };
+        const script = `
+            const [e1, e2, e3] = arguments;
+            const el = document.querySelector('#left svg');
+            el.onclick(e1);
+            el.onmousemove(e2);
+            el.onclick(e3);
+            const res = el.children.length;
+            return res;
+          `;
+        const res = await driver.execute(script, [e1, e2, e3]);
+        console.log(`--------------`, res);
+
+        chai.expect(svg.length).to.equal(0);
     }));
 
     parent.addSuite(suite);

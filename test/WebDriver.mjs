@@ -18,7 +18,7 @@ const BASE_URL = `http://127.0.0.1:4444`;
 
 export default class WebDriver {
     constructor() {
-        console.log('Starting webdriver...')
+        console.log('Starting webdriver...');
         this.proc = proc.spawn('chromedriver', ['--port=4444']);
         this.proc.stdout.on('data', async (data) => {
             const str = data.toString();
@@ -77,6 +77,11 @@ export default class WebDriver {
         });
     }
 
+    async execute(script, args) {
+         const message = await this.session.executeScript(script, args);
+         return message;
+    }
+
     async visit(url) {
         await this.session.go(url);
     }
@@ -86,7 +91,7 @@ export default class WebDriver {
     }
 
     async close() {
-        console.log('Terminating webdriver...')
+        console.log('Terminating webdriver...');
         if (this.session) await this.session.delete();
         this.proc.stdin.pause();
         this.proc.kill('SIGKILL');
