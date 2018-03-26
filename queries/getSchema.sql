@@ -22,5 +22,27 @@ FROM information_schema.tables tab
        AND kcu.column_name = col.column_name
 WHERE tab.table_schema = 'public'
       AND tab.table_type = 'BASE TABLE'
-      AND tab.table_name NOT LIKE 'schema_version'
+      AND tab.table_name NOT LIKE '__migrations__'
 ORDER BY tab.table_name, col.ordinal_position;
+
+SELECT
+  tc.constraint_catalog as catalog,
+  tc.constraint_schema as schema,
+  tc.constraint_name as "constraint",
+  kcu.ordinal_position as "ordinalPosition",
+  kcu.table_name as "foreignTable",
+  kcu.column_name as "foreignColumn",
+  ccu.table_name as "primaryTable",
+  ccu.column_name as "primaryColumn"
+FROM
+  information_schema.table_constraints AS tc
+  JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+  JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+where tc.constraint_type='FOREIGN KEY'
+ORDER BY
+  tc.constraint_catalog,
+  tc.constraint_schema,
+  tc.constraint_name,
+  kcu.ordinal_position;

@@ -6,7 +6,9 @@ const GET_SCHEMA = fs.readFileSync(`./queries/getSchema.sql`, `utf8`);
 
 class SnapshotService {
     async takeSnapshot(includeRows) {
-        const schema = await db.any(GET_SCHEMA);
+        const results = await db.multi(GET_SCHEMA);
+        const schema = results[0];
+        const relations = results[1];
         const tableNames = [...new Set(schema.map(t => t.tableName))];
         const tables = tableNames.map(tableName => {
             const columns = schema.filter(it => it.tableName === tableName);
