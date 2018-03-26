@@ -17,7 +17,7 @@ export default (parent, driver, db) => {
     }));
 
     suite.addTest(new Mocha.Test(`should get schema`, async () => {
-        const ss = await SnapshotService.takeSnapshot(true);
+        const ss = await SnapshotService.takeSnapshot(`document`, [`id`]);
         chai.expect(ss.lsn.length > 0).to.equal(true);
         chai.expect(ss.tables.length > 0).to.equal(true);
         const migrations = ss.tables.find(it => it.name === `__migrations__`);

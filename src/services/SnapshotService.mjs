@@ -5,7 +5,7 @@ import { db } from './DbService.mjs';
 const GET_SCHEMA = fs.readFileSync(`./queries/getSchema.sql`, `utf8`);
 
 class SnapshotService {
-    async takeSnapshot(includeRows) {
+    async takeSnapshot(primaryTableName, pk) {
         const results = await db.multi(GET_SCHEMA);
         const schema = results[0];
         const relations = results[1];
@@ -16,14 +16,35 @@ class SnapshotService {
             const rows = [];
             return { name: tableName, columns, rows };
         });
-        if (includeRows) {
-            for (const table of tables) {
-                const colNames = table.columns.map(it => it.columnName);
-                table.rows = await this.selectAll(table.name, colNames);
+        const foreignTableNames = [...new Set(relations.map(r => r.foreignTable))];
+        const foreignColumnNames = foreignTableNames.map(ftn => {
+            return {
+                tableName: ftn,
+                columns: relations.filter(rel => rel.foreignTable === ftn)
             }
-        }
+        });
         const lsn = await this.getCurrentLSN();
+        if (primaryTableName && pk) {
+            for (const table of tables) {
+                if(!foreignTableNames.includes(table.name)) continue;
+                const colNames = table.columns.map(it => it.columnName);
+                const fks = foreignColumnNames[table.name];
+                table.rows = await this.select(table.name, colNames, fks, pk);
+            }
+            const table = tables.find(t => t.name === primaryTableName);
+            const colNames = table.columns.map(it => it.columnName);
+            const pkCols = schema.filter(col => col.tableName === table.name && col.pkOrdinal);
+            table.rows = await this.select(table.name, colNames, pkCols, pk);
+        }
         return { lsn, tables };
+    }
+
+    async select(tableName, columns, keys, values) {
+        const clause = keys.map(k => `"${k}"=?`).join(` and `);
+        const colNames = columns.map(name => `"${name}"`).join(`,`);
+        const sql = `select ${colNames} from "${tableName}" where ${clause}`;
+        const rows = await db.any(sql, values);
+        return rows
     }
 
     async selectAll(tableName, columns) {

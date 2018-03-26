@@ -24,7 +24,7 @@ app.ws('/echo', (ws, req) => {
         console.log('websocket msg=', action);
         switch (action.type) {
             case 'SNAPSHOT_REQUEST':
-                const ss = await SnapshotService.takeSnapshot(true);
+                const ss = await SnapshotService.takeSnapshot(`document`, [`id`]);
                 const msg = {
                     type: `SNAPSHOT_RESPONSE`,
                     payload: ss
