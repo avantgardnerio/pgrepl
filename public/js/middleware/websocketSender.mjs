@@ -1,5 +1,4 @@
-import {subscribeRequest} from "../actions/websocketActions";
-import {snapshotRequest} from "../actions/websocketActions.mjs";
+import {snapshotRequest, subscribeRequest} from "../actions/websocketActions.mjs";
 
 export const createWebSocketSender = (socket) => {
     const webSocketSender = (store) => {
@@ -17,8 +16,8 @@ export const createWebSocketSender = (socket) => {
                             const state = store.getState();
                             const docId = action.docId;
                             const doc = state.db.documents[docId];
-                            if(!doc || !doc.lsn) {
-                                if(socket.connected) socket.write(snapshotRequest(docId));
+                            if (!doc || !doc.lsn) {
+                                if (socket.connected) socket.write(snapshotRequest(docId));
                             }
                             return next(action);
                         case 'SNAPSHOT_RESPONSE':
