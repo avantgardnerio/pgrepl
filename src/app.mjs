@@ -10,6 +10,7 @@ import migrations from 'sql-migrations';
 
 import documents from './routes/documents';
 import cfgSvc from '../src/services/ConfigService.mjs';
+import SnapshotService from './services/SnapshotService.mjs';
 
 debug('express:server');
 dotenv.config();
@@ -18,9 +19,22 @@ const app = express();
 expressWs(app);
 
 app.ws('/echo', (ws, req) => {
-    ws.on('message', (msg) => {
-        console.log('websocket msg=', msg);
-        //ws.send(msg);
+    ws.on('message', async (msg) => {
+        const action = JSON.parse(msg);
+        console.log('websocket msg=', action);
+        switch (action.type) {
+            case 'SNAPSHOT_REQUEST':
+                const ss = await SnapshotService.takeSnapshot(true);
+                const msg = {
+                    type: `SNAPSHOT_RESPONSE`,
+                    payload: ss
+                };
+                ws.send(JSON.stringify(msg));
+                break;
+            default:
+                console.log(`Unknown msg type:`, action.type);
+                break;
+        }
     });
 });
 
