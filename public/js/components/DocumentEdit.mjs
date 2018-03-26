@@ -1,5 +1,5 @@
 import uuidv4 from '../util/uuid.mjs';
-import {createInsertRowAction, createTxnAction} from '../actions/databaseActions.mjs';
+import {createInsertRowAction, createTxnAction, openDoc} from '../actions/databaseActions.mjs';
 
 export default class DocumentEdit {
     constructor(store) {
@@ -86,6 +86,9 @@ export default class DocumentEdit {
     }
 
     onChange() {
+        const state = this.store.getState();
+        const doc = state.db.documents[this.docId];
+        if(!doc) this.store.dispatch(openDoc(this.docId));
     }
 
     get element() {

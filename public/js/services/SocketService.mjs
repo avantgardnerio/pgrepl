@@ -6,6 +6,7 @@ export default class SocketService {
         this.WebSocket = WebSocket;
         this.id = uuidv4();
         this.timer = undefined;
+        this._connected = false;
 
         this._onopen = this._onopen.bind(this);
         this._send = this._send.bind(this);
@@ -22,7 +23,7 @@ export default class SocketService {
     }
 
     close() {
-        console.log('Closing websocket...')
+        console.log('Closing websocket...');
         this._ws.close(1000);
         if (this.timer) clearInterval(this.timer);
         this._ws = undefined;
@@ -35,11 +36,12 @@ export default class SocketService {
     };
 
     get connected() {
-        return this._ws !== undefined;
+        return this._connected;
     }
 
     _onopen() {
         console.info(`WebSocket ${this.id} Connected`);
+        this._connected = true;
         if (this.onConnect) this.onConnect();
         this.timer = setInterval(() => this.write({type: 'PING'}), 30000);
     };
@@ -56,6 +58,7 @@ export default class SocketService {
 
     _onclose(ev) {
         if (this.timer) clearInterval(this.timer);
+        this._connected = false;
         this.timer = undefined;
         this._ws = undefined;
         if (this.onClose) this.onClose();

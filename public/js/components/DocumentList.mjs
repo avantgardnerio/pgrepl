@@ -23,7 +23,6 @@ export default class DocumentList {
     }
 
     docSelected(doc) {
-        this.store.dispatch(openDoc(doc.id));
         this.store.dispatch(push(`/documents/${doc.id}`));
     }
 
