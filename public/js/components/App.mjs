@@ -12,7 +12,8 @@ export default class App {
         window.apps = window.apps || [];
         window.apps.push(this);
 
-        const wsUrl = document.location.toString().replace('http://', 'ws://') + "echo";
+        const protocol = document.location.protocol === `http:` ? `ws:` : `wss:`;
+        const wsUrl = `${protocol}//${document.location.host}/echo`;
         const history = createBrowserHistory();
         this.client = new ReplClient(
             {

@@ -26,7 +26,7 @@ export default class ReplClient {
         this.ws.onConnect = () => this.onConnect();
         this.ws.onMsg = (msg) => this.store.dispatch(msg);
         this.ws.onClose = () => this.store.dispatch(disconnected());
-        //this.ws.connect();
+        this.ws.connect();
     }
 
     onConnect() {
