@@ -15,7 +15,7 @@ export default (parent, driver, db) => {
         await db.none(`delete from document`);
         await db.none(`INSERT INTO document("id", "name", "curTxnId") VALUES($1, $2, $3)`,
             [documentId, `test doc`, curTxnId]
-        )
+        );
     });
 
     suite.addTest(new Mocha.Test(`should return a list of documents`, (done) => {

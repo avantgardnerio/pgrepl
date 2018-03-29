@@ -23,6 +23,7 @@ export const disconnect = () => {
 };
 
 export const snapshotRequest = (docId) => {
+    if(!docId) throw new Error(`Invalid snapshot request: no docId!`);
     return {
         type: 'SNAPSHOT_REQUEST',
         docId

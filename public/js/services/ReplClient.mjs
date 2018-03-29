@@ -33,17 +33,6 @@ export default class ReplClient {
 
     onConnect() {
         this.store.dispatch(connected());
-        const state = this.store.getState();
-        Object.keys(state.db.documents).forEach(docId => {
-            const doc = state.db.documents[docId];
-            if (doc.lsn) {
-                const msg = subscribeRequest(this.ws.id, docId, doc.lsn);
-                this.ws.write(msg);
-            } else {
-                const msg = snapshotRequest(docId);
-                this.ws.write(msg);
-            }
-        });
     }
 
     get store() {

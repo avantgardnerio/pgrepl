@@ -64,18 +64,9 @@ export default (parent, driver, db) => {
         await driver.visit(`http://localhost:3000/documents/${docId}`);
         const svg = (await driver.find(`#left svg`));
 
-        const e1 = {
-            offsetX: 10,
-            offsetY: 10
-        };
-        const e2 = {
-            offsetX: 100,
-            offsetY: 100
-        };
-        const e3 = {
-            offsetX: 100,
-            offsetY: 100
-        };
+        const e1 = { offsetX: 10, offsetY: 10 };
+        const e2 = { offsetX: 100, offsetY: 100 };
+        const e3 = { offsetX: 100, offsetY: 100 };
         const script = `
             const [e1, e2, e3] = arguments;
             const el = document.querySelector('#left svg');

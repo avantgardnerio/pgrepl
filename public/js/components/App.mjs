@@ -49,7 +49,11 @@ export default class App {
     }
 
     async load() {
-        this.store.dispatch(getDocuments());
+        try {
+            this.store.dispatch(getDocuments());
+        } catch (er) {
+            console.error(`App.mjs load()`, er);
+        }
     }
 
     get element() {

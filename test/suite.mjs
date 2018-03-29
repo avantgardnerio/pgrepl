@@ -41,8 +41,8 @@ documentPage(suite, driver, db);
 documentApi(suite, driver, db);
 
 // -------------------------------- Unit --------------------------------
-documentUnit(suite);
-ssUnit(suite);
-replUnit(suite);
+documentUnit(suite, driver, db);
+ssUnit(suite, driver, db);
+replUnit(suite, driver, db);
 
 started.then(() => runner.run());

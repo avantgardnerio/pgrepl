@@ -20,20 +20,25 @@ expressWs(app);
 
 app.ws('/echo', (ws, req) => {
     ws.on('message', async (msg) => {
-        const action = JSON.parse(msg);
-        console.log('websocket msg=', action);
-        switch (action.type) {
-            case 'SNAPSHOT_REQUEST':
-                const ss = await SnapshotService.takeSnapshot(`document`, [`id`]);
-                const msg = {
-                    type: `SNAPSHOT_RESPONSE`,
-                    payload: ss
-                };
-                ws.send(JSON.stringify(msg));
-                break;
-            default:
-                console.log(`Unknown msg type:`, action.type);
-                break;
+        try {
+            const action = JSON.parse(msg);
+            console.log('websocket msg=', action);
+            switch (action.type) {
+                case 'SNAPSHOT_REQUEST':
+                    if(!action.docId) throw new Error(`Invalid snapshot request: no docId!`);
+                    const ss = await SnapshotService.takeSnapshot(`document`, [action.docId]);
+                    const msg = {
+                        type: `SNAPSHOT_RESPONSE`,
+                        payload: ss
+                    };
+                    ws.send(JSON.stringify(msg));
+                    break;
+                default:
+                    console.log(`Unknown msg type:`, action.type);
+                    break;
+            }
+        } catch (er) {
+            console.error(`app.mjs message()`, er);
         }
     });
 });
@@ -101,8 +106,12 @@ const configuration = {
     password: 'postgres'
 };
 const migrate = async () => {
-    await migrations.migrate(configuration);
-    app.server = app.listen(port);
+    try {
+        await migrations.migrate(configuration);
+        app.server = app.listen(port);
+    } catch(er) {
+        console.error(`app.mjs migrate`, er);
+    }
 };
 
 export const started = migrate();

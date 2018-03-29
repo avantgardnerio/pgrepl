@@ -7,7 +7,8 @@ export default (parent, driver, db) => {
     const suite = new Mocha.Suite(`ReplService`);
 
     suite.addTest(new Mocha.Test(`should instantiate`, async () => {
-        const repl = new ReplClient();
+        const WebSocket = function() {};
+        const repl = new ReplClient({}, [], ``, WebSocket);
         chai.expect(repl).to.not.be.undefined;
     }));
     
