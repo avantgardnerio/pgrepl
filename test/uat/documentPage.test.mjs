@@ -77,8 +77,9 @@ export default (parent, driver, db) => {
             return res;
         };
         const res = await driver.execute(drag, [e1, e2, e3]);
-
-        chai.expect(svg.length).to.equal(0);
+        const children = (await driver.find(`#app > svg > *`));
+        chai.expect(children.length).to.equal(0);
+        // TODO: more transparent-box instrumentation to ensure action is fired, etc
     }));
 
     parent.addSuite(suite);

@@ -11,8 +11,6 @@ export default class DocumentEdit {
         const html = `
         <svg style="width: 100%; height: 100%" viewbox="0 0 1 1" 
                 preserveAspectRatio="xMidyMid meet">
-            <rect x="0" y="0" width="1" height="1" stroke-width="2" stroke="black" vector-effect="non-scaling-stroke" 
-                fill-opacity="0"/>
         </svg>`;
         this.el = new DOMParser().parseFromString(html, `text/html`).body.firstChild;
 
