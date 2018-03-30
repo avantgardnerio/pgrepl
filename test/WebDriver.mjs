@@ -56,7 +56,7 @@ export default class WebDriver {
                     reject(new Error(`Timeout waiting for elements: ${qs}`));
                 }
                 this.find(qs).then((elements) => {
-                    if(elements.length > 0) {
+                    if (elements.length > 0) {
                         clearInterval(id);
                         resolve(elements);
                     }
@@ -77,9 +77,10 @@ export default class WebDriver {
         });
     }
 
-    async execute(script, args) {
-         const message = await this.session.executeScript(script, args);
-         return message;
+    async execute(func, args) {
+        const script = /function\s*\(\)\s*\{(.*)\}/gs.exec(func.toString())[1];
+        const message = await this.session.executeScript(script, args);
+        return message;
     }
 
     async visit(url) {

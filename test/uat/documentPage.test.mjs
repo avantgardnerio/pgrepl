@@ -67,7 +67,7 @@ export default (parent, driver, db) => {
         const e1 = { offsetX: 10, offsetY: 10 };
         const e2 = { offsetX: 100, offsetY: 100 };
         const e3 = { offsetX: 100, offsetY: 100 };
-        const script = `
+        const drag = function() {
             const [e1, e2, e3] = arguments;
             const el = document.querySelector('#left svg');
             el.onclick(e1);
@@ -75,9 +75,8 @@ export default (parent, driver, db) => {
             el.onclick(e3);
             const res = el.children.length;
             return res;
-          `;
-        const res = await driver.execute(script, [e1, e2, e3]);
-        console.log(`--------------`, res);
+        };
+        const res = await driver.execute(drag, [e1, e2, e3]);
 
         chai.expect(svg.length).to.equal(0);
     }));
