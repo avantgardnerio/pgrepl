@@ -2,10 +2,8 @@ import App from './components/App.mjs';
 
 onload = async () => {
     try {
-        const left = new App(`left`);
-        const rght = new App(`rght`);
-        document.body.appendChild(left.el);
-        document.body.appendChild(rght.el);
+        const app = new App(`app`);
+        document.body.appendChild(app.el);
     } catch (er) {
         console.error(`index.mjs`, er);
     }

@@ -19,7 +19,7 @@ export default (parent, driver, db) => {
         );
 
         await driver.visit(`http://localhost:3000/`);
-        const el = await driver.find(`#left li`);
+        const el = await driver.find(`#app li`);
         chai.expect(el.length).to.equal(1);
         chai.expect(await el[0].getText()).to.equal(`test doc`);
     }));
@@ -29,12 +29,12 @@ export default (parent, driver, db) => {
         await db.none(`delete from document`);
 
         await driver.visit(`http://localhost:3000/documents/new`);
-        const tbName = (await driver.find(`#left input`))[0];
-        const btnSave = (await driver.find(`#left button`))[0];
+        const tbName = (await driver.find(`#app input`))[0];
+        const btnSave = (await driver.find(`#app button`))[0];
         tbName.sendKeys(`inserted doc`);
         btnSave.click();
-        await driver.waitForElements(`#left .documentNew`);
-        const item = (await driver.find(`#left li`))[0];
+        await driver.waitForElements(`#app .documentNew`);
+        const item = (await driver.find(`#app li`))[0];
         const text = await item.getText();
         chai.expect(text).to.equal(`inserted doc`);
     }));
@@ -47,9 +47,9 @@ export default (parent, driver, db) => {
         );
 
         await driver.visit(`http://localhost:3000/`);
-        const li = (await driver.waitForElements(`#left li`))[0];
+        const li = (await driver.waitForElements(`#app li`))[0];
         li.click();
-        const svg = (await driver.find(`#left svg`));
+        const svg = (await driver.find(`#app svg`));
         chai.expect(svg.length).to.equal(1);
     }));
 
@@ -62,14 +62,14 @@ export default (parent, driver, db) => {
         );
 
         await driver.visit(`http://localhost:3000/documents/${docId}`);
-        const svg = (await driver.find(`#left svg`));
+        const svg = (await driver.find(`#app svg`));
 
         const e1 = { offsetX: 10, offsetY: 10 };
         const e2 = { offsetX: 100, offsetY: 100 };
         const e3 = { offsetX: 100, offsetY: 100 };
         const drag = function() {
             const [e1, e2, e3] = arguments;
-            const el = document.querySelector('#left svg');
+            const el = document.querySelector('#app svg');
             el.onclick(e1);
             el.onmousemove(e2);
             el.onclick(e3);
